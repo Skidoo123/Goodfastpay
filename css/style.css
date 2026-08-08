@@ -3334,7 +3334,7 @@ body {
     height: 84px;
     display: flex;
     align-items: center;
-    background: rgba(7, 9, 19, 0.85);
+    background: rgba(7, 9, 19, 0.88);
     backdrop-filter: blur(24px);
     -webkit-backdrop-filter: blur(24px);
     border-bottom: 1px solid rgba(255, 255, 255, 0.08);
@@ -3346,9 +3346,9 @@ body {
 
 .landing-nav-container {
     width: 100%;
-    max-width: 1320px;
+    max-width: 1400px;
     margin: 0 auto;
-    padding: 0 32px;
+    padding: 0 clamp(20px, 4vw, 48px);
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -3362,6 +3362,7 @@ body {
     gap: 10px;
     letter-spacing: -0.5px;
     color: var(--text-primary);
+    flex-shrink: 0;
 }
 
 .landing-logo img {
@@ -3376,7 +3377,7 @@ body {
 .landing-nav-menu {
     display: flex;
     align-items: center;
-    gap: 32px;
+    gap: clamp(20px, 2.5vw, 36px);
 }
 
 .landing-nav-link {
@@ -3386,6 +3387,7 @@ body {
     transition: all var(--transition-fast);
     position: relative;
     padding: 6px 0;
+    white-space: nowrap;
 }
 
 .landing-nav-link:hover {
@@ -3412,30 +3414,32 @@ body {
     display: flex;
     align-items: center;
     gap: 14px;
+    flex-shrink: 0;
 }
 
 /* Landing Hero Layout */
 .landing-hero {
     position: relative;
-    padding: 70px 0 90px;
+    padding: clamp(40px, 6vw, 80px) 0;
     background-color: #050713;
     background-image: 
-        radial-gradient(circle at 10% 25%, rgba(59, 130, 246, 0.18), transparent 45%),
-        radial-gradient(circle at 90% 40%, rgba(6, 182, 212, 0.16), transparent 45%),
-        radial-gradient(circle at 50% 90%, rgba(139, 92, 246, 0.12), transparent 55%),
+        radial-gradient(circle at 10% 25%, rgba(59, 130, 246, 0.18), transparent 50%),
+        radial-gradient(circle at 90% 40%, rgba(6, 182, 212, 0.16), transparent 50%),
+        radial-gradient(circle at 50% 90%, rgba(139, 92, 246, 0.12), transparent 60%),
         radial-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 0);
     background-size: 100% 100%, 100% 100%, 100% 100%, 32px 32px;
     min-height: calc(100vh - 84px);
     display: flex;
     align-items: center;
     overflow: hidden;
+    width: 100%;
 }
 
 .landing-hero-container {
     width: 100%;
-    max-width: 1320px;
+    max-width: 1400px;
     margin: 0 auto;
-    padding: 0 32px;
+    padding: 0 clamp(20px, 4vw, 48px);
     position: relative;
     z-index: 2;
 }
@@ -3443,7 +3447,7 @@ body {
 .landing-hero-grid {
     display: grid;
     grid-template-columns: 1.15fr 0.85fr;
-    gap: 56px;
+    gap: clamp(32px, 5vw, 64px);
     align-items: center;
     width: 100%;
 }
@@ -3453,6 +3457,7 @@ body {
     flex-direction: column;
     align-items: flex-start;
     text-align: left;
+    width: 100%;
 }
 
 /* Glowing Live Pill */
@@ -3460,14 +3465,14 @@ body {
     display: inline-flex;
     align-items: center;
     gap: 10px;
-    padding: 8px 18px;
+    padding: 8px 20px;
     border-radius: 50px;
-    background: rgba(15, 23, 42, 0.8);
+    background: rgba(15, 23, 42, 0.85);
     border: 1px solid rgba(59, 130, 246, 0.35);
     color: #93c5fd;
     font-size: 0.85rem;
     font-weight: 700;
-    margin-bottom: 24px;
+    margin-bottom: 22px;
     box-shadow: 0 0 20px rgba(59, 130, 246, 0.15);
     backdrop-filter: blur(10px);
 }
@@ -3489,27 +3494,28 @@ body {
 }
 
 .hero-main-title {
-    font-size: clamp(2.4rem, 4.4vw, 4rem);
+    font-size: clamp(2.2rem, 3.8vw, 3.8rem);
     font-weight: 800;
-    line-height: 1.12;
+    line-height: 1.15;
     letter-spacing: -0.03em;
     color: #ffffff;
-    margin-bottom: 22px;
+    margin-bottom: 20px;
+    width: 100%;
 }
 
 .hero-subtext {
-    font-size: clamp(1rem, 1.3vw, 1.125rem);
+    font-size: clamp(0.95rem, 1.2vw, 1.125rem);
     line-height: 1.7;
     color: #94a3b8;
-    max-width: 580px;
-    margin-bottom: 36px;
+    max-width: 600px;
+    margin-bottom: 32px;
 }
 
 .hero-cta-group {
     display: flex;
     gap: 16px;
     align-items: center;
-    margin-bottom: 48px;
+    margin-bottom: 40px;
     flex-wrap: wrap;
 }
 
@@ -3531,7 +3537,7 @@ body {
     grid-template-columns: repeat(3, 1fr);
     gap: 16px;
     width: 100%;
-    max-width: 620px;
+    max-width: 600px;
 }
 
 .hero-stat-card {
@@ -3539,7 +3545,7 @@ body {
     border: 1px solid rgba(255, 255, 255, 0.08);
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
-    padding: 20px 22px;
+    padding: 18px 20px;
     border-radius: 18px;
     transition: all var(--transition-fast);
     position: relative;
@@ -3563,7 +3569,7 @@ body {
 }
 
 .hero-stat-number {
-    font-size: clamp(1.5rem, 2.2vw, 2.1rem);
+    font-size: clamp(1.4rem, 2vw, 1.9rem);
     font-weight: 800;
     color: #ffffff;
     line-height: 1.2;
@@ -3581,16 +3587,16 @@ body {
 
 /* Quick Exchange Estimate Card */
 .hero-calc-card {
-    background: linear-gradient(145deg, rgba(14, 19, 38, 0.92), rgba(7, 10, 22, 0.95));
+    background: linear-gradient(145deg, rgba(14, 19, 38, 0.94), rgba(7, 10, 22, 0.98));
     backdrop-filter: blur(28px);
     -webkit-backdrop-filter: blur(28px);
     border: 1px solid rgba(255, 255, 255, 0.12);
     border-radius: 28px;
-    padding: 34px 30px;
+    padding: clamp(24px, 3.5vw, 36px);
     box-shadow: 0 30px 70px -15px rgba(0, 0, 0, 0.8), 0 0 45px rgba(59, 130, 246, 0.12);
     width: 100%;
-    max-width: 480px;
-    margin: 0 auto;
+    max-width: 540px;
+    margin-left: auto;
     position: relative;
 }
 
@@ -3625,9 +3631,9 @@ body {
     background: linear-gradient(135deg, rgba(16, 185, 129, 0.08), rgba(6, 182, 212, 0.04));
     border: 1px solid rgba(16, 185, 129, 0.25);
     border-radius: 18px;
-    padding: 22px;
+    padding: 20px;
     text-align: center;
-    margin: 20px 0 22px;
+    margin: 18px 0 20px;
     box-shadow: inset 0 0 20px rgba(16, 185, 129, 0.05);
 }
 
@@ -3640,7 +3646,7 @@ body {
 }
 
 .calc-payout-val {
-    font-size: clamp(1.9rem, 3.2vw, 2.4rem);
+    font-size: clamp(1.8rem, 3vw, 2.3rem);
     font-weight: 800;
     color: #10b981;
     margin: 4px 0;
@@ -3676,11 +3682,11 @@ body {
 }
 
 .calc-denom-chip {
-    padding: 5px 12px;
+    padding: 6px 14px;
     border-radius: 8px;
     background: rgba(255, 255, 255, 0.06);
     border: 1px solid rgba(255, 255, 255, 0.1);
-    font-size: 0.78rem;
+    font-size: 0.8rem;
     font-weight: 700;
     color: #94a3b8;
     cursor: pointer;
@@ -3702,15 +3708,16 @@ body {
     overflow-x: auto;
     white-space: nowrap;
     -webkit-overflow-scrolling: touch;
+    width: 100%;
 }
 
 .rates-ticker-container {
     display: flex;
     gap: 20px;
     align-items: center;
-    max-width: 1320px;
+    max-width: 1400px;
     margin: 0 auto;
-    padding: 0 32px;
+    padding: 0 clamp(20px, 4vw, 48px);
 }
 
 .rates-ticker-item {
@@ -3739,23 +3746,26 @@ body {
     font-weight: 800;
 }
 
-/* Landing Page Responsive Media Queries */
-@media (max-width: 1100px) {
+/* Responsive Media Queries (2 Columns on Desktop/MacBook down to 960px) */
+@media (max-width: 960px) {
     .landing-hero-grid {
         grid-template-columns: 1fr;
-        gap: 48px;
+        gap: 40px;
     }
     .hero-left-content {
         align-items: center;
         text-align: center;
     }
     .hero-subtext {
-        margin: 0 auto 36px;
+        margin: 0 auto 28px;
     }
     .hero-cta-group {
         justify-content: center;
     }
     .hero-stats-row {
+        margin: 0 auto;
+    }
+    .hero-calc-card {
         margin: 0 auto;
     }
 }
@@ -3780,9 +3790,6 @@ body {
     .landing-hero {
         padding: 40px 0 60px;
     }
-    .landing-hero-container {
-        padding: 0 20px;
-    }
     .hero-stats-row {
         grid-template-columns: 1fr;
         gap: 12px;
@@ -3797,8 +3804,5 @@ body {
     }
     .hero-cta-group .btn {
         width: 100%;
-    }
-    .hero-calc-card {
-        padding: 24px 20px;
     }
 }
