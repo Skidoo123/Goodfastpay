@@ -159,7 +159,9 @@ function loadSession() {
 // Side drawer toggling for mobile layout
 function toggleSidebar() {
     const sidebar = document.getElementById("portal-sidebar");
-    sidebar.classList.toggle("active");
+    const overlay = document.getElementById("portal-sidebar-overlay");
+    if (sidebar) sidebar.classList.toggle("active");
+    if (overlay) overlay.classList.toggle("active");
 }
 
 // Switch between workspace tabs
@@ -183,8 +185,11 @@ function switchSection(sectionId, element) {
         if (matchingLink) matchingLink.classList.add("active");
     }
     
-    // Close sidebar on mobile
-    document.getElementById("portal-sidebar").classList.remove("active");
+    // Close sidebar and overlay on mobile
+    const sidebar = document.getElementById("portal-sidebar");
+    const overlay = document.getElementById("portal-sidebar-overlay");
+    if (sidebar) sidebar.classList.remove("active");
+    if (overlay) overlay.classList.remove("active");
     
     // Special section-based triggers
     if (sectionId === "withdraw") {

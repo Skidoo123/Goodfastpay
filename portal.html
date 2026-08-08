@@ -74,59 +74,64 @@
 <body>
 
     <div class="dashboard-layout">
+        <!-- SIDEBAR BACKDROP OVERLAY FOR MOBILE -->
+        <div class="sidebar-overlay" id="portal-sidebar-overlay" onclick="toggleSidebar()"></div>
+
         <!-- SIDEBAR -->
         <aside class="sidebar" id="portal-sidebar">
-            <button class="sidebar-close" onclick="toggleSidebar()"><i class="fas fa-xmark"></i></button>
-            <div class="logo sidebar-logo" style="margin-bottom: 30px;">
+            <button class="sidebar-close" onclick="toggleSidebar()" aria-label="Close Sidebar"><i class="fas fa-xmark"></i></button>
+            <div class="logo sidebar-logo" style="margin-bottom: 24px;">
                 <img src="images/logo.png" alt="Goodfastpay Logo" style="height: 32px; width: 32px; background: #ffffff; border-radius: 6px; padding: 3px; vertical-align: middle; margin-right: 8px; object-fit: contain;">
                 <span>Good<span class="gradient-text">fast</span>pay</span>
             </div>
             
-            <ul class="sidebar-menu" style="flex: 1;">
-                <li>
-                    <a class="sidebar-link active" onclick="switchSection('dashboard', this)">
-                        <i class="fas fa-chart-line"></i> Dashboard
-                    </a>
-                </li>
-                <li>
-                    <a class="sidebar-link" onclick="switchSection('buy', this)">
-                        <i class="fas fa-cart-shopping"></i> Buy Gift Card
-                    </a>
-                </li>
-                <li>
-                    <a class="sidebar-link" onclick="switchSection('sell', this)">
-                        <i class="fas fa-wallet"></i> Sell Gift Card
-                    </a>
-                </li>
-                <li>
-                    <a class="sidebar-link" onclick="switchSection('withdraw', this)">
-                        <i class="fas fa-money-bill-transfer"></i> Withdraw Cash
-                    </a>
-                </li>
-                <li>
-                    <a class="sidebar-link" onclick="switchSection('bank', this)">
-                        <i class="fas fa-building-columns"></i> Bank Account
-                    </a>
-                </li>
-                <li>
-                    <a class="sidebar-link" onclick="switchSection('logs', this)">
-                        <i class="fas fa-shield-halved"></i> Security Logs
-                    </a>
-                </li>
-                <li>
-                    <a class="sidebar-link" onclick="switchSection('support', this)">
-                        <i class="fas fa-headset"></i> Help & Support <span class="badge badge-warning" id="badge-user-support" style="display:none; font-size: 0.7rem; padding: 2px 6px;">0</span>
-                    </a>
-                </li>
-                <li>
-                    <a class="sidebar-link" onclick="switchSection('bank', this); showToast('Settings loaded.', 'info');">
-                        <i class="fas fa-gear"></i> Settings
-                    </a>
-                </li>
-            </ul>
+            <div class="sidebar-nav-scroll">
+                <ul class="sidebar-menu">
+                    <li>
+                        <a class="sidebar-link active" onclick="switchSection('dashboard', this)">
+                            <i class="fas fa-chart-line"></i> Dashboard
+                        </a>
+                    </li>
+                    <li>
+                        <a class="sidebar-link" onclick="switchSection('buy', this)">
+                            <i class="fas fa-cart-shopping"></i> Buy Gift Card
+                        </a>
+                    </li>
+                    <li>
+                        <a class="sidebar-link" onclick="switchSection('sell', this)">
+                            <i class="fas fa-wallet"></i> Sell Gift Card
+                        </a>
+                    </li>
+                    <li>
+                        <a class="sidebar-link" onclick="switchSection('withdraw', this)">
+                            <i class="fas fa-money-bill-transfer"></i> Withdraw Cash
+                        </a>
+                    </li>
+                    <li>
+                        <a class="sidebar-link" onclick="switchSection('bank', this)">
+                            <i class="fas fa-building-columns"></i> Bank Account
+                        </a>
+                    </li>
+                    <li>
+                        <a class="sidebar-link" onclick="switchSection('logs', this)">
+                            <i class="fas fa-shield-halved"></i> Security Logs
+                        </a>
+                    </li>
+                    <li>
+                        <a class="sidebar-link" onclick="switchSection('support', this)">
+                            <i class="fas fa-headset"></i> Help & Support <span class="badge badge-warning" id="badge-user-support" style="display:none; font-size: 0.7rem; padding: 2px 6px;">0</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a class="sidebar-link" onclick="switchSection('bank', this); showToast('Settings loaded.', 'info');">
+                            <i class="fas fa-gear"></i> Settings
+                        </a>
+                    </li>
+                </ul>
+            </div>
 
             <!-- Bottom User Profile Card -->
-            <div style="border-top: 1px solid var(--border-color); padding-top: 16px; display: flex; flex-direction: column; gap: 12px; margin-top: auto;">
+            <div class="sidebar-footer">
                 <div class="sidebar-profile">
                     <div class="sidebar-profile-avatar" id="sidebar-user-avatar">U</div>
                     <div class="sidebar-profile-info">
@@ -135,7 +140,7 @@
                     </div>
                     <i class="fas fa-gear sidebar-profile-settings" onclick="switchSection('bank', document.querySelector('[onclick*=\'bank\']'))" title="Settings"></i>
                 </div>
-                <button class="btn btn-secondary btn-sm" onclick="handleLogout()" style="width: 100%; font-weight: 700;">
+                <button class="btn btn-secondary btn-sm logout-btn" onclick="handleLogout()" style="font-weight: 700;">
                     <i class="fas fa-right-from-bracket" style="color: var(--danger);"></i> Sign Out
                 </button>
             </div>
@@ -144,22 +149,26 @@
         <!-- MAIN WORKSPACE -->
         <main class="main-content">
             <!-- Header bar -->
-            <header style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; flex-wrap: wrap; gap: 16px; position: relative;">
-                <div style="display: flex; align-items: center; gap: 16px;">
-                    <button class="sidebar-toggle" onclick="toggleSidebar()"><i class="fas fa-bars"></i></button>
+            <header style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; gap: 12px; position: relative;">
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <button class="sidebar-toggle" onclick="toggleSidebar()" aria-label="Toggle Menu"><i class="fas fa-bars"></i></button>
+                    <div class="mobile-header-logo" style="display: none; align-items: center; gap: 6px; font-weight: 800; font-size: 1.15rem;">
+                        <img src="images/logo.png" alt="Goodfastpay Logo" style="height: 26px; width: 26px; background: #ffffff; border-radius: 4px; padding: 2px; object-fit: contain;">
+                        <span>Good<span class="gradient-text">fast</span>pay</span>
+                    </div>
                 </div>
                 
-                <div style="display: flex; align-items: center; gap: 16px; position: relative;">
+                <div style="display: flex; align-items: center; gap: 12px; position: relative;">
                     <!-- Theme Toggle -->
-                    <button class="theme-toggle-btn" onclick="toggleTheme()" style="background: var(--bg-secondary); border: 1px solid var(--border-color); width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--text-primary);">
+                    <button class="theme-toggle-btn" onclick="toggleTheme()" aria-label="Toggle Theme" style="background: var(--bg-secondary); border: 1px solid var(--border-color); width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--text-primary);">
                         <i class="fas fa-sun"></i>
                     </button>
                     
                     <!-- Notification Bell Container -->
                     <div style="position: relative;">
-                        <button onclick="toggleNotifDropdown()" style="background: var(--bg-secondary); border: 1px solid var(--border-color); width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--text-primary); position: relative;">
+                        <button onclick="toggleNotifDropdown()" aria-label="Notifications" style="background: var(--bg-secondary); border: 1px solid var(--border-color); width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--text-primary); position: relative;">
                             <i class="fas fa-bell" style="pointer-events: none;"></i>
-                            <span class="badge badge-danger" id="nav-notif-count" style="position: absolute; top: -5px; right: -5px; width: 18px; height: 18px; border-radius: 50%; background: var(--danger); color: white; font-size: 0.65rem; font-weight: 800; display: flex; align-items: center; justify-content: center; display: none; pointer-events: none;">0</span>
+                            <span class="badge badge-danger" id="nav-notif-count" style="position: absolute; top: -4px; right: -4px; width: 18px; height: 18px; border-radius: 50%; background: var(--danger); color: white; font-size: 0.65rem; font-weight: 800; display: flex; align-items: center; justify-content: center; display: none; pointer-events: none;">0</span>
                         </button>
                         
                         <!-- Dropdown list -->
@@ -180,10 +189,10 @@
             </header>
 
             <!-- Page Title Block -->
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 32px; flex-wrap: wrap; gap: 16px; border-bottom: 1px solid var(--border-color); padding-bottom: 20px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; flex-wrap: wrap; gap: 12px; border-bottom: 1px solid var(--border-color); padding-bottom: 16px;">
                 <div>
-                    <h2 id="welcome-title" style="font-size: 1.8rem; font-weight: 800;">Welcome back, User!</h2>
-                    <p style="color: var(--text-secondary); font-size: 0.95rem; margin-top: 4px;">Buy and sell gift cards instantly, track balances, and cashout direct to bank.</p>
+                    <h2 id="welcome-title" style="font-size: clamp(1.3rem, 4vw, 1.8rem); font-weight: 800;">Welcome back, User!</h2>
+                    <p style="color: var(--text-secondary); font-size: 0.9rem; margin-top: 4px;">Buy and sell gift cards instantly, track balances, and cashout direct to bank.</p>
                 </div>
             </div>
 

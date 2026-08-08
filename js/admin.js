@@ -111,7 +111,9 @@ function loadAdminSession() {
 // Side drawer toggling for mobile layout
 function toggleAdminSidebar() {
     const sidebar = document.getElementById("admin-sidebar");
-    sidebar.classList.toggle("active");
+    const overlay = document.getElementById("admin-sidebar-overlay");
+    if (sidebar) sidebar.classList.toggle("active");
+    if (overlay) overlay.classList.toggle("active");
 }
 
 // Switch between workspace tabs
@@ -131,10 +133,16 @@ function switchAdminSection(sectionId, element) {
     
     if (element) {
         element.classList.add("active");
+    } else {
+        const matchingLink = Array.from(links).find(lnk => lnk.getAttribute("onclick") && lnk.getAttribute("onclick").includes(`'${sectionId}'`));
+        if (matchingLink) matchingLink.classList.add("active");
     }
     
-    // Close sidebar on mobile
-    document.getElementById("admin-sidebar").classList.remove("active");
+    // Close sidebar and overlay on mobile
+    const sidebar = document.getElementById("admin-sidebar");
+    const overlay = document.getElementById("admin-sidebar-overlay");
+    if (sidebar) sidebar.classList.remove("active");
+    if (overlay) overlay.classList.remove("active");
     
     // Reload state if necessary
     if (sectionId === "audit") {

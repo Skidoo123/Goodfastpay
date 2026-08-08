@@ -348,11 +348,21 @@
     <script src="js/app.js"></script>
     <script>
         function toggleNavMenu() {
-            if (window.getComputedStyle(document.querySelector('.nav-toggle')).display !== 'none') {
+            const toggleBtn = document.querySelector('.nav-toggle');
+            if (toggleBtn && window.getComputedStyle(toggleBtn).display !== 'none') {
                 const menu = document.getElementById("nav-links-menu");
-                menu.classList.toggle("active");
+                if (menu) menu.classList.toggle("active");
             }
         }
+
+        // Close mobile nav when clicking outside
+        document.addEventListener("click", (e) => {
+            const menu = document.getElementById("nav-links-menu");
+            const toggleBtn = document.querySelector(".nav-toggle");
+            if (menu && menu.classList.contains("active") && !menu.contains(e.target) && !toggleBtn.contains(e.target)) {
+                menu.classList.remove("active");
+            }
+        });
 
         // Check if user session already active
         window.addEventListener("DOMContentLoaded", () => {

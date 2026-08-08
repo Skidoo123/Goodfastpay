@@ -59,9 +59,12 @@
 <body>
 
     <div class="dashboard-layout">
+        <!-- SIDEBAR BACKDROP OVERLAY FOR MOBILE -->
+        <div class="sidebar-overlay" id="admin-sidebar-overlay" onclick="toggleAdminSidebar()"></div>
+
         <!-- SIDEBAR -->
         <aside class="sidebar" id="admin-sidebar">
-            <button class="sidebar-close" onclick="toggleAdminSidebar()"><i class="fas fa-xmark"></i></button>
+            <button class="sidebar-close" onclick="toggleAdminSidebar()" aria-label="Close Sidebar"><i class="fas fa-xmark"></i></button>
             <div class="logo sidebar-logo">
                 <img src="images/logo.png" alt="Goodfastpay Logo" style="height: 32px; width: 32px; background: rgba(255, 255, 255, 0.08); border-radius: 6px; padding: 3px; vertical-align: middle; margin-right: 8px; object-fit: contain;">
                 <span>Good<span class="gradient-text">fast</span>pay</span> <span style="font-size: 0.65rem; padding: 2px 6px; border: 1px solid var(--primary); border-radius:4px; font-weight:700; color:var(--primary); margin-left: 4px;">ADMIN</span>
@@ -131,15 +134,18 @@
         <main class="main-content">
             <!-- Header bar -->
             <header class="admin-header">
-                <div style="display: flex; align-items: center; gap: 16px;">
-                    <button class="sidebar-toggle" onclick="toggleAdminSidebar()"><i class="fas fa-bars"></i></button>
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <button class="sidebar-toggle" onclick="toggleAdminSidebar()" aria-label="Toggle Menu"><i class="fas fa-bars"></i></button>
+                    <div class="mobile-header-logo" style="display: none; align-items: center; gap: 6px; font-weight: 800; font-size: 1.1rem;">
+                        <img src="images/logo.png" alt="Goodfastpay Logo" style="height: 24px; width: 24px; background: rgba(255,255,255,0.08); border-radius: 4px; padding: 2px; object-fit: contain;">
+                        <span>Good<span class="gradient-text">fast</span>pay</span>
+                    </div>
                 </div>
-                <div style="display: flex; align-items: center; gap: 16px;">
+                <div style="display: flex; align-items: center; gap: 10px;">
                     <span class="badge badge-success" style="display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; font-weight: 700; text-transform: uppercase; font-size: 0.75rem;"><i class="fas fa-shield-halved"></i> Platform Secure</span>
-                    <div style="display: flex; align-items: center; gap: 10px; background: var(--bg-secondary); padding: 6px 14px; border-radius: var(--radius-md); border: 1px solid var(--border-color);">
+                    <div style="display: flex; align-items: center; gap: 8px; background: var(--bg-secondary); padding: 6px 12px; border-radius: var(--radius-md); border: 1px solid var(--border-color);">
                         <div style="width: 28px; height: 28px; background: var(--primary); color: #ffffff; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 0.85rem;">A</div>
-                        <span style="font-size: 0.85rem; font-weight: 700; color: var(--text-primary);">Admin Administrator</span>
-                        <i class="fas fa-chevron-down" style="font-size: 0.7rem; color: var(--text-secondary);"></i>
+                        <span style="font-size: 0.85rem; font-weight: 700; color: var(--text-primary);">Admin</span>
                     </div>
                 </div>
             </header>
@@ -150,7 +156,7 @@
                     <h2 class="page-title">Platform Administrator Console</h2>
                     <p class="page-subtitle">Manage card reviews, handle withdrawal payouts, credit user wallets, and audit activity logs.</p>
                 </div>
-                <button class="btn btn-secondary" onclick="location.reload()" style="border: 1px solid var(--primary); color: var(--primary); background: transparent; padding: 8px 16px; font-weight: 700; border-radius: var(--radius-md);"><i class="fas fa-rotate"></i> REFRESH</button>
+                <button class="btn btn-secondary btn-sm" onclick="location.reload()" style="border: 1px solid var(--primary); color: var(--primary); background: transparent; padding: 8px 16px; font-weight: 700; border-radius: var(--radius-md); min-height: 40px;"><i class="fas fa-rotate"></i> REFRESH</button>
             </div>
 
             <!-- SECTION 1: DASHBOARD ANALYTICS -->
