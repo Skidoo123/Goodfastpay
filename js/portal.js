@@ -154,6 +154,29 @@ function loadSession() {
     } else {
         document.title = "Goodfastpay - Customer Portal";
     }
+
+    // Attach Cloud Firestore Realtime Sync Listener
+    initPortalFirestoreListeners();
+}
+
+let isFirestoreListening = false;
+function initPortalFirestoreListeners() {
+    if (isFirestoreListening || !currentUser) return;
+    if (typeof listenToUserCloudUpdates === "function") {
+        listenToUserCloudUpdates(currentUser.email, (cloudUser) => {
+            console.log("⚡ Realtime cloud update received for user profile");
+            loadSession();
+        });
+    }
+    if (typeof listenToCollectionCloudUpdates === "function") {
+        listenToCollectionCloudUpdates("submissions", () => {
+            loadSession();
+        });
+        listenToCollectionCloudUpdates("tickets", () => {
+            if (typeof renderUserTickets === "function") renderUserTickets();
+        });
+    }
+    isFirestoreListening = true;
 }
 
 // Side drawer toggling for mobile layout

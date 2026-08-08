@@ -106,6 +106,41 @@ function loadAdminSession() {
     } else {
         document.title = "Goodfastpay - Administrative Console";
     }
+
+    // Attach Cloud Firestore Realtime Sync Listener
+    initAdminFirestoreListeners();
+}
+
+let isAdminFirestoreListening = false;
+function initAdminFirestoreListeners() {
+    if (isAdminFirestoreListening || !currentAdmin) return;
+    if (typeof listenToCollectionCloudUpdates === "function") {
+        listenToCollectionCloudUpdates("users", () => {
+            console.log("⚡ Realtime cloud update: users updated");
+            refreshAdminStats();
+            renderUsersList();
+        });
+        listenToCollectionCloudUpdates("submissions", () => {
+            console.log("⚡ Realtime cloud update: submissions updated");
+            refreshAdminStats();
+            renderCardReviewsQueue();
+        });
+        listenToCollectionCloudUpdates("withdrawals", () => {
+            console.log("⚡ Realtime cloud update: withdrawals updated");
+            refreshAdminStats();
+            renderWithdrawalsQueue();
+        });
+        listenToCollectionCloudUpdates("tickets", () => {
+            console.log("⚡ Realtime cloud update: support tickets updated");
+            if (typeof renderAdminSupportDesk === "function") renderAdminSupportDesk();
+        });
+        listenToCollectionCloudUpdates("inventory", () => {
+            console.log("⚡ Realtime cloud update: inventory updated");
+            renderAdminInventoryTable();
+            renderInventoryStats();
+        });
+    }
+    isAdminFirestoreListening = true;
 }
 
 // Side drawer toggling for mobile layout
