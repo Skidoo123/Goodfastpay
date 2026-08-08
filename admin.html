@@ -59,9 +59,12 @@
 <body>
 
     <div class="dashboard-layout">
+        <!-- SIDEBAR BACKDROP OVERLAY FOR MOBILE -->
+        <div class="sidebar-overlay" id="admin-sidebar-overlay" onclick="toggleAdminSidebar()"></div>
+
         <!-- SIDEBAR -->
         <aside class="sidebar" id="admin-sidebar">
-            <button class="sidebar-close" onclick="toggleAdminSidebar()"><i class="fas fa-xmark"></i></button>
+            <button class="sidebar-close" onclick="toggleAdminSidebar()" aria-label="Close Sidebar"><i class="fas fa-xmark"></i></button>
             <div class="logo sidebar-logo">
                 <img src="images/logo.png" alt="Goodfastpay Logo" style="height: 32px; width: 32px; background: rgba(255, 255, 255, 0.08); border-radius: 6px; padding: 3px; vertical-align: middle; margin-right: 8px; object-fit: contain;">
                 <span>Good<span class="gradient-text">fast</span>pay</span> <span style="font-size: 0.65rem; padding: 2px 6px; border: 1px solid var(--primary); border-radius:4px; font-weight:700; color:var(--primary); margin-left: 4px;">ADMIN</span>
@@ -131,15 +134,18 @@
         <main class="main-content">
             <!-- Header bar -->
             <header class="admin-header">
-                <div style="display: flex; align-items: center; gap: 16px;">
-                    <button class="sidebar-toggle" onclick="toggleAdminSidebar()"><i class="fas fa-bars"></i></button>
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <button class="sidebar-toggle" onclick="toggleAdminSidebar()" aria-label="Toggle Menu"><i class="fas fa-bars"></i></button>
+                    <div class="mobile-header-logo" style="display: none; align-items: center; gap: 6px; font-weight: 800; font-size: 1.1rem;">
+                        <img src="images/logo.png" alt="Goodfastpay Logo" style="height: 24px; width: 24px; background: rgba(255,255,255,0.08); border-radius: 4px; padding: 2px; object-fit: contain;">
+                        <span>Good<span class="gradient-text">fast</span>pay</span>
+                    </div>
                 </div>
-                <div style="display: flex; align-items: center; gap: 16px;">
+                <div style="display: flex; align-items: center; gap: 10px;">
                     <span class="badge badge-success" style="display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; font-weight: 700; text-transform: uppercase; font-size: 0.75rem;"><i class="fas fa-shield-halved"></i> Platform Secure</span>
-                    <div style="display: flex; align-items: center; gap: 10px; background: var(--bg-secondary); padding: 6px 14px; border-radius: var(--radius-md); border: 1px solid var(--border-color);">
+                    <div style="display: flex; align-items: center; gap: 8px; background: var(--bg-secondary); padding: 6px 12px; border-radius: var(--radius-md); border: 1px solid var(--border-color);">
                         <div style="width: 28px; height: 28px; background: var(--primary); color: #ffffff; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 0.85rem;">A</div>
-                        <span style="font-size: 0.85rem; font-weight: 700; color: var(--text-primary);">Admin Administrator</span>
-                        <i class="fas fa-chevron-down" style="font-size: 0.7rem; color: var(--text-secondary);"></i>
+                        <span style="font-size: 0.85rem; font-weight: 700; color: var(--text-primary);">Admin</span>
                     </div>
                 </div>
             </header>
@@ -150,7 +156,7 @@
                     <h2 class="page-title">Platform Administrator Console</h2>
                     <p class="page-subtitle">Manage card reviews, handle withdrawal payouts, credit user wallets, and audit activity logs.</p>
                 </div>
-                <button class="btn btn-secondary" onclick="location.reload()" style="border: 1px solid var(--primary); color: var(--primary); background: transparent; padding: 8px 16px; font-weight: 700; border-radius: var(--radius-md);"><i class="fas fa-rotate"></i> REFRESH</button>
+                <button class="btn btn-secondary btn-sm" onclick="location.reload()" style="border: 1px solid var(--primary); color: var(--primary); background: transparent; padding: 8px 16px; font-weight: 700; border-radius: var(--radius-md); min-height: 40px;"><i class="fas fa-rotate"></i> REFRESH</button>
             </div>
 
             <!-- SECTION 1: DASHBOARD ANALYTICS -->
@@ -593,31 +599,23 @@
                             <select id="filter-inv-status" class="input-field" onchange="onInventoryFilterChange()" style="width: 130px; margin-bottom: 0; padding: 0 12px; font-size: 0.85rem; height: 44px; background: var(--bg-tertiary);">
                                 <option value="ALL">All Statuses</option>
                                 <option value="AVAILABLE">Available</option>
-                                <option value="SOLD">Sold</option>
                                 <option value="RESERVED">Reserved</option>
+                                <option value="SOLD">Sold</option>
                                 <option value="EXPIRED">Expired</option>
                             </select>
                             
-                            <!-- Sort Filter -->
-                            <select id="filter-inv-sort" class="input-field" onchange="onInventoryFilterChange()" style="width: 145px; margin-bottom: 0; padding: 0 12px; font-size: 0.85rem; height: 44px; background: var(--bg-tertiary);">
-                                <option value="LATEST">Latest Added</option>
-                                <option value="OLDEST">Oldest Added</option>
-                                <option value="PRICE_DESC">Price: High to Low</option>
-                                <option value="PRICE_ASC">Price: Low to High</option>
-                                <option value="VAL_DESC">Face Value: High-Low</option>
-                                <option value="VAL_ASC">Face Value: Low-High</option>
+                            <!-- Rows per page selector -->
+                            <select id="filter-inv-rows" class="input-field" onchange="onInventoryRowsChange(this.value)" style="width: 110px; margin-bottom: 0; padding: 0 12px; font-size: 0.85rem; height: 44px; background: var(--bg-tertiary);">
+                                <option value="10">10 rows</option>
+                                <option value="25">25 rows</option>
+                                <option value="50">50 rows</option>
                             </select>
-                            
-                            <!-- Reset Button -->
-                            <button class="btn btn-secondary" onclick="resetInventoryFilters()" style="height: 44px; padding: 0 16px; font-weight: 700; font-size: 0.85rem; background: var(--bg-tertiary); display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--border-color); color: var(--text-primary);">
-                                <i class="fas fa-arrow-rotate-left" style="font-size: 0.75rem;"></i> Reset
-                            </button>
                         </div>
                     </div>
                     
-                    <!-- Table Responsive Wrapper -->
-                    <div class="stock-ledger-table-wrapper" style="max-height: 480px; overflow-y: auto;">
-                        <table class="stock-ledger-table">
+                    <!-- Table wrapper -->
+                    <div class="stock-ledger-table-wrapper" style="overflow-x: auto; max-height: 480px; -webkit-overflow-scrolling: touch;">
+                        <table class="stock-ledger-table" id="admin-inventory-table">
                             <thead>
                                 <tr>
                                     <th>Brand</th>
@@ -625,36 +623,22 @@
                                     <th>Currency</th>
                                     <th>Face Value</th>
                                     <th>Selling Price</th>
-                                    <th>Card Code (PIN)</th>
+                                    <th>PIN Code</th>
                                     <th>Status</th>
-                                    <th>Date Added / Buyer</th>
+                                    <th>Date Added</th>
                                     <th>Actions</th>
                                 </tr>
                             </thead>
                             <tbody id="admin-inventory-tbody">
-                                <!-- Populated dynamically -->
+                                <!-- Populated dynamically from admin.js -->
                             </tbody>
                         </table>
                     </div>
                     
-                    <!-- Pagination Footer -->
-                    <div class="stock-ledger-pagination">
-                        <div style="display: flex; align-items: center; gap: 8px; font-size: 0.85rem; color: var(--text-secondary);">
-                            <span>Show</span>
-                            <select id="pagination-rows-limit" onchange="onInventoryRowsLimitChange()" style="padding: 4px 8px; border-radius: var(--radius-sm); border: 1px solid var(--border-color); background: var(--bg-tertiary); color: var(--text-primary);">
-                                <option value="10">10</option>
-                                <option value="25">25</option>
-                                <option value="50">50</option>
-                                <option value="100">100</option>
-                            </select>
-                            <span>rows per page</span>
-                        </div>
-                        
-                        <div id="pagination-info" style="font-size: 0.85rem; color: var(--text-secondary);">
-                            Showing 0-0 of 0 entries
-                        </div>
-                        
-                        <div class="stock-ledger-pagination-buttons" id="pagination-buttons-container">
+                    <!-- Pagination Footer UI -->
+                    <div class="stock-ledger-pagination" id="admin-inventory-pagination">
+                        <span style="font-size: 0.85rem; color: var(--text-secondary);" id="inv-pagination-info">Showing 0 to 0 of 0 entries</span>
+                        <div class="stock-ledger-pagination-buttons" id="inv-pagination-controls">
                             <!-- Populated dynamically -->
                         </div>
                     </div>
@@ -663,15 +647,18 @@
 
             <!-- SECTION 7: SYSTEM AUDIT LOGS -->
             <section id="section-audit" class="admin-section">
-                <h3 style="font-size: 1.3rem; font-weight: 800; margin-bottom: 24px;"><i class="fas fa-clipboard-list" style="color: var(--accent); margin-right: 8px;"></i> Platform Security Audit Logs</h3>
-                <div class="card" style="padding:0; overflow:hidden;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+                    <h3 style="font-size: 1.3rem; font-weight: 800;"><i class="fas fa-clipboard-list" style="color: var(--primary); margin-right: 8px;"></i> System Administrator Audit Trail</h3>
+                </div>
+
+                <div class="card" style="padding: 0; overflow: hidden;">
                     <table class="data-table">
                         <thead>
                             <tr>
-                                <th>Timestamp</th>
-                                <th>Operator</th>
-                                <th>Activity Type</th>
-                                <th>Details</th>
+                                <th style="width: 20%;">Timestamp</th>
+                                <th style="width: 20%;">Operator</th>
+                                <th style="width: 25%;">Operation Event</th>
+                                <th style="width: 35%;">Details / Payload</th>
                             </tr>
                         </thead>
                         <tbody id="admin-audit-tbody">
@@ -754,205 +741,43 @@
                         <div style="width: 130px;">
                             <select id="admin-ticket-priority-filter" class="input-field" onchange="onAdminTicketFilterChange()">
                                 <option value="ALL">All Priorities</option>
-                                <option value="LOW">Low</option>
-                                <option value="MEDIUM">Medium</option>
-                                <option value="HIGH">High</option>
-                                <option value="CRITICAL">Urgent/Critical</option>
+                                <option value="NORMAL">Normal</option>
+                                <option value="HIGH">High Priority</option>
+                                <option value="URGENT">Urgent Priority</option>
                             </select>
                         </div>
-                        <div style="width: 140px;">
-                            <select id="admin-ticket-assignee-filter" class="input-field" onchange="onAdminTicketFilterChange()">
-                                <option value="ALL">All Assignees</option>
-                                <option value="Unassigned">Unassigned</option>
-                                <option value="Support Staff A">Support Staff A</option>
-                                <option value="Support Staff B">Support Staff B</option>
-                                <option value="System Admin">System Admin</option>
-                            </select>
-                        </div>
-                        <div style="display: flex; align-items: center; gap: 6px;">
-                            <span style="font-size: 0.75rem; color: var(--text-secondary); font-weight:700;">From:</span>
-                            <input type="date" id="admin-ticket-date-start" class="input-field" style="width: 130px; padding: 6px 10px; height: 38px; font-size:0.8rem;" onchange="onAdminTicketFilterChange()">
-                        </div>
-                        <div style="display: flex; align-items: center; gap: 6px;">
-                            <span style="font-size: 0.75rem; color: var(--text-secondary); font-weight:700;">To:</span>
-                            <input type="date" id="admin-ticket-date-end" class="input-field" style="width: 130px; padding: 6px 10px; height: 38px; font-size:0.8rem;" onchange="onAdminTicketFilterChange()">
-                        </div>
+                        <button class="btn btn-secondary btn-sm" onclick="resetAdminTicketFilters()" style="padding: 10px 14px;"><i class="fas fa-rotate"></i> Reset</button>
                     </div>
                 </div>
 
-                <!-- Split Workspace Layout -->
+                <!-- Three-Pane Support Workspace -->
                 <div class="admin-support-workspace">
-                    <!-- Left: Queue (25%) -->
-                    <div class="card" style="display: flex; flex-direction: column; overflow: hidden; padding: 24px 20px;">
-                        <h4 style="font-weight: 800; font-size: 1.05rem; margin-bottom: 14px; color: var(--text-primary); display: flex; align-items: center; gap: 8px;"><i class="fas fa-list-ul" style="color: var(--primary);"></i> Resolution Queue</h4>
-                        <div class="admin-tickets-queue" id="admin-tickets-queue-container" style="flex: 1; overflow-y: auto;">
-                            <!-- Populated dynamically -->
+                    <!-- Pane 1: Tickets Queue -->
+                    <div class="card" style="padding: 0; display: flex; flex-direction: column; overflow: hidden;">
+                        <div style="padding: 16px 20px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center;">
+                            <h4 style="font-weight: 800; font-size: 0.95rem;">Incoming Queue</h4>
+                            <span class="badge badge-info" id="admin-queue-count-badge" style="font-size: 0.7rem;">0 items</span>
+                        </div>
+                        <div class="admin-tickets-queue" id="admin-tickets-queue-list">
+                            <!-- Populated dynamically from admin.js -->
                         </div>
                     </div>
 
-                    <!-- Center: Inspector & Chat Console (45%) -->
-                    <div class="card" style="display: flex; flex-direction: column; overflow: hidden; padding: 0; position: relative;">
-                        <!-- Placeholder -->
-                        <div id="admin-support-chat-placeholder" style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; text-align: center; padding: 40px; color: var(--text-secondary);">
-                            <div style="width: 72px; height: 72px; background: rgba(99,102,241,0.06); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 2.2rem; color: var(--primary); margin-bottom: 20px;">
-                                <i class="fas fa-headset"></i>
-                            </div>
-                            <h3 style="font-weight: 800; font-size: 1.3rem; margin-bottom: 8px; color: var(--text-primary);">No Ticket Selected</h3>
-                            <p style="font-size: 0.88rem; max-width: 320px; line-height: 1.5;">Please select a ticket from the left queue list to inspect details, view user transactions, and respond.</p>
-                        </div>
-
-                        <!-- Chat Console Panel -->
-                        <div id="admin-support-chat-board" style="display: none; flex-direction: column; height: 100%; width: 100%;">
-                            <!-- Chat Header -->
-                            <div class="admin-chat-header" style="border-bottom: 1px solid var(--border-color); padding: 16px 24px; display: flex; justify-content: space-between; align-items: center;">
-                                <div style="overflow: hidden; flex: 1;">
-                                    <h4 id="admin-chat-ticket-title" style="font-weight: 800; font-size: 1.1rem; margin: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">Ticket Title</h4>
-                                    <div style="display: flex; gap: 8px; align-items: center; margin-top: 4px;">
-                                        <span id="admin-chat-ticket-id" style="font-family: monospace; font-size: 0.72rem; color: var(--text-muted); cursor: pointer;" onclick="copyTicketIdToClipboard()" title="Click to copy Ticket ID">TKT-100</span>
-                                        <span style="font-size: 0.72rem; color: var(--text-muted);">•</span>
-                                        <span id="admin-chat-ticket-user" style="font-size: 0.75rem; color: var(--text-secondary); max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="User Email">user@goodfastpay.com</span>
-                                    </div>
-                                </div>
-                                <div style="display: flex; gap: 6px;">
-                                    <span id="admin-chat-ticket-category" class="currency-pill-badge" style="background: rgba(99, 102, 241, 0.08); color: var(--primary); border: 1px solid rgba(99,102,241,0.15); font-size: 0.7rem;">Category</span>
-                                    <span id="admin-chat-ticket-priority" class="ticket-priority-badge" style="font-size: 0.7rem;">Priority</span>
-                                </div>
-                            </div>
-
-                            <!-- Live Chat Scroll Area -->
-                            <div class="admin-chat-feed" id="admin-chat-messages-container" style="flex: 1; overflow-y: auto; padding: 20px;">
-                                <!-- Messages feed list -->
-                            </div>
-
-                            <!-- Live Typing Indicator -->
-                            <div class="typing-indicator" id="admin-chat-typing" style="display: none; padding: 8px 24px; font-size: 0.78rem; background: var(--bg-secondary); border-top: 1px solid var(--border-color);">
-                                <span></span><span></span><span></span> User is typing...
-                            </div>
-
-                            <!-- Modern Chat Composer Card inside chat box -->
-                            <form id="admin-chat-reply-form" onsubmit="handleAdminChatReply(event)" style="margin-top: auto; border-top: 1px solid var(--border-color); background: var(--bg-secondary);">
-                                <div class="admin-composer-container">
-                                    <textarea id="admin-chat-reply-input" class="admin-composer-textarea" placeholder="Type your reply to the customer… (Shift+Enter for new line, Enter to send)" oninput="handleAdminChatInputResize()" onkeydown="handleAdminChatInputKeyDown(event)" required></textarea>
-                                    
-                                    <div class="admin-composer-toolbar">
-                                        <div style="display: flex; align-items: center; gap: 8px;">
-                                            <input type="file" id="admin-chat-reply-attachment" style="display:none;" onchange="handleAdminChatAttachmentSelect()">
-                                            <button type="button" class="btn btn-secondary btn-sm" onclick="document.getElementById('admin-chat-reply-attachment').click()" title="Attach File" style="height: 32px; width: 32px; padding: 0; border-radius: 8px; display: inline-flex; align-items: center; justify-content: center;"><i class="fas fa-paperclip"></i></button>
-                                            <span id="admin-chat-reply-filename" style="font-size: 0.72rem; color: var(--secondary); max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600;"></span>
-                                        </div>
-                                        
-                                        <button type="submit" class="btn btn-primary" style="height: 32px; padding: 0 16px; border-radius: 8px; font-weight: 700; font-size: 0.8rem; display: inline-flex; align-items: center; gap: 6px;"><i class="fas fa-paper-plane"></i> Send</button>
-                                    </div>
-                                </div>
-                            </form>
+                    <!-- Pane 2: Live Chat Active Conversation -->
+                    <div class="card" style="padding: 0; display: flex; flex-direction: column; overflow: hidden;" id="admin-active-chat-container">
+                        <div style="text-align: center; padding: 120px 20px; color: var(--text-muted);">
+                            <i class="fas fa-comments" style="font-size: 3.5rem; margin-bottom: 16px;"></i>
+                            <h4 style="font-weight: 700; color: var(--text-primary);">No Ticket Selected</h4>
+                            <p style="font-size: 0.85rem; margin-top: 4px;">Choose a support request from the queue to start conversation.</p>
                         </div>
                     </div>
 
-                    <!-- Right: Ticket Inspector Details & Actions Sidebar (30%) -->
-                    <div class="card admin-ticket-details-sidebar" style="display: flex; flex-direction: column; overflow-y: auto; padding: 24px 20px; border-left: 1px solid var(--border-color);" id="admin-sidebar-inspector">
-                        <!-- Default view showing select reminder if no ticket is active -->
-                        <div id="admin-sidebar-details-content" style="height: 100%; display: flex; flex-direction: column;">
-                            
-                            <!-- Customer Profile Avatar Row -->
-                            <div style="display: flex; flex-direction: column; align-items: center; text-align: center; margin-bottom: 20px; border-bottom: 1px solid var(--border-color); padding-bottom: 20px;">
-                                <div id="det-user-avatar" style="width: 64px; height: 64px; background: var(--primary); color: #ffffff; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 1.8rem; margin-bottom: 12px; box-shadow: 0 4px 10px rgba(99,102,241,0.3);">U</div>
-                                <h4 id="det-user-name" style="font-weight: 800; font-size: 1.1rem; margin: 0; color: var(--text-primary);">-</h4>
-                                <span id="det-user-email" style="font-size: 0.82rem; color: var(--text-secondary); word-break: break-all; max-width: 100%; margin-top: 4px;">-</span>
-                            </div>
-
-                            <div class="sidebar-section-title" style="margin-top: 0;">Ticket Info</div>
-                            <div class="sidebar-detail-row">
-                                <span>Ticket ID:</span>
-                                <span id="det-ticket-id" style="font-family: monospace;">-</span>
-                            </div>
-                            <div class="sidebar-detail-row">
-                                <span>Created:</span>
-                                <span id="det-ticket-created">-</span>
-                            </div>
-                            <div class="sidebar-detail-row">
-                                <span>Last Reply:</span>
-                                <span id="det-ticket-last-reply">-</span>
-                            </div>
-                            <div class="sidebar-detail-row">
-                                <span>Response Time:</span>
-                                <span id="det-ticket-response-time">-</span>
-                            </div>
-                            
-                            <div class="sidebar-section-title">Assignment & Status</div>
-                            <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 8px;">
-                                <div style="display: flex; flex-direction: column; gap: 4px;">
-                                    <label style="font-size: 0.7rem; font-weight: 700; color: var(--text-secondary); text-transform: uppercase;">Ticket Status</label>
-                                    <select id="admin-ticket-status" class="input-field" onchange="updateTicketStatus()" style="height: 36px; padding: 0 10px; font-size: 0.8rem; width: 100%;">
-                                        <option value="OPEN">Open</option>
-                                        <option value="PENDING">Pending</option>
-                                        <option value="IN_PROGRESS">In Progress</option>
-                                        <option value="ESCALATED">Escalated</option>
-                                        <option value="RESOLVED">Resolved</option>
-                                        <option value="CLOSED">Closed</option>
-                                    </select>
-                                </div>
-                                <div style="display: flex; flex-direction: column; gap: 4px;">
-                                    <label style="font-size: 0.7rem; font-weight: 700; color: var(--text-secondary); text-transform: uppercase;">Assignee</label>
-                                    <select id="admin-ticket-assignee" class="input-field" onchange="updateTicketAssignee()" style="height: 36px; padding: 0 10px; font-size: 0.8rem; width: 100%;">
-                                        <option value="Unassigned">Unassigned</option>
-                                        <option value="Support Staff A">Support Staff A</option>
-                                        <option value="Support Staff B">Support Staff B</option>
-                                        <option value="System Admin">System Admin</option>
-                                    </select>
-                                </div>
-                            </div>
-                            
-                            <div class="sidebar-section-title">Customer Coordinates</div>
-                            <div class="sidebar-detail-row">
-                                <span>Phone:</span>
-                                <span id="det-user-phone">-</span>
-                            </div>
-                            <div class="sidebar-detail-row">
-                                <span>Wallet Balance:</span>
-                                <span id="det-user-balance" style="color: var(--secondary); font-weight: 700;">₦0.00</span>
-                            </div>
-                            <div class="sidebar-detail-row">
-                                <span>Account Status:</span>
-                                <span id="det-user-status" class="badge" style="font-size:0.75rem;">-</span>
-                            </div>
-                            <div class="sidebar-detail-row">
-                                <span>KYC Verification:</span>
-                                <span id="det-user-kyc" style="font-weight: 600;">-</span>
-                            </div>
-                            <div class="sidebar-detail-row">
-                                <span>Registration:</span>
-                                <span id="det-user-registered" style="font-size:0.78rem;">-</span>
-                            </div>
-                            <div class="sidebar-detail-row">
-                                <span>Last Login:</span>
-                                <span id="det-user-lastlogin" style="font-size:0.78rem;">-</span>
-                            </div>
-
-                            <div class="sidebar-section-title" id="det-attach-title" style="display: none;">Attachments</div>
-                            <div id="admin-detail-ticket-attachments-list" style="display: flex; flex-direction: column; gap: 6px; margin-top: 8px;"></div>
-                            
-                            <!-- Ticket History Summary List -->
-                            <div class="sidebar-section-title">Ticket History</div>
-                            <div id="admin-detail-ticket-history-list" style="display: flex; flex-direction: column; gap: 8px; max-height: 150px; overflow-y: auto; margin-top: 8px;">
-                                <!-- Dynamically loaded user's ticket list -->
-                            </div>
-
-                            <div class="sidebar-section-title">Support Actions</div>
-                            <div class="sidebar-actions-grid">
-                                <button class="btn btn-secondary btn-sm" onclick="btnReopenTicket()" title="Reopen Ticket"><i class="fas fa-rotate"></i> Reopen</button>
-                                <button class="btn btn-secondary btn-sm" onclick="btnEscalateTicket()" title="Escalate Ticket"><i class="fas fa-circle-chevron-up"></i> Escalate</button>
-                                <button class="btn btn-secondary btn-sm" onclick="btnAddInternalNote()" title="Add Internal Note"><i class="fas fa-clipboard-question"></i> Note</button>
-                                <button class="btn btn-secondary btn-sm" onclick="btnInspectCustomer()" title="View User Profile"><i class="fas fa-user-gear"></i> Profile</button>
-                                <button class="btn btn-secondary btn-sm" onclick="btnCustomerTxHistory()" title="View Transaction History"><i class="fas fa-list-check"></i> Trades</button>
-                                <button class="btn btn-secondary btn-sm" onclick="btnDownloadConversation()" title="Download Conversation"><i class="fas fa-file-arrow-down"></i> Export</button>
-                                <button class="btn btn-secondary btn-sm" onclick="btnPrintTicket()" title="Print Ticket"><i class="fas fa-print"></i> Print</button>
-                            </div>
-                            
-                            <div class="sidebar-section-title" style="color: var(--danger);">Danger Zone</div>
-                            <div style="display: flex; gap: 8px; margin-top: 8px;">
-                                <button class="btn btn-secondary btn-sm" id="btn-archive-ticket" onclick="handleArchiveTicket()" style="flex: 1; border: 1px solid var(--border-color); height: 34px;"><i class="fas fa-box-archive"></i> Archive</button>
-                                <button class="btn btn-danger btn-sm" id="btn-delete-ticket" onclick="handleDeleteTicket()" style="flex: 1; height: 34px;"><i class="fas fa-trash-can"></i> Delete</button>
-                            </div>
+                    <!-- Pane 3: Ticket Metadata & Customer Profile Sidebar -->
+                    <div class="card admin-ticket-details-sidebar" style="padding: 20px; display: flex; flex-direction: column; overflow-y: auto;" id="admin-ticket-sidebar-panel">
+                        <div style="text-align: center; padding: 100px 10px; color: var(--text-muted);">
+                            <i class="fas fa-id-card" style="font-size: 3rem; margin-bottom: 16px;"></i>
+                            <h5 style="font-weight: 700; color: var(--text-primary);">Ticket Profile Details</h5>
+                            <p style="font-size: 0.8rem; margin-top: 4px;">Metadata, priority controls, and user logs will display here.</p>
                         </div>
                     </div>
                 </div>
@@ -960,112 +785,70 @@
         </main>
     </div>
 
-    <!-- USER INSPECTOR MODAL -->
+    <!-- USER INSPECT PROFILE MODAL -->
     <div class="modal-overlay" id="user-inspect-modal">
-        <div class="modal-content" style="max-width: 600px;">
+        <div class="modal-content" style="max-width: 680px;">
             <div class="modal-header">
-                <h3 style="font-weight: 800; font-size: 1.3rem;">User Profile Inspections</h3>
+                <h3 style="font-weight: 800; font-size: 1.3rem;"><i class="fas fa-user-shield" style="color: var(--primary); margin-right: 8px;"></i> User Account Audit & Profile Inspection</h3>
                 <button class="modal-close" onclick="closeUserInspectModal()"><i class="fas fa-xmark"></i></button>
             </div>
             
-            <div id="user-inspect-details" style="margin-bottom: 24px;">
-                <!-- Filled dynamically -->
+            <div id="user-inspect-details">
+                <!-- Populated dynamically -->
             </div>
             
-            <div class="tab-headers">
-                <div class="tab-btn active" id="btn-inspect-bank" onclick="toggleInspectTab('bank')">Bank details</div>
-                <div class="tab-btn" id="btn-inspect-logs" onclick="toggleInspectTab('logs')">Activity logs</div>
-                <div class="tab-btn" id="btn-inspect-adjust" onclick="toggleInspectTab('adjust')">Manual balance</div>
+            <!-- Tab selector for user inspection sub-views -->
+            <div class="segment-tab-headers" style="margin-top: 24px; margin-bottom: 16px;">
+                <button class="tab-btn active" id="btn-inspect-bank" onclick="toggleInspectTab('bank')"><i class="fas fa-building-columns"></i> Bank Profile</button>
+                <button class="tab-btn" id="btn-inspect-logs" onclick="toggleInspectTab('logs')"><i class="fas fa-shield-halved"></i> Activity Logs</button>
+                <button class="tab-btn" id="btn-inspect-adjust" onclick="toggleInspectTab('adjust')"><i class="fas fa-wallet"></i> Adjust Balance</button>
             </div>
-            
-            <!-- User Bank Info Tab -->
-            <div id="tab-inspect-bank" class="inspect-sub-tab">
-                <div style="padding: 16px; border: 1px solid var(--border-color); background: var(--bg-tertiary); border-radius: var(--radius-md); line-height: 1.6; font-size: 0.9rem;">
-                    <strong>Linked Bank:</strong> <span id="ins-bank-name">-</span><br>
-                    <strong>Account Number:</strong> <span id="ins-bank-number">-</span><br>
-                    <strong>Beneficiary Name:</strong> <span id="ins-bank-holder">-</span>
+
+            <!-- Tab 1: Bank Details -->
+            <div id="tab-inspect-bank">
+                <div class="card" style="background: var(--bg-tertiary); padding: 16px; border-radius: var(--radius-md);">
+                    <div class="detail-item"><span>Bank Institution:</span> <strong id="ins-bank-name">-</strong></div>
+                    <div class="detail-item"><span>Account Number:</span> <strong id="ins-bank-number">-</strong></div>
+                    <div class="detail-item"><span>Account Holder:</span> <strong id="ins-bank-holder">-</strong></div>
                 </div>
             </div>
-            
-            <!-- User Logs Tab -->
-            <div id="tab-inspect-logs" class="inspect-sub-tab" style="display:none; max-height:250px; overflow-y:auto;">
-                <table class="data-table" style="font-size:0.8rem;">
-                    <thead>
-                        <tr>
-                            <th>Time</th>
-                            <th>Event</th>
-                            <th>IP</th>
-                        </tr>
-                    </thead>
-                    <tbody id="ins-logs-tbody"></tbody>
-                </table>
+
+            <!-- Tab 2: User Logs -->
+            <div id="tab-inspect-logs" style="display: none;">
+                <div class="table-container" style="max-height: 250px; overflow-y: auto;">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Event</th>
+                                <th>IP</th>
+                            </tr>
+                        </thead>
+                        <tbody id="ins-logs-tbody">
+                            <!-- Populated dynamically -->
+                        </tbody>
+                    </table>
+                </div>
             </div>
-            
-            <!-- User Balance Adjust Tab -->
-            <div id="tab-inspect-adjust" class="inspect-sub-tab" style="display:none;">
-                <form id="inspect-wallet-adjustment-form" onsubmit="handleManualWalletAdjust(event)">
+
+            <!-- Tab 3: Wallet Adjustments -->
+            <div id="tab-inspect-adjust" style="display: none;">
+                <form onsubmit="handleManualWalletAdjust(event)" class="card" style="background: var(--bg-tertiary); padding: 16px;">
                     <input type="hidden" id="ins-adjust-email">
                     <div class="input-group">
                         <label class="input-label">Adjustment Type</label>
                         <select id="ins-adjust-type" class="input-field">
-                            <option value="CREDIT">Manual Payout Credit (Add Balance)</option>
-                            <option value="DEDUCT">Manual Account Deduction (Subtract Balance)</option>
+                            <option value="CREDIT">Credit Wallet (+ NGN)</option>
+                            <option value="DEDUCT">Deduct Wallet (- NGN)</option>
                         </select>
                     </div>
                     <div class="input-group">
                         <label class="input-label">Adjustment Amount (NGN)</label>
-                        <input type="number" id="ins-adjust-amount" class="input-field" placeholder="10000" min="1" step="0.01" required>
+                        <input type="number" id="ins-adjust-amount" class="input-field" placeholder="e.g. 50000" min="1" required>
                     </div>
-                    
-                    <button type="submit" class="btn btn-primary" style="width: 100%;">Post Wallet Adjustment</button>
+                    <button type="submit" class="btn btn-primary" style="width: 100%;">Execute Balance Adjustment</button>
                 </form>
             </div>
-        </div>
-    </div>
-
-    <!-- CURRENCY EDIT MODAL -->
-    <div class="modal-overlay" id="currency-edit-modal">
-        <div class="modal-content" style="max-width: 450px;">
-            <div class="modal-header">
-                <h3 style="font-weight: 800; font-size: 1.3rem;"><i class="fas fa-pen-to-square" style="color: var(--primary); margin-right: 8px;"></i> Edit Currency Details</h3>
-                <button class="modal-close" onclick="closeCurrencyEditModal()"><i class="fas fa-xmark"></i></button>
-            </div>
-            
-            <form id="admin-edit-currency-form" onsubmit="handleEditCurrencySubmit(event)">
-                <input type="hidden" id="edit-curr-orig-code">
-                
-                <div class="input-group">
-                    <label class="input-label">Currency Code (Read Only)</label>
-                    <input type="text" id="edit-curr-code" class="input-field" disabled style="background: var(--bg-tertiary); opacity: 0.6; cursor: not-allowed;">
-                </div>
-                
-                <div class="input-group">
-                    <label class="input-label">Currency Name</label>
-                    <input type="text" id="edit-curr-name" class="input-field" placeholder="British Pound Sterling" required>
-                </div>
-                
-                <div class="input-group">
-                    <label class="input-label">Base Exchange Rate (₦)</label>
-                    <input type="number" id="edit-curr-rate" class="input-field" placeholder="1850" min="0.01" step="0.01" required>
-                </div>
-
-                <div class="input-group">
-                    <label class="input-label">Display Order</label>
-                    <input type="number" id="edit-curr-order" class="input-field" placeholder="1" min="1" step="1" required>
-                </div>
-                
-                <div class="input-group">
-                    <label class="input-label">Status</label>
-                    <select id="edit-curr-status" class="input-field">
-                        <option value="ACTIVE">Active (Enabled)</option>
-                        <option value="DISABLED">Disabled</option>
-                    </select>
-                </div>
-                
-                <button type="submit" id="btn-edit-curr-save" class="btn btn-primary" style="width: 100%; padding: 12px; margin-top: 16px; display: flex; align-items: center; justify-content: center; gap: 8px;">
-                    <i class="fas fa-floppy-disk"></i> Save Currency Details
-                </button>
-            </form>
         </div>
     </div>
 
