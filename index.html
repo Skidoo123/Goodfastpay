@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover">
-    <title>Goodfastpay - Instant Gift Card & Digital Asset Exchange</title>
+    <title>Goodfastpay - Premier Gift Card & Digital Asset Exchange</title>
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -20,7 +20,7 @@
         <div class="landing-nav-container">
             <!-- Brand Logo -->
             <a href="index.html" class="landing-logo">
-                <img src="images/logo.png" alt="Goodfastpay Logo" style="height: 34px; width: 34px; background: #ffffff; border-radius: 8px; padding: 3px; vertical-align: middle; object-fit: contain;">
+                <img src="images/logo.png" alt="Goodfastpay Logo" style="height: 36px; width: 36px; background: #ffffff; border-radius: 8px; padding: 3px; vertical-align: middle; object-fit: contain;">
                 <span>Good<span class="gradient-text">fast</span>pay</span>
             </a>
             
@@ -63,24 +63,24 @@
                 <!-- Left Hero Content -->
                 <div class="hero-left-content">
                     <div class="hero-pill-badge">
-                        <i class="fas fa-shield-halved"></i> 100% Secure & Regulated Liquidity
+                        <span class="live-dot"></span> Next-Gen Digital Asset & Gift Card Liquidity
                     </div>
                     
                     <h1 class="hero-main-title">
-                        Instant Payouts for<br>
-                        <span class="gradient-text">Gift Cards & Digital Assets</span>
+                        Instant Settlements for<br>
+                        <span class="gradient-text">Global Gift Cards & Assets</span>
                     </h1>
                     
                     <p class="hero-subtext">
-                        Exchange your gift cards at top market rates with instant bank settlements within 3–5 minutes. Zero hidden fees, military-grade encryption, and 24/7 dedicated support.
+                        Convert Apple, Steam, Amazon, Google Play, and 70+ global gift cards to instant cash at market-leading rates. Automated payouts within 3–5 minutes with zero hidden fees.
                     </p>
                     
                     <div class="hero-cta-group">
                         <button class="btn btn-primary btn-lg" onclick="openAuthModal('register')">
                             Trade Now <i class="fas fa-arrow-right"></i>
                         </button>
-                        <a href="#calculator" class="btn btn-secondary btn-lg">
-                            <i class="fas fa-calculator"></i> Calculate Rate
+                        <a href="#rates" class="btn btn-secondary btn-lg">
+                            <i class="fas fa-bolt" style="color: #fbbf24;"></i> Explore Live Rates
                         </a>
                     </div>
                     
@@ -107,12 +107,14 @@
                         <span class="badge badge-success" style="font-size: 0.75rem; padding: 6px 14px;">
                             <i class="fas fa-signal-stream"></i> REAL-TIME RATES
                         </span>
-                        <span style="font-size: 0.8rem; color: var(--text-muted); display: flex; align-items: center; gap: 6px;">
+                        <span style="font-size: 0.8rem; color: #94a3b8; display: flex; align-items: center; gap: 6px;">
                             <i class="fas fa-arrows-rotate fa-spin-pulse"></i> Auto-refreshed
                         </span>
                     </div>
                     
-                    <h3 class="calc-card-title">Quick Exchange Estimate</h3>
+                    <h3 class="calc-card-title">
+                        <i class="fas fa-calculator" style="color: var(--primary);"></i> Quick Exchange Estimate
+                    </h3>
                     
                     <!-- Brand Select -->
                     <div class="input-group">
@@ -135,6 +137,17 @@
                             <input type="number" id="calc-value" class="input-field" min="10" max="5000" value="100" oninput="updateCalcRate()" style="height: 48px;">
                         </div>
                     </div>
+
+                    <!-- Quick Denomination Selection Chips -->
+                    <div style="margin-top: -8px; margin-bottom: 12px;">
+                        <div class="calc-denom-row">
+                            <div class="calc-denom-chip" onclick="setCalcValue(25)">$25</div>
+                            <div class="calc-denom-chip" onclick="setCalcValue(50)">$50</div>
+                            <div class="calc-denom-chip active" onclick="setCalcValue(100)">$100</div>
+                            <div class="calc-denom-chip" onclick="setCalcValue(200)">$200</div>
+                            <div class="calc-denom-chip" onclick="setCalcValue(500)">$500</div>
+                        </div>
+                    </div>
                     
                     <!-- Payout Calculation Box -->
                     <div class="calc-payout-box">
@@ -151,6 +164,36 @@
             </div>
         </div>
     </section>
+
+    <!-- LIVE RATES TICKER STRIP -->
+    <div class="rates-ticker-strip">
+        <div class="rates-ticker-container">
+            <span style="font-size: 0.75rem; font-weight: 800; color: var(--primary); text-transform: uppercase; letter-spacing: 1px; display: flex; align-items: center; gap: 6px;">
+                <i class="fas fa-chart-line"></i> TOP MARKET RATES:
+            </span>
+            <div class="rates-ticker-item" onclick="selectTickerCard('Apple/iTunes')">
+                <i class="fa-brands fa-apple" style="color: #cbd5e1;"></i> Apple: <span class="rates-ticker-rate">₦1,990/$</span>
+            </div>
+            <div class="rates-ticker-item" onclick="selectTickerCard('Steam')">
+                <i class="fa-brands fa-steam" style="color: #60a5fa;"></i> Steam: <span class="rates-ticker-rate">₦2,200/$</span>
+            </div>
+            <div class="rates-ticker-item" onclick="selectTickerCard('Google Play')">
+                <i class="fa-brands fa-google-play" style="color: #34d399;"></i> Google Play: <span class="rates-ticker-rate">₦2,360/$</span>
+            </div>
+            <div class="rates-ticker-item" onclick="selectTickerCard('Amazon')">
+                <i class="fa-brands fa-amazon" style="color: #fbbf24;"></i> Amazon: <span class="rates-ticker-rate">₦1,980/$</span>
+            </div>
+            <div class="rates-ticker-item" onclick="selectTickerCard('Razer Gold')">
+                <i class="fas fa-gamepad" style="color: #a855f7;"></i> Razer Gold: <span class="rates-ticker-rate">₦2,100/$</span>
+            </div>
+            <div class="rates-ticker-item" onclick="selectTickerCard('Sephora')">
+                <i class="fas fa-gem" style="color: #f43f5e;"></i> Sephora: <span class="rates-ticker-rate">₦1,390/$</span>
+            </div>
+            <div class="rates-ticker-item" onclick="selectTickerCard('Nike')">
+                <i class="fas fa-tag" style="color: #f97316;"></i> Nike: <span class="rates-ticker-rate">₦1,520/$</span>
+            </div>
+        </div>
+    </div>
 
     <!-- LIVE RATES SECTION -->
     <section class="section" id="rates" style="background: var(--bg-secondary); padding: 90px 0;">
@@ -175,8 +218,8 @@
             </div>
             
             <div class="grid-3">
-                <div class="card" style="padding: 36px 28px; text-align: center; border-radius: 20px;">
-                    <div style="width: 68px; height: 68px; background: rgba(99, 102, 241, 0.1); color: var(--primary); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.85rem; margin: 0 auto 24px;">
+                <div class="card" style="padding: 36px 28px; text-align: center; border-radius: 22px;">
+                    <div style="width: 72px; height: 72px; background: rgba(59, 130, 246, 0.12); color: var(--primary); border: 1px solid rgba(59, 130, 246, 0.3); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.85rem; margin: 0 auto 24px; box-shadow: 0 0 25px rgba(59, 130, 246, 0.2);">
                         <i class="fas fa-user-plus"></i>
                     </div>
                     <h3 style="font-size: 1.25rem; font-weight: 800; margin-bottom: 12px;">1. Create Free Account</h3>
@@ -185,8 +228,8 @@
                     </p>
                 </div>
                 
-                <div class="card" style="padding: 36px 28px; text-align: center; border-radius: 20px;">
-                    <div style="width: 68px; height: 68px; background: rgba(6, 182, 212, 0.1); color: var(--secondary); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.85rem; margin: 0 auto 24px;">
+                <div class="card" style="padding: 36px 28px; text-align: center; border-radius: 22px;">
+                    <div style="width: 72px; height: 72px; background: rgba(6, 182, 212, 0.12); color: var(--secondary); border: 1px solid rgba(6, 182, 212, 0.3); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.85rem; margin: 0 auto 24px; box-shadow: 0 0 25px rgba(6, 182, 212, 0.2);">
                         <i class="fas fa-cloud-arrow-up"></i>
                     </div>
                     <h3 style="font-size: 1.25rem; font-weight: 800; margin-bottom: 12px;">2. Upload Card Details</h3>
@@ -195,8 +238,8 @@
                     </p>
                 </div>
                 
-                <div class="card" style="padding: 36px 28px; text-align: center; border-radius: 20px;">
-                    <div style="width: 68px; height: 68px; background: rgba(16, 185, 129, 0.1); color: var(--success); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.85rem; margin: 0 auto 24px;">
+                <div class="card" style="padding: 36px 28px; text-align: center; border-radius: 22px;">
+                    <div style="width: 72px; height: 72px; background: rgba(16, 185, 129, 0.12); color: var(--success); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.85rem; margin: 0 auto 24px; box-shadow: 0 0 25px rgba(16, 185, 129, 0.2);">
                         <i class="fas fa-building-columns"></i>
                     </div>
                     <h3 style="font-size: 1.25rem; font-weight: 800; margin-bottom: 12px;">3. Instant Bank Credit</h3>
@@ -218,7 +261,7 @@
             
             <div class="grid-2" style="max-width: 1080px; margin: 0 auto; gap: 24px;">
                 <div class="card" style="padding: 28px; display: flex; gap: 20px; align-items: flex-start; border-radius: 18px;">
-                    <div style="width: 52px; height: 52px; border-radius: 14px; background: rgba(37, 99, 235, 0.1); color: var(--primary); display: flex; align-items: center; justify-content: center; font-size: 1.5rem; flex-shrink: 0;">
+                    <div style="width: 52px; height: 52px; border-radius: 14px; background: rgba(37, 99, 235, 0.15); color: var(--primary); display: flex; align-items: center; justify-content: center; font-size: 1.5rem; flex-shrink: 0;">
                         <i class="fas fa-lock"></i>
                     </div>
                     <div>
@@ -228,7 +271,7 @@
                 </div>
                 
                 <div class="card" style="padding: 28px; display: flex; gap: 20px; align-items: flex-start; border-radius: 18px;">
-                    <div style="width: 52px; height: 52px; border-radius: 14px; background: rgba(6, 182, 212, 0.1); color: var(--secondary); display: flex; align-items: center; justify-content: center; font-size: 1.5rem; flex-shrink: 0;">
+                    <div style="width: 52px; height: 52px; border-radius: 14px; background: rgba(6, 182, 212, 0.15); color: var(--secondary); display: flex; align-items: center; justify-content: center; font-size: 1.5rem; flex-shrink: 0;">
                         <i class="fas fa-shield-virus"></i>
                     </div>
                     <div>
@@ -238,7 +281,7 @@
                 </div>
                 
                 <div class="card" style="padding: 28px; display: flex; gap: 20px; align-items: flex-start; border-radius: 18px;">
-                    <div style="width: 52px; height: 52px; border-radius: 14px; background: rgba(245, 158, 11, 0.1); color: var(--warning); display: flex; align-items: center; justify-content: center; font-size: 1.5rem; flex-shrink: 0;">
+                    <div style="width: 52px; height: 52px; border-radius: 14px; background: rgba(245, 158, 11, 0.15); color: var(--warning); display: flex; align-items: center; justify-content: center; font-size: 1.5rem; flex-shrink: 0;">
                         <i class="fas fa-key"></i>
                     </div>
                     <div>
@@ -248,7 +291,7 @@
                 </div>
 
                 <div class="card" style="padding: 28px; display: flex; gap: 20px; align-items: flex-start; border-radius: 18px;">
-                    <div style="width: 52px; height: 52px; border-radius: 14px; background: rgba(16, 185, 129, 0.1); color: var(--accent); display: flex; align-items: center; justify-content: center; font-size: 1.5rem; flex-shrink: 0;">
+                    <div style="width: 52px; height: 52px; border-radius: 14px; background: rgba(16, 185, 129, 0.15); color: var(--accent); display: flex; align-items: center; justify-content: center; font-size: 1.5rem; flex-shrink: 0;">
                         <i class="fas fa-list-check"></i>
                     </div>
                     <div>
@@ -298,7 +341,7 @@
             <div class="footer-grid" style="display: grid; grid-template-columns: 2fr 1fr 1fr 1.5fr; gap: 40px; margin-bottom: 50px;">
                 <div class="footer-brand">
                     <a href="index.html" class="landing-logo" style="margin-bottom: 16px; display: inline-flex;">
-                        <img src="images/logo.png" alt="Goodfastpay Logo" style="height: 32px; width: 32px; background: #ffffff; border-radius: 6px; padding: 3px; vertical-align: middle; object-fit: contain;">
+                        <img src="images/logo.png" alt="Goodfastpay Logo" style="height: 34px; width: 34px; background: #ffffff; border-radius: 8px; padding: 3px; vertical-align: middle; object-fit: contain;">
                         <span>Good<span class="gradient-text">fast</span>pay</span>
                     </a>
                     <p style="color: var(--text-secondary); font-size: 0.9rem; line-height: 1.6; max-width: 320px;">
@@ -451,6 +494,31 @@
             }
         });
 
+        // Quick set denomination chip handler
+        function setCalcValue(val) {
+            const input = document.getElementById("calc-value");
+            if (input) {
+                input.value = val;
+                updateCalcRate();
+            }
+            document.querySelectorAll(".calc-denom-chip").forEach(chip => {
+                if (chip.textContent.trim() === `$${val}`) {
+                    chip.classList.add("active");
+                } else {
+                    chip.classList.remove("active");
+                }
+            });
+        }
+
+        function selectTickerCard(brand) {
+            const select = document.getElementById("calc-brand");
+            if (select) {
+                select.value = brand;
+                updateCurrencyOptions();
+                window.location.href = "#calculator";
+            }
+        }
+
         // Check if user session already active
         window.addEventListener("DOMContentLoaded", () => {
             initTheme();
@@ -490,13 +558,13 @@
             
             const popularCards = [
                 { brand: "Apple/iTunes", icon: "fa-brands fa-apple", color: "#A2AAAD", bestRate: "₦1,990/$" },
-                { brand: "Steam", icon: "fa-brands fa-steam", color: "#171a21", bestRate: "₦2,200/$" },
-                { brand: "Google Play", icon: "fa-brands fa-google-play", color: "#01875f", bestRate: "₦2,360/$" },
-                { brand: "Amazon", icon: "fa-brands fa-amazon", color: "#FF9900", bestRate: "₦1,980/$" },
-                { brand: "Walmart", icon: "fa-solid fa-cart-shopping", color: "#0071dc", bestRate: "₦1,860/$" },
-                { brand: "Sephora", icon: "fa-solid fa-gem", color: "#e11d48", bestRate: "₦1,390/$" },
+                { brand: "Steam", icon: "fa-brands fa-steam", color: "#60a5fa", bestRate: "₦2,200/$" },
+                { brand: "Google Play", icon: "fa-brands fa-google-play", color: "#34d399", bestRate: "₦2,360/$" },
+                { brand: "Amazon", icon: "fa-brands fa-amazon", color: "#fbbf24", bestRate: "₦1,980/$" },
+                { brand: "Walmart", icon: "fa-solid fa-cart-shopping", color: "#38bdf8", bestRate: "₦1,860/$" },
+                { brand: "Sephora", icon: "fa-solid fa-gem", color: "#f43f5e", bestRate: "₦1,390/$" },
                 { brand: "Nike", icon: "fa-solid fa-tag", color: "#f97316", bestRate: "₦1,520/$" },
-                { brand: "Uber", icon: "fa-solid fa-car", color: "#06b6d4", bestRate: "₦2,200/$" }
+                { brand: "Razer Gold", icon: "fa-solid fa-gamepad", color: "#a855f7", bestRate: "₦2,100/$" }
             ];
             
             popularCards.forEach(card => {
@@ -504,7 +572,7 @@
                 cardEl.className = "card";
                 cardEl.style.padding = "24px";
                 cardEl.style.cursor = "pointer";
-                cardEl.style.borderRadius = "16px";
+                cardEl.style.borderRadius = "20px";
                 cardEl.onclick = () => {
                     document.getElementById("calc-brand").value = card.brand;
                     updateCurrencyOptions();
@@ -513,16 +581,16 @@
                 
                 cardEl.innerHTML = `
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
-                        <div style="width: 48px; height: 48px; border-radius: 12px; background: rgba(255,255,255,0.05); display: flex; align-items: center; justify-content: center; font-size: 1.5rem; color: ${card.color};">
+                        <div style="width: 50px; height: 50px; border-radius: 14px; background: rgba(255,255,255,0.06); display: flex; align-items: center; justify-content: center; font-size: 1.55rem; color: ${card.color}; box-shadow: 0 0 15px rgba(255,255,255,0.05);">
                             <i class="${card.icon}"></i>
                         </div>
-                        <span class="badge badge-success">High Rate</span>
+                        <span class="badge badge-success" style="font-size: 0.72rem; padding: 4px 10px;">High Yield</span>
                     </div>
-                    <h3 style="font-weight: 700; font-size: 1.1rem; margin-bottom: 4px;">${card.brand}</h3>
-                    <p style="color: var(--text-muted); font-size: 0.8rem; margin-bottom: 12px;">Physical & E-Codes</p>
-                    <div style="display: flex; justify-content: space-between; align-items: baseline;">
+                    <h3 style="font-weight: 800; font-size: 1.15rem; margin-bottom: 4px; color: #ffffff;">${card.brand}</h3>
+                    <p style="color: var(--text-muted); font-size: 0.8rem; margin-bottom: 14px;">Physical & E-Codes</p>
+                    <div style="display: flex; justify-content: space-between; align-items: baseline; border-top: 1px dashed rgba(255,255,255,0.08); padding-top: 10px;">
                         <span style="font-size: 0.8rem; color: var(--text-secondary);">Top Rate:</span>
-                        <span style="font-size: 1.15rem; font-weight: 800; color: var(--primary);">${card.bestRate}</span>
+                        <span style="font-size: 1.2rem; font-weight: 800; color: #34d399;">${card.bestRate}</span>
                     </div>
                 `;
                 grid.appendChild(cardEl);
