@@ -3319,3 +3319,322 @@ body {
         grid-template-columns: repeat(3, 1fr);
     }
 }
+
+/* =========================================================
+   PREMIUM FINTECH LANDING PAGE SYSTEM
+   ========================================================= */
+
+.landing-navbar {
+    height: 84px;
+    display: flex;
+    align-items: center;
+    background: rgba(11, 15, 25, 0.85);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    width: 100%;
+}
+
+.landing-nav-container {
+    width: 100%;
+    max-width: 1320px;
+    margin: 0 auto;
+    padding: 0 32px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.landing-logo {
+    font-weight: 800;
+    font-size: 1.55rem;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    letter-spacing: -0.5px;
+    color: var(--text-primary);
+}
+
+.landing-nav-menu {
+    display: flex;
+    align-items: center;
+    gap: 32px;
+}
+
+.landing-nav-link {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    transition: color var(--transition-fast);
+}
+
+.landing-nav-link:hover {
+    color: #60a5fa;
+}
+
+.landing-nav-actions {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+
+/* Landing Hero Layout */
+.landing-hero {
+    position: relative;
+    padding: 60px 0 80px;
+    background: radial-gradient(circle at 15% 30%, rgba(37, 99, 235, 0.14), transparent 55%),
+                radial-gradient(circle at 85% 60%, rgba(6, 182, 212, 0.12), transparent 50%),
+                radial-gradient(circle at 50% 100%, rgba(99, 102, 241, 0.08), transparent 60%);
+    min-height: calc(100vh - 84px);
+    display: flex;
+    align-items: center;
+}
+
+.landing-hero-container {
+    width: 100%;
+    max-width: 1320px;
+    margin: 0 auto;
+    padding: 0 32px;
+}
+
+.landing-hero-grid {
+    display: grid;
+    grid-template-columns: 1.15fr 0.85fr;
+    gap: 56px;
+    align-items: center;
+    width: 100%;
+}
+
+.hero-left-content {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    text-align: left;
+}
+
+.hero-pill-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 18px;
+    border-radius: 50px;
+    background: rgba(37, 99, 235, 0.12);
+    border: 1px solid rgba(59, 130, 246, 0.3);
+    color: #60a5fa;
+    font-size: 0.85rem;
+    font-weight: 700;
+    margin-bottom: 24px;
+    box-shadow: 0 4px 15px rgba(37, 99, 235, 0.1);
+}
+
+.hero-main-title {
+    font-size: clamp(2.4rem, 4.2vw, 3.8rem);
+    font-weight: 800;
+    line-height: 1.15;
+    letter-spacing: -0.025em;
+    color: var(--text-primary);
+    margin-bottom: 22px;
+}
+
+.hero-subtext {
+    font-size: clamp(1rem, 1.3vw, 1.125rem);
+    line-height: 1.65;
+    color: var(--text-secondary);
+    max-width: 580px;
+    margin-bottom: 36px;
+}
+
+.hero-cta-group {
+    display: flex;
+    gap: 16px;
+    align-items: center;
+    margin-bottom: 48px;
+    flex-wrap: wrap;
+}
+
+.hero-cta-group .btn {
+    height: 52px;
+    padding: 0 32px;
+    font-size: 1rem;
+    border-radius: 12px;
+    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.hero-stats-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    width: 100%;
+    max-width: 620px;
+}
+
+.hero-stat-card {
+    background: rgba(30, 41, 59, 0.45);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    padding: 20px 22px;
+    border-radius: 16px;
+    transition: transform var(--transition-fast), border-color var(--transition-fast);
+}
+
+.hero-stat-card:hover {
+    transform: translateY(-3px);
+    border-color: rgba(59, 130, 246, 0.3);
+}
+
+.hero-stat-number {
+    font-size: clamp(1.5rem, 2.2vw, 2rem);
+    font-weight: 800;
+    color: #ffffff;
+    line-height: 1.2;
+    margin-bottom: 4px;
+}
+
+.hero-stat-label {
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+}
+
+/* Quick Exchange Estimate Card */
+.hero-calc-card {
+    background: rgba(19, 27, 46, 0.85);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 24px;
+    padding: 32px 30px;
+    box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.6), 0 0 30px rgba(37, 99, 235, 0.08);
+    width: 100%;
+    max-width: 480px;
+    margin: 0 auto;
+}
+
+.calc-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 18px;
+}
+
+.calc-card-title {
+    font-size: 1.35rem;
+    font-weight: 800;
+    margin-bottom: 20px;
+    color: var(--text-primary);
+}
+
+.calc-payout-box {
+    background: rgba(15, 23, 42, 0.85);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 16px;
+    padding: 20px;
+    text-align: center;
+    margin: 20px 0 22px;
+}
+
+.calc-payout-label {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.calc-payout-val {
+    font-size: clamp(1.8rem, 3vw, 2.3rem);
+    font-weight: 800;
+    color: #10b981;
+    margin: 4px 0;
+    letter-spacing: -0.5px;
+}
+
+.calc-rate-info {
+    font-size: 0.84rem;
+    color: var(--text-secondary);
+}
+
+.calc-cta-btn {
+    height: 52px;
+    width: 100%;
+    font-size: 1rem;
+    font-weight: 700;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+/* Landing Page Responsive Media Queries */
+@media (max-width: 1100px) {
+    .landing-hero-grid {
+        grid-template-columns: 1fr;
+        gap: 48px;
+    }
+    .hero-left-content {
+        align-items: center;
+        text-align: center;
+    }
+    .hero-subtext {
+        margin: 0 auto 36px;
+    }
+    .hero-cta-group {
+        justify-content: center;
+    }
+    .hero-stats-row {
+        margin: 0 auto;
+    }
+}
+
+@media (max-width: 768px) {
+    .landing-nav-menu {
+        position: fixed;
+        top: 84px;
+        left: 0;
+        width: 100%;
+        background: var(--bg-primary);
+        border-bottom: 1px solid var(--border-color);
+        flex-direction: column;
+        padding: 24px;
+        gap: 20px;
+        display: none;
+        box-shadow: var(--shadow-xl);
+    }
+    .landing-nav-menu.active {
+        display: flex;
+    }
+    .landing-hero {
+        padding: 40px 0 60px;
+    }
+    .landing-hero-container {
+        padding: 0 20px;
+    }
+    .hero-stats-row {
+        grid-template-columns: 1fr;
+        gap: 12px;
+    }
+    .hero-stat-card {
+        padding: 16px;
+        text-align: center;
+    }
+    .hero-cta-group {
+        width: 100%;
+        flex-direction: column;
+    }
+    .hero-cta-group .btn {
+        width: 100%;
+    }
+    .hero-calc-card {
+        padding: 24px 20px;
+    }
+}

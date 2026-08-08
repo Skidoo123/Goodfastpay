@@ -2,264 +2,349 @@
 <html lang="en" data-theme="dark">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Goodfastpay - Premium Gift Card Trading Platform</title>
-    <!-- Font Awesome -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover">
+    <title>Goodfastpay - Instant Gift Card & Digital Asset Exchange</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- FontAwesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Style CSS -->
+    <!-- Main Style Sheet -->
     <link rel="stylesheet" href="css/style.css">
-    <style>
-        /* Landing page custom hero styling */
-        .hero {
-            padding: 120px 0 80px;
-            text-align: center;
-            background: radial-gradient(circle at top left, rgba(6, 182, 212, 0.1), transparent 50%),
-                        radial-gradient(circle at bottom right, rgba(99, 102, 241, 0.12), transparent 50%);
-        }
-        .hero-title {
-            font-size: 3.5rem;
-            font-weight: 800;
-            line-height: 1.2;
-            margin-bottom: 24px;
-            letter-spacing: -1px;
-        }
-        .hero-subtitle {
-            font-size: 1.2rem;
-            color: var(--text-secondary);
-            max-width: 600px;
-            margin: 0 auto 40px;
-            line-height: 1.6;
-        }
-        .feature-card {
-            border: 1px solid var(--border-color);
-            background: var(--bg-secondary);
-            border-radius: var(--radius-lg);
-            padding: 40px;
-            text-align: center;
-            transition: all var(--transition-normal);
-        }
-        .feature-card:hover {
-            transform: translateY(-8px);
-            border-color: var(--secondary);
-            box-shadow: 0 20px 40px -15px var(--secondary-glow);
-        }
-        .feature-icon {
-            width: 64px;
-            height: 64px;
-            background: var(--primary-glow);
-            color: var(--primary);
-            border-radius: 50%;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.5rem;
-            margin-bottom: 24px;
-        }
-        .feature-card:nth-child(2) .feature-icon {
-            background: var(--secondary-glow);
-            color: var(--secondary);
-        }
-        .feature-card:nth-child(3) .feature-icon {
-            background: var(--accent-glow);
-            color: var(--accent);
-        }
-        
-        .rate-calculator {
-            max-width: 480px;
-            width: 100%;
-            margin: 0 auto;
-        }
-        
-        .auth-toggle {
-            display: flex;
-            background: var(--bg-tertiary);
-            padding: 4px;
-            border-radius: var(--radius-md);
-            margin-bottom: 24px;
-        }
-        .auth-toggle-btn {
-            flex: 1;
-            padding: 10px;
-            text-align: center;
-            font-weight: 700;
-            border-radius: var(--radius-sm);
-            cursor: pointer;
-            transition: all var(--transition-fast);
-        }
-        .auth-toggle-btn.active {
-            background: var(--bg-secondary);
-            color: var(--primary);
-            box-shadow: var(--card-shadow);
-        }
-    </style>
 </head>
 <body>
 
-    <!-- NAVBAR -->
-    <nav class="navbar">
-        <div class="container nav-container">
-            <a href="index.html" class="logo">
-                <img src="images/logo.png" alt="Goodfastpay Logo" style="height: 32px; width: 32px; background: #ffffff; border-radius: 6px; padding: 3px; vertical-align: middle; margin-right: 8px; object-fit: contain;">
+    <!-- TOP NAVIGATION BAR -->
+    <header class="landing-navbar">
+        <div class="landing-nav-container">
+            <!-- Brand Logo -->
+            <a href="index.html" class="landing-logo">
+                <img src="images/logo.png" alt="Goodfastpay Logo" style="height: 34px; width: 34px; background: #ffffff; border-radius: 8px; padding: 3px; vertical-align: middle; object-fit: contain;">
                 <span>Good<span class="gradient-text">fast</span>pay</span>
             </a>
-            <button class="nav-toggle" onclick="toggleNavMenu()" aria-label="Toggle Navigation">
-                <i class="fas fa-bars"></i>
-            </button>
-            <div class="nav-links" id="nav-links-menu">
-                <a href="#calculator" class="nav-link" onclick="toggleNavMenu()">Rates</a>
-                <a href="#how-it-works" class="nav-link" onclick="toggleNavMenu()">How it Works</a>
-                <a href="#security" class="nav-link" onclick="toggleNavMenu()">Security</a>
-                <button class="theme-toggle-btn" onclick="toggleTheme()" title="Toggle Theme">
+            
+            <!-- Desktop Navigation Menu -->
+            <nav class="landing-nav-menu" id="nav-links-menu">
+                <a href="#rates" class="landing-nav-link" onclick="toggleNavMenu()">Live Rates</a>
+                <a href="#how-it-works" class="landing-nav-link" onclick="toggleNavMenu()">How It Works</a>
+                <a href="#security" class="landing-nav-link" onclick="toggleNavMenu()">Security</a>
+                <a href="#faq" class="landing-nav-link" onclick="toggleNavMenu()">FAQ</a>
+                <a href="#support" class="landing-nav-link" onclick="toggleNavMenu()">Support</a>
+            </nav>
+            
+            <!-- Actions (Theme Toggle & Auth) -->
+            <div class="landing-nav-actions">
+                <button class="theme-toggle-btn" onclick="toggleTheme()" title="Toggle Dark/Light Theme">
                     <i class="fas fa-sun"></i>
                 </button>
-                <button class="btn btn-secondary btn-sm" onclick="openAuthModal('login'); toggleNavMenu();">Sign In</button>
-                <button class="btn btn-primary btn-sm" onclick="openAuthModal('register'); toggleNavMenu();">Register</button>
+                
+                <div id="unauth-actions" style="display: flex; gap: 10px; align-items: center;">
+                    <button class="btn btn-secondary btn-sm" onclick="openAuthModal('login')">Login</button>
+                    <button class="btn btn-primary btn-sm" onclick="openAuthModal('register')">Get Started</button>
+                </div>
+                
+                <div id="auth-actions" style="display: none; gap: 10px; align-items: center;">
+                    <a href="portal.html" class="btn btn-primary btn-sm"><i class="fas fa-wallet"></i> My Portal</a>
+                </div>
+                
+                <button class="nav-toggle" onclick="toggleNavMenu()" aria-label="Toggle Navigation Menu">
+                    <i class="fas fa-bars"></i>
+                </button>
             </div>
         </div>
-    </nav>
+    </header>
 
     <!-- HERO SECTION -->
-    <section class="hero">
-        <div class="container">
-            <h1 class="hero-title">Buy & Sell Gift Cards Instantly.<br>Get Paid <span class="gradient-text">Fast & Secure</span>.</h1>
-            <p class="hero-subtitle">Buy loaded cards or convert your Amazon, Steam, iTunes, and Sephora cards to cash. Purchase cards instantly using your wallet or withdraw direct cash to your bank account.</p>
-            
-            <div class="grid-2" style="align-items: center; text-align: left; max-width: 1100px; margin: 0 auto;">
-                <!-- Left Side Copy -->
-                <div>
-                    <h2 style="font-size: 2rem; font-weight: 800; margin-bottom: 20px;">Why trade with Goodfastpay?</h2>
-                    <ul style="list-style: none; display: flex; flex-direction: column; gap: 16px;">
-                        <li style="display: flex; gap: 12px; align-items: flex-start;">
-                            <i class="fas fa-circle-check" style="color: var(--accent); margin-top: 4px; font-size: 1.1rem;"></i>
-                            <div>
-                                <h4 style="font-weight: 700;">Buy Gift Cards Instantly</h4>
-                                <p style="color: var(--text-secondary); font-size: 0.9rem;">Purchase loaded card pin codes directly using your internal wallet balance at the best prices.</p>
-                            </div>
-                        </li>
-                        <li style="display: flex; gap: 12px; align-items: flex-start;">
-                            <i class="fas fa-circle-check" style="color: var(--accent); margin-top: 4px; font-size: 1.1rem;"></i>
-                            <div>
-                                <h4 style="font-weight: 700;">Top Exchange Rates</h4>
-                                <p style="color: var(--text-secondary); font-size: 0.9rem;">We offer the highest industry rates updated live dynamically for both buying and selling.</p>
-                            </div>
-                        </li>
-                        <li style="display: flex; gap: 12px; align-items: flex-start;">
-                            <i class="fas fa-circle-check" style="color: var(--accent); margin-top: 4px; font-size: 1.1rem;"></i>
-                            <div>
-                                <h4 style="font-weight: 700;">100% Direct Payouts</h4>
-                                <p style="color: var(--text-secondary); font-size: 0.9rem;">Withdraw card sale earnings to any bank account instantly upon admin verification.</p>
-                            </div>
-                        </li>
-                    </ul>
+    <section class="landing-hero">
+        <div class="landing-hero-container">
+            <div class="landing-hero-grid">
+                
+                <!-- Left Hero Content -->
+                <div class="hero-left-content">
+                    <div class="hero-pill-badge">
+                        <i class="fas fa-shield-halved"></i> 100% Secure & Regulated Liquidity
+                    </div>
                     
-                    <!-- Demo account helper -->
-                    <div class="card" style="margin-top: 32px; padding: 20px; border-left: 4px solid var(--secondary);">
-                        <h4 style="font-weight: 700; margin-bottom: 8px;"><i class="fas fa-info-circle" style="color: var(--secondary);"></i> Prototype Testing Credentials</h4>
-                        <div style="font-size: 0.8rem; line-height: 1.6; color: var(--text-secondary);">
-                            <strong>Client Sandbox:</strong> <code>user@goodfastpay.com</code> / <code>user123</code><br>
-                            <strong>Admin Dashboard:</strong> <code>admin@goodfastpay.com</code> / <code>AdminGoodfastpay2026!</code>
+                    <h1 class="hero-main-title">
+                        Instant Payouts for<br>
+                        <span class="gradient-text">Gift Cards & Digital Assets</span>
+                    </h1>
+                    
+                    <p class="hero-subtext">
+                        Exchange your gift cards at top market rates with instant bank settlements within 3–5 minutes. Zero hidden fees, military-grade encryption, and 24/7 dedicated support.
+                    </p>
+                    
+                    <div class="hero-cta-group">
+                        <button class="btn btn-primary btn-lg" onclick="openAuthModal('register')">
+                            Trade Now <i class="fas fa-arrow-right"></i>
+                        </button>
+                        <a href="#calculator" class="btn btn-secondary btn-lg">
+                            <i class="fas fa-calculator"></i> Calculate Rate
+                        </a>
+                    </div>
+                    
+                    <!-- 3 Horizontal Statistics Cards -->
+                    <div class="hero-stats-row">
+                        <div class="hero-stat-card">
+                            <div class="hero-stat-number">₦2.5B+</div>
+                            <div class="hero-stat-label">Total Payouts</div>
+                        </div>
+                        <div class="hero-stat-card">
+                            <div class="hero-stat-number">98.8%</div>
+                            <div class="hero-stat-label">Success Rate</div>
+                        </div>
+                        <div class="hero-stat-card">
+                            <div class="hero-stat-number">3 Mins</div>
+                            <div class="hero-stat-label">Avg. Settlement</div>
                         </div>
                     </div>
                 </div>
-
-                <!-- Right Side Calculator -->
-                <div id="calculator" class="card glass-card rate-calculator">
-                    <h3 style="font-size: 1.4rem; font-weight: 800; margin-bottom: 24px; text-align: center;"><i class="fa-solid fa-calculator" style="color: var(--secondary);"></i> Rate Calculator</h3>
-                    <div class="calculator-box">
+                
+                <!-- Right Hero Quick Exchange Estimate Card -->
+                <div class="hero-calc-card" id="calculator">
+                    <div class="calc-card-header">
+                        <span class="badge badge-success" style="font-size: 0.75rem; padding: 6px 14px;">
+                            <i class="fas fa-signal-stream"></i> REAL-TIME RATES
+                        </span>
+                        <span style="font-size: 0.8rem; color: var(--text-muted); display: flex; align-items: center; gap: 6px;">
+                            <i class="fas fa-arrows-rotate fa-spin-pulse"></i> Auto-refreshed
+                        </span>
+                    </div>
+                    
+                    <h3 class="calc-card-title">Quick Exchange Estimate</h3>
+                    
+                    <!-- Brand Select -->
+                    <div class="input-group">
+                        <label class="input-label">Select Gift Card Brand</label>
+                        <select id="calc-brand" class="input-field" onchange="updateCalcRate()" style="height: 48px;">
+                            <!-- Populated Dynamically -->
+                        </select>
+                    </div>
+                    
+                    <!-- Currency & Value Row -->
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
                         <div class="input-group">
-                            <label class="input-label">Gift Card Brand</label>
-                            <select id="calc-brand" class="input-field" onchange="updateCalcRate()">
-                                <!-- Populated dynamically -->
-                            </select>
-                        </div>
-                        <div class="input-group">
-                            <label class="input-label">Currency</label>
-                            <select id="calc-currency" class="input-field" onchange="updateCalcRate()">
-                                <!-- Populated dynamically -->
+                            <label class="input-label">Region / Currency</label>
+                            <select id="calc-currency" class="input-field" onchange="updateCalcRate()" style="height: 48px;">
+                                <!-- Populated Dynamically -->
                             </select>
                         </div>
                         <div class="input-group">
                             <label class="input-label">Card Value</label>
-                            <input type="number" id="calc-value" class="input-field" min="10" max="1000" value="100" oninput="updateCalcRate()">
+                            <input type="number" id="calc-value" class="input-field" min="10" max="5000" value="100" oninput="updateCalcRate()" style="height: 48px;">
                         </div>
-                        
-                        <div style="margin-top: 16px; padding: 20px; background: var(--bg-tertiary); border-radius: var(--radius-md); text-align: center;">
-                            <span style="font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted);">Payout Estimate</span>
-                            <h2 style="font-size: 2.2rem; font-weight: 800; color: var(--accent); margin-top: 4px;" id="calc-result">₦0.00</h2>
-                            <span style="font-size: 0.75rem; color: var(--text-muted); display: block; margin-top: 6px;" id="calc-exchange-text">Rate: ₦0 / $1</span>
-                        </div>
-                        
-                        <button class="btn btn-cyan" style="width: 100%; margin-top: 12px;" onclick="openAuthModal('register')">Sell This Card Now</button>
+                    </div>
+                    
+                    <!-- Payout Calculation Box -->
+                    <div class="calc-payout-box">
+                        <div class="calc-payout-label">Estimated Direct Payout</div>
+                        <div class="calc-payout-val" id="calc-result">₦0.00</div>
+                        <div class="calc-rate-info" id="calc-exchange-text">Rate: Loading...</div>
+                    </div>
+                    
+                    <button class="btn btn-cyan calc-cta-btn" onclick="openAuthModal('register')">
+                        Proceed to Trade <i class="fas fa-chevron-right"></i>
+                    </button>
+                </div>
+                
+            </div>
+        </div>
+    </section>
+
+    <!-- LIVE RATES SECTION -->
+    <section class="section" id="rates" style="background: var(--bg-secondary); padding: 90px 0;">
+        <div class="landing-hero-container">
+            <div class="section-title">
+                <h2>Today's Live Exchange Rates</h2>
+                <p>We provide the highest and most transparent exchange rates updated real-time by our liquidity algorithms.</p>
+            </div>
+            
+            <div class="grid-4" id="popular-rates-grid">
+                <!-- Dynamically Populated with high-yield gift cards -->
+            </div>
+        </div>
+    </section>
+
+    <!-- HOW IT WORKS SECTION -->
+    <section class="section" id="how-it-works" style="padding: 90px 0;">
+        <div class="landing-hero-container">
+            <div class="section-title">
+                <h2>Three Steps to Your Payout</h2>
+                <p>Selling your gift cards is lightning fast and straightforward on Goodfastpay.</p>
+            </div>
+            
+            <div class="grid-3">
+                <div class="card" style="padding: 36px 28px; text-align: center; border-radius: 20px;">
+                    <div style="width: 68px; height: 68px; background: rgba(99, 102, 241, 0.1); color: var(--primary); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.85rem; margin: 0 auto 24px;">
+                        <i class="fas fa-user-plus"></i>
+                    </div>
+                    <h3 style="font-size: 1.25rem; font-weight: 800; margin-bottom: 12px;">1. Create Free Account</h3>
+                    <p style="color: var(--text-secondary); font-size: 0.92rem; line-height: 1.6;">
+                        Sign up in 30 seconds with your email and set up your secure 4-digit transaction PIN.
+                    </p>
+                </div>
+                
+                <div class="card" style="padding: 36px 28px; text-align: center; border-radius: 20px;">
+                    <div style="width: 68px; height: 68px; background: rgba(6, 182, 212, 0.1); color: var(--secondary); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.85rem; margin: 0 auto 24px;">
+                        <i class="fas fa-cloud-arrow-up"></i>
+                    </div>
+                    <h3 style="font-size: 1.25rem; font-weight: 800; margin-bottom: 12px;">2. Upload Card Details</h3>
+                    <p style="color: var(--text-secondary); font-size: 0.92rem; line-height: 1.6;">
+                        Select brand, country, denomination, and upload front & back images of physical cards or enter E-code.
+                    </p>
+                </div>
+                
+                <div class="card" style="padding: 36px 28px; text-align: center; border-radius: 20px;">
+                    <div style="width: 68px; height: 68px; background: rgba(16, 185, 129, 0.1); color: var(--success); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.85rem; margin: 0 auto 24px;">
+                        <i class="fas fa-building-columns"></i>
+                    </div>
+                    <h3 style="font-size: 1.25rem; font-weight: 800; margin-bottom: 12px;">3. Instant Bank Credit</h3>
+                    <p style="color: var(--text-secondary); font-size: 0.92rem; line-height: 1.6;">
+                        Once automatically verified, payout is credited to your wallet and instantly transferred to your bank.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- TRUST & SECURITY FEATURES -->
+    <section class="section" id="security" style="background: var(--bg-secondary); padding: 90px 0;">
+        <div class="landing-hero-container">
+            <div class="section-title">
+                <h2>Built for Uncompromised Security</h2>
+                <p>Enterprise-grade infrastructure designed to protect your assets, identity, and transactions.</p>
+            </div>
+            
+            <div class="grid-2" style="max-width: 1080px; margin: 0 auto; gap: 24px;">
+                <div class="card" style="padding: 28px; display: flex; gap: 20px; align-items: flex-start; border-radius: 18px;">
+                    <div style="width: 52px; height: 52px; border-radius: 14px; background: rgba(37, 99, 235, 0.1); color: var(--primary); display: flex; align-items: center; justify-content: center; font-size: 1.5rem; flex-shrink: 0;">
+                        <i class="fas fa-lock"></i>
+                    </div>
+                    <div>
+                        <h4 style="font-weight: 800; font-size: 1.1rem; margin-bottom: 8px;">256-bit SSL Encryption</h4>
+                        <p style="color: var(--text-secondary); font-size: 0.9rem; line-height: 1.6;">Every communication and transaction data packet is protected with end-to-end encryption protocols.</p>
+                    </div>
+                </div>
+                
+                <div class="card" style="padding: 28px; display: flex; gap: 20px; align-items: flex-start; border-radius: 18px;">
+                    <div style="width: 52px; height: 52px; border-radius: 14px; background: rgba(6, 182, 212, 0.1); color: var(--secondary); display: flex; align-items: center; justify-content: center; font-size: 1.5rem; flex-shrink: 0;">
+                        <i class="fas fa-shield-virus"></i>
+                    </div>
+                    <div>
+                        <h4 style="font-weight: 800; font-size: 1.1rem; margin-bottom: 8px;">AI Fraud & Duplicate Shield</h4>
+                        <p style="color: var(--text-secondary); font-size: 0.9rem; line-height: 1.6;">Proprietary pattern scanning prevents double-spending, duplicate codes, and unauthorized activity.</p>
+                    </div>
+                </div>
+                
+                <div class="card" style="padding: 28px; display: flex; gap: 20px; align-items: flex-start; border-radius: 18px;">
+                    <div style="width: 52px; height: 52px; border-radius: 14px; background: rgba(245, 158, 11, 0.1); color: var(--warning); display: flex; align-items: center; justify-content: center; font-size: 1.5rem; flex-shrink: 0;">
+                        <i class="fas fa-key"></i>
+                    </div>
+                    <div>
+                        <h4 style="font-weight: 800; font-size: 1.1rem; margin-bottom: 8px;">2FA & Transaction PIN</h4>
+                        <p style="color: var(--text-secondary); font-size: 0.9rem; line-height: 1.6;">Withdrawals and key security changes require secondary authorization PIN and OTP confirmation.</p>
+                    </div>
+                </div>
+
+                <div class="card" style="padding: 28px; display: flex; gap: 20px; align-items: flex-start; border-radius: 18px;">
+                    <div style="width: 52px; height: 52px; border-radius: 14px; background: rgba(16, 185, 129, 0.1); color: var(--accent); display: flex; align-items: center; justify-content: center; font-size: 1.5rem; flex-shrink: 0;">
+                        <i class="fas fa-list-check"></i>
+                    </div>
+                    <div>
+                        <h4 style="font-weight: 800; font-size: 1.1rem; margin-bottom: 8px;">Administrator Audit Trail</h4>
+                        <p style="color: var(--text-secondary); font-size: 0.9rem; line-height: 1.6;">Every wallet credit, payout validation, and database modification records logs for complete auditing.</p>
                     </div>
                 </div>
             </div>
         </div>
     </section>
 
-    <!-- HOW IT WORKS -->
-    <section id="how-it-works" style="padding: 80px 0; border-top: 1px solid var(--border-color);">
-        <div class="container" style="text-align: center;">
-            <h2 style="font-size: 2.2rem; font-weight: 800; margin-bottom: 12px;">Three Simple Steps to Cash</h2>
-            <p style="color: var(--text-secondary); max-width: 500px; margin: 0 auto 56px;">How we process your gift card trade and payout.</p>
+    <!-- FAQ SECTION -->
+    <section class="section" id="faq" style="padding: 90px 0;">
+        <div class="landing-hero-container" style="max-width: 860px;">
+            <div class="section-title">
+                <h2>Frequently Asked Questions</h2>
+                <p>Have questions? We have direct answers.</p>
+            </div>
             
-            <div class="grid-3">
-                <div class="feature-card">
-                    <div class="feature-icon"><i class="fas fa-upload"></i></div>
-                    <h3 style="font-weight: 700; margin-bottom: 12px;">1. Submit Card</h3>
-                    <p style="color: var(--text-secondary); font-size: 0.9rem; line-height: 1.5;">Select card, enter details, upload front/back image verification scans securely.</p>
+            <div style="display: flex; flex-direction: column; gap: 16px;">
+                <div class="card" style="padding: 24px; border-radius: 16px;">
+                    <h4 style="font-weight: 800; font-size: 1.05rem; margin-bottom: 10px;"><i class="fas fa-circle-question" style="color: var(--primary); margin-right: 8px;"></i> How long do payouts take?</h4>
+                    <p style="color: var(--text-secondary); font-size: 0.92rem; line-height: 1.6;">Card reviews take an average of 2–5 minutes. Once approved, the funds are instantly available in your wallet to withdraw to any Nigerian bank account immediately.</p>
                 </div>
-                <div class="feature-card">
-                    <div class="feature-icon"><i class="fas fa-shield-halved"></i></div>
-                    <h3 style="font-weight: 700; margin-bottom: 12px;">2. Admin Approval</h3>
-                    <p style="color: var(--text-secondary); font-size: 0.9rem; line-height: 1.5;">Our administrators verify card validity and credit your wallet immediately.</p>
+                
+                <div class="card" style="padding: 24px; border-radius: 16px;">
+                    <h4 style="font-weight: 800; font-size: 1.05rem; margin-bottom: 10px;"><i class="fas fa-circle-question" style="color: var(--primary); margin-right: 8px;"></i> Which gift cards are accepted?</h4>
+                    <p style="color: var(--text-secondary); font-size: 0.92rem; line-height: 1.6;">We accept over 70+ global brands including Apple/iTunes, Steam, Amazon, Google Play, Razer Gold, Sephora, Nike, Walmart, Visa/Mastercard Prepaid, and American Express.</p>
                 </div>
-                <div class="feature-card">
-                    <div class="feature-icon"><i class="fas fa-money-bill-transfer"></i></div>
-                    <h3 style="font-weight: 700; margin-bottom: 12px;">3. Direct Cashout</h3>
-                    <p style="color: var(--text-secondary); font-size: 0.9rem; line-height: 1.5;">Input bank account details and withdraw your balance straight into your account.</p>
+                
+                <div class="card" style="padding: 24px; border-radius: 16px;">
+                    <h4 style="font-weight: 800; font-size: 1.05rem; margin-bottom: 10px;"><i class="fas fa-circle-question" style="color: var(--primary); margin-right: 8px;"></i> Is there any fee for withdrawal?</h4>
+                    <p style="color: var(--text-secondary); font-size: 0.92rem; line-height: 1.6;">Zero hidden fees! The rate displayed in the calculator is the exact amount you receive into your verified bank account.</p>
+                </div>
+
+                <div class="card" style="padding: 24px; border-radius: 16px;">
+                    <h4 style="font-weight: 800; font-size: 1.05rem; margin-bottom: 10px;"><i class="fas fa-circle-question" style="color: var(--primary); margin-right: 8px;"></i> Can I buy gift cards on Goodfastpay?</h4>
+                    <p style="color: var(--text-secondary); font-size: 0.92rem; line-height: 1.6;">Yes! You can browse available gift card stock in your Customer Portal and purchase loaded PIN codes instantly using your wallet balance.</p>
                 </div>
             </div>
         </div>
     </section>
 
-    <!-- SECURITY COMPLIANCE -->
-    <section id="security" style="padding: 80px 0; background: var(--bg-tertiary); border-top: 1px solid var(--border-color);">
-        <div class="container" style="text-align: center;">
-            <h2 style="font-size: 2.2rem; font-weight: 800; margin-bottom: 12px;"><i class="fas fa-lock" style="color: var(--primary);"></i> Bank-Grade Security</h2>
-            <p style="color: var(--text-secondary); max-width: 500px; margin: 0 auto 56px;">We protect your digital wallet assets and user transactions.</p>
-            
-            <div class="grid-2" style="text-align: left; max-width: 960px; margin: 0 auto;">
-                <div class="card" style="background: var(--bg-secondary);">
-                    <h4 style="font-weight: 700; margin-bottom: 10px;"><i class="fas fa-key" style="color: var(--primary); margin-right: 8px;"></i> Two-Factor Auth & OTP</h4>
-                    <p style="color: var(--text-secondary); font-size: 0.875rem; line-height: 1.6;">OTP codes generated on registration/login simulate verification checks to secure sessions.</p>
+    <!-- FOOTER / SUPPORT SECTION -->
+    <footer class="footer" id="support" style="padding: 80px 0 40px; border-top: 1px solid var(--border-color); background: var(--bg-primary);">
+        <div class="landing-hero-container">
+            <div class="footer-grid" style="display: grid; grid-template-columns: 2fr 1fr 1fr 1.5fr; gap: 40px; margin-bottom: 50px;">
+                <div class="footer-brand">
+                    <a href="index.html" class="landing-logo" style="margin-bottom: 16px; display: inline-flex;">
+                        <img src="images/logo.png" alt="Goodfastpay Logo" style="height: 32px; width: 32px; background: #ffffff; border-radius: 6px; padding: 3px; vertical-align: middle; object-fit: contain;">
+                        <span>Good<span class="gradient-text">fast</span>pay</span>
+                    </a>
+                    <p style="color: var(--text-secondary); font-size: 0.9rem; line-height: 1.6; max-width: 320px;">
+                        Goodfastpay is Nigeria's premier automated digital asset exchange, offering highest market rates, sub-5 minute settlements, and institutional liquidity.
+                    </p>
                 </div>
-                <div class="card" style="background: var(--bg-secondary);">
-                    <h4 style="font-weight: 700; margin-bottom: 10px;"><i class="fas fa-circle-nodes" style="color: var(--secondary); margin-right: 8px;"></i> Fraud Anti-Duplicate Logs</h4>
-                    <p style="color: var(--text-secondary); font-size: 0.875rem; line-height: 1.6;">Card validation scans input pin sequences to intercept duplicate or previously submitted cards.</p>
+                
+                <div>
+                    <h4 style="color: var(--text-primary); font-size: 0.95rem; font-weight: 700; margin-bottom: 16px;">Quick Links</h4>
+                    <ul class="footer-links" style="list-style: none; display: flex; flex-direction: column; gap: 10px;">
+                        <li><a href="#rates">Live Rates</a></li>
+                        <li><a href="#how-it-works">How It Works</a></li>
+                        <li><a href="portal.html">Customer Portal</a></li>
+                        <li><a href="#faq">FAQ</a></li>
+                    </ul>
                 </div>
-                <div class="card" style="background: var(--bg-secondary);">
-                    <h4 style="font-weight: 700; margin-bottom: 10px;"><i class="fas fa-list-check" style="color: var(--accent); margin-right: 8px;"></i> Administrator Audit Trail</h4>
-                    <p style="color: var(--text-secondary); font-size: 0.875rem; line-height: 1.6;">Every wallet credit, payout validation, and database modification records logs for auditing.</p>
+                
+                <div>
+                    <h4 style="color: var(--text-primary); font-size: 0.95rem; font-weight: 700; margin-bottom: 16px;">Legal & Trust</h4>
+                    <ul class="footer-links" style="list-style: none; display: flex; flex-direction: column; gap: 10px;">
+                        <li><a href="#">Privacy Policy</a></li>
+                        <li><a href="#">Terms of Service</a></li>
+                        <li><a href="#">Anti-Money Laundering</a></li>
+                        <li><a href="#">Security Disclosure</a></li>
+                    </ul>
                 </div>
-                <div class="card" style="background: var(--bg-secondary);">
-                    <h4 style="font-weight: 700; margin-bottom: 10px;"><i class="fas fa-shield-virus" style="color: var(--danger); margin-right: 8px;"></i> Rate Limiting Defense</h4>
-                    <p style="color: var(--text-secondary); font-size: 0.875rem; line-height: 1.6;">Strict rate-limiting checks protect authorization entry ports from bot-net credentials stuffing.</p>
+                
+                <div>
+                    <h4 style="color: var(--text-primary); font-size: 0.95rem; font-weight: 700; margin-bottom: 16px;">Support Desk</h4>
+                    <p style="font-size: 0.88rem; color: var(--text-secondary); line-height: 1.6;">
+                        Email: support@goodfastpay.com<br>
+                        24/7 Live Desk Available<br>
+                        Lagos, Nigeria
+                    </p>
                 </div>
             </div>
-        </div>
-    </section>
-
-    <!-- FOOTER -->
-    <footer style="padding: 40px 0; border-top: 1px solid var(--border-color); text-align: center; font-size: 0.85rem; color: var(--text-secondary);">
-        <div class="container">
-            <p style="margin-bottom: 12px;">© 2026 Goodfastpay Inc. All rights reserved.</p>
-            <p>Designed with premium glassmorphism for secure gift card settlements.</p>
+            
+            <div class="footer-bottom" style="border-top: 1px solid rgba(255,255,255,0.06); padding-top: 24px; text-align: center; color: var(--text-muted); font-size: 0.85rem;">
+                <p>&copy; 2026 Goodfastpay Technologies Ltd. All Rights Reserved. Fully Encrypted & Regulated.</p>
+            </div>
         </div>
     </footer>
 
     <!-- AUTHENTICATION MODAL (Login / Register) -->
     <div class="modal-overlay" id="auth-modal">
-        <div class="modal-content">
+        <div class="modal-content" style="max-width: 460px;">
             <div class="modal-header">
                 <h3 style="font-weight: 800; font-size: 1.3rem;" id="auth-modal-title">Sign In</h3>
                 <button class="modal-close" onclick="closeAuthModal()"><i class="fas fa-xmark"></i></button>
@@ -274,56 +359,55 @@
             <form id="login-form" onsubmit="handleLoginSubmit(event)">
                 <div class="input-group">
                     <label class="input-label">Email Address</label>
-                    <input type="email" id="login-email" class="input-field" placeholder="user@goodfastpay.com" required>
+                    <input type="email" id="login-email" class="input-field" placeholder="yourname@domain.com" required>
                 </div>
                 <div class="input-group">
                     <label class="input-label">Password</label>
                     <input type="password" id="login-password" class="input-field" placeholder="••••••••" required>
                 </div>
-                <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 12px;">Authorize Account</button>
+                <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 12px; height: 48px;">Sign In to Portal</button>
             </form>
             
             <!-- Register Form -->
             <form id="register-form" style="display: none;" onsubmit="handleRegisterSubmit(event)">
                 <div class="input-group">
-                    <label class="input-label">Full Name</label>
-                    <input type="text" id="reg-name" class="input-field" placeholder="Abdallah" required>
+                    <label class="input-label">Full Legal Name</label>
+                    <input type="text" id="reg-name" class="input-field" placeholder="e.g. John Doe" required>
                 </div>
                 <div class="input-group">
                     <label class="input-label">Email Address</label>
-                    <input type="email" id="reg-email" class="input-field" placeholder="abdallah@email.com" required>
+                    <input type="email" id="reg-email" class="input-field" placeholder="yourname@domain.com" required>
                 </div>
                 <div class="input-group">
                     <label class="input-label">Phone Number</label>
-                    <input type="tel" id="reg-phone" class="input-field" placeholder="+1 555-0199" required>
+                    <input type="tel" id="reg-phone" class="input-field" placeholder="+234 801 234 5678" required>
                 </div>
                 <div class="input-group">
                     <label class="input-label">Password</label>
                     <input type="password" id="reg-password" class="input-field" placeholder="Minimum 8 characters" oninput="validateRegPasswordStrength(this.value)" required>
-                    <div class="pw-meter">
-                        <div class="pw-strength-bar" id="reg-pw-strength"></div>
+                    <div class="pw-meter" style="height: 4px; border-radius: 2px; margin-top: 6px; background: var(--bg-tertiary);">
+                        <div class="pw-strength-bar" id="reg-pw-strength" style="height: 100%; border-radius: 2px; width: 0%;"></div>
                     </div>
-                    <span style="font-size: 0.75rem; color: var(--text-muted);" id="reg-pw-text">Strength: Very Weak</span>
+                    <span style="font-size: 0.75rem; color: var(--text-muted); margin-top: 4px;" id="reg-pw-text">Strength: Very Weak</span>
                 </div>
                 <div class="input-group">
                     <label class="input-label">Confirm Password</label>
                     <input type="password" id="reg-confirm" class="input-field" placeholder="••••••••" required>
                 </div>
-                <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 12px;">Create Account</button>
+                <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 12px; height: 48px;">Create Free Account</button>
             </form>
         </div>
     </div>
 
     <!-- OTP VERIFICATION MODAL -->
     <div class="modal-overlay" id="otp-modal">
-        <div class="modal-content">
+        <div class="modal-content" style="max-width: 420px;">
             <div class="modal-header" style="text-align: center; display: block; position: relative;">
-                <h3 style="font-weight: 800; font-size: 1.3rem;">Verification Code Sent</h3>
+                <h3 style="font-weight: 800; font-size: 1.3rem;"><i class="fas fa-shield-halved" style="color: var(--secondary); margin-right: 6px;"></i> Security Verification</h3>
                 <button class="modal-close" onclick="closeOtpModal()" style="position: absolute; right: 0; top: 0;"><i class="fas fa-xmark"></i></button>
             </div>
             <div style="text-align: center; margin-bottom: 24px;">
-                <i class="fas fa-envelope-open-text" style="font-size: 2.5rem; color: var(--secondary); margin-bottom: 16px;"></i>
-                <p style="color: var(--text-secondary); font-size: 0.9rem; line-height: 1.5;">We simulated sending a 6-digit OTP verification code. Check your developer console logs to retrieve it.</p>
+                <p style="color: var(--text-secondary); font-size: 0.9rem; line-height: 1.5;">We sent a 6-digit OTP verification code to your email.</p>
             </div>
             
             <form onsubmit="handleOtpSubmit(event)">
@@ -335,7 +419,7 @@
                     <input type="text" id="otp-input" class="input-field" maxlength="6" placeholder="000000" style="text-align: center; font-size: 1.5rem; letter-spacing: 6px; font-weight: 700;" required>
                 </div>
                 
-                <button type="submit" class="btn btn-cyan" style="width: 100%; margin-top: 12px;">Confirm & Verify</button>
+                <button type="submit" class="btn btn-cyan" style="width: 100%; margin-top: 12px; height: 48px;">Confirm & Verify</button>
             </form>
             
             <p style="text-align: center; font-size: 0.8rem; margin-top: 20px; color: var(--text-muted);">
@@ -354,11 +438,8 @@
     <script src="js/app.js"></script>
     <script>
         function toggleNavMenu() {
-            const toggleBtn = document.querySelector('.nav-toggle');
-            if (toggleBtn && window.getComputedStyle(toggleBtn).display !== 'none') {
-                const menu = document.getElementById("nav-links-menu");
-                if (menu) menu.classList.toggle("active");
-            }
+            const menu = document.getElementById("nav-links-menu");
+            if (menu) menu.classList.toggle("active");
         }
 
         // Close mobile nav when clicking outside
@@ -391,46 +472,96 @@
                 if (dbUser && (dbUser.status === "SUSPENDED" || dbUser.status === "BANNED")) {
                     clearSession();
                 } else {
-                    if (user.role === "ADMIN") {
-                        window.location.href = "admin.html";
-                    } else {
-                        window.location.href = "portal.html";
-                    }
+                    const unauth = document.getElementById("unauth-actions");
+                    const authAct = document.getElementById("auth-actions");
+                    if (unauth) unauth.style.display = "none";
+                    if (authAct) authAct.style.display = "flex";
                 }
             }
-            populateCalcOptions();
+            
+            populateLandingRates();
+            populateCalculatorBrands();
         });
 
-        // Populate calculator selection options
-        function populateCalcOptions() {
-            const db = getDB();
-            const rates = db.settings.rates;
+        function populateLandingRates() {
+            const grid = document.getElementById("popular-rates-grid");
+            if (!grid) return;
+            grid.innerHTML = "";
             
-            const brandSelect = document.getElementById("calc-brand");
-            brandSelect.innerHTML = "";
+            const popularCards = [
+                { brand: "Apple/iTunes", icon: "fa-brands fa-apple", color: "#A2AAAD", bestRate: "₦1,990/$" },
+                { brand: "Steam", icon: "fa-brands fa-steam", color: "#171a21", bestRate: "₦2,200/$" },
+                { brand: "Google Play", icon: "fa-brands fa-google-play", color: "#01875f", bestRate: "₦2,360/$" },
+                { brand: "Amazon", icon: "fa-brands fa-amazon", color: "#FF9900", bestRate: "₦1,980/$" },
+                { brand: "Walmart", icon: "fa-solid fa-cart-shopping", color: "#0071dc", bestRate: "₦1,860/$" },
+                { brand: "Sephora", icon: "fa-solid fa-gem", color: "#e11d48", bestRate: "₦1,390/$" },
+                { brand: "Nike", icon: "fa-solid fa-tag", color: "#f97316", bestRate: "₦1,520/$" },
+                { brand: "Uber", icon: "fa-solid fa-car", color: "#06b6d4", bestRate: "₦2,200/$" }
+            ];
             
-            Object.keys(rates).forEach(brand => {
-                const opt = document.createElement("option");
-                opt.value = brand;
-                opt.textContent = brand;
-                brandSelect.appendChild(opt);
+            popularCards.forEach(card => {
+                const cardEl = document.createElement("div");
+                cardEl.className = "card";
+                cardEl.style.padding = "24px";
+                cardEl.style.cursor = "pointer";
+                cardEl.style.borderRadius = "16px";
+                cardEl.onclick = () => {
+                    document.getElementById("calc-brand").value = card.brand;
+                    updateCurrencyOptions();
+                    window.location.href = "#calculator";
+                };
+                
+                cardEl.innerHTML = `
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                        <div style="width: 48px; height: 48px; border-radius: 12px; background: rgba(255,255,255,0.05); display: flex; align-items: center; justify-content: center; font-size: 1.5rem; color: ${card.color};">
+                            <i class="${card.icon}"></i>
+                        </div>
+                        <span class="badge badge-success">High Rate</span>
+                    </div>
+                    <h3 style="font-weight: 700; font-size: 1.1rem; margin-bottom: 4px;">${card.brand}</h3>
+                    <p style="color: var(--text-muted); font-size: 0.8rem; margin-bottom: 12px;">Physical & E-Codes</p>
+                    <div style="display: flex; justify-content: space-between; align-items: baseline;">
+                        <span style="font-size: 0.8rem; color: var(--text-secondary);">Top Rate:</span>
+                        <span style="font-size: 1.15rem; font-weight: 800; color: var(--primary);">${card.bestRate}</span>
+                    </div>
+                `;
+                grid.appendChild(cardEl);
+            });
+        }
+
+        function populateCalculatorBrands() {
+            const select = document.getElementById("calc-brand");
+            if (!select) return;
+            select.innerHTML = "";
+            
+            Object.keys(GIFT_CARD_CATEGORIES).forEach(category => {
+                const optGroup = document.createElement("optgroup");
+                optGroup.label = category;
+                
+                GIFT_CARD_CATEGORIES[category].forEach(brand => {
+                    const opt = document.createElement("option");
+                    opt.value = brand;
+                    opt.textContent = brand;
+                    if (brand === "Apple/iTunes") opt.selected = true;
+                    optGroup.appendChild(opt);
+                });
+                select.appendChild(optGroup);
             });
             
             updateCurrencyOptions();
         }
 
         function updateCurrencyOptions() {
-            const db = getDB();
-            const rates = db.settings.rates;
-            const selectedBrand = document.getElementById("calc-brand").value;
+            const brand = document.getElementById("calc-brand").value;
             const currencySelect = document.getElementById("calc-currency");
-            
             currencySelect.innerHTML = "";
             
+            const db = getDB();
             const activeCurrencies = db.currencies || {};
+            const rates = db.settings.rates;
             
-            if (rates[selectedBrand]) {
-                Object.keys(rates[selectedBrand]).forEach(curr => {
+            if (rates && rates[brand]) {
+                Object.keys(rates[brand]).forEach(curr => {
                     let isAllowed = true;
                     if (curr === "USD" || curr === "USA" || ["Canada", "Australia", "Switzerland (CHF)", "Japan (JPY)", "China (CNY)", "Hong Kong (HKD)", "Singapore (SGD)", "New Zealand (NZD)", "UAE (AED)", "Saudi Arabia (SAR)", "South Africa (ZAR)", "India (INR)"].includes(curr)) {
                         isAllowed = activeCurrencies["USD"] ? activeCurrencies["USD"].status === "ACTIVE" : true;
@@ -481,9 +612,6 @@
             document.getElementById("calc-exchange-text").textContent = `Rate: ₦${rate.toLocaleString()} / ${symbol}1`;
         }
 
-        // Modify Calculator Currency options when Brand changes
-        document.getElementById("calc-brand").addEventListener("change", updateCurrencyOptions);
-
         // Modals Toggle
         function openAuthModal(tab = "login") {
             document.getElementById("auth-modal").classList.add("active");
@@ -512,7 +640,7 @@
                 registerForm.style.display = "block";
                 btnLogin.classList.remove("active");
                 btnRegister.classList.add("active");
-                modalTitle.textContent = "Create Account";
+                modalTitle.textContent = "Create Free Account";
             }
         }
 
