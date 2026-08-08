@@ -1,0 +1,930 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Goodfastpay - Customer Portal</title>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Style CSS -->
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        .portal-section {
+            display: none;
+        }
+        .portal-section.active {
+            display: block;
+        }
+        .stats-card {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+        .stats-icon {
+            width: 50px;
+            height: 50px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.25rem;
+        }
+        .icon-wallet { background: rgba(16, 185, 129, 0.1); color: var(--accent); }
+        .icon-pending { background: rgba(245, 158, 11, 0.1); color: var(--warning); }
+        .icon-cards { background: rgba(79, 70, 229, 0.1); color: var(--primary); }
+        .icon-withdraw { background: rgba(6, 182, 212, 0.1); color: var(--secondary); }
+        
+        .notification-item {
+            padding: 16px;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            margin-bottom: 12px;
+            background: var(--bg-secondary);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: relative;
+            transition: border-color var(--transition-fast);
+        }
+        .notification-item.unread {
+            border-left: 4px solid var(--primary);
+        }
+        
+        .bank-banner {
+            border: 1px solid var(--warning);
+            background: rgba(245, 158, 11, 0.05);
+            border-radius: var(--radius-md);
+            padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+        
+        .payout-preview-box {
+            background: var(--bg-tertiary);
+            border-radius: var(--radius-md);
+            padding: 24px;
+            text-align: center;
+            border: 1px solid var(--border-color);
+            margin-bottom: 24px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="dashboard-layout">
+        <!-- SIDEBAR -->
+        <aside class="sidebar" id="portal-sidebar">
+            <button class="sidebar-close" onclick="toggleSidebar()"><i class="fas fa-xmark"></i></button>
+            <div class="logo sidebar-logo" style="margin-bottom: 30px;">
+                <img src="images/logo.png" alt="Goodfastpay Logo" style="height: 32px; width: 32px; background: #ffffff; border-radius: 6px; padding: 3px; vertical-align: middle; margin-right: 8px; object-fit: contain;">
+                <span>Good<span class="gradient-text">fast</span>pay</span>
+            </div>
+            
+            <ul class="sidebar-menu" style="flex: 1;">
+                <li>
+                    <a class="sidebar-link active" onclick="switchSection('dashboard', this)">
+                        <i class="fas fa-chart-line"></i> Dashboard
+                    </a>
+                </li>
+                <li>
+                    <a class="sidebar-link" onclick="switchSection('buy', this)">
+                        <i class="fas fa-cart-shopping"></i> Buy Gift Card
+                    </a>
+                </li>
+                <li>
+                    <a class="sidebar-link" onclick="switchSection('sell', this)">
+                        <i class="fas fa-wallet"></i> Sell Gift Card
+                    </a>
+                </li>
+                <li>
+                    <a class="sidebar-link" onclick="switchSection('withdraw', this)">
+                        <i class="fas fa-money-bill-transfer"></i> Withdraw Cash
+                    </a>
+                </li>
+                <li>
+                    <a class="sidebar-link" onclick="switchSection('bank', this)">
+                        <i class="fas fa-building-columns"></i> Bank Account
+                    </a>
+                </li>
+                <li>
+                    <a class="sidebar-link" onclick="switchSection('logs', this)">
+                        <i class="fas fa-shield-halved"></i> Security Logs
+                    </a>
+                </li>
+                <li>
+                    <a class="sidebar-link" onclick="switchSection('support', this)">
+                        <i class="fas fa-headset"></i> Help & Support <span class="badge badge-warning" id="badge-user-support" style="display:none; font-size: 0.7rem; padding: 2px 6px;">0</span>
+                    </a>
+                </li>
+                <li>
+                    <a class="sidebar-link" onclick="switchSection('bank', this); showToast('Settings loaded.', 'info');">
+                        <i class="fas fa-gear"></i> Settings
+                    </a>
+                </li>
+            </ul>
+
+            <!-- Bottom User Profile Card -->
+            <div style="border-top: 1px solid var(--border-color); padding-top: 16px; display: flex; flex-direction: column; gap: 12px; margin-top: auto;">
+                <div class="sidebar-profile">
+                    <div class="sidebar-profile-avatar" id="sidebar-user-avatar">U</div>
+                    <div class="sidebar-profile-info">
+                        <div class="sidebar-profile-name" id="sidebar-user-name">Loading...</div>
+                        <div class="sidebar-profile-status"><i class="fas fa-circle-check"></i> Verified</div>
+                    </div>
+                    <i class="fas fa-gear sidebar-profile-settings" onclick="switchSection('bank', document.querySelector('[onclick*=\'bank\']'))" title="Settings"></i>
+                </div>
+                <button class="btn btn-secondary btn-sm" onclick="handleLogout()" style="width: 100%; font-weight: 700;">
+                    <i class="fas fa-right-from-bracket" style="color: var(--danger);"></i> Sign Out
+                </button>
+            </div>
+        </aside>
+
+        <!-- MAIN WORKSPACE -->
+        <main class="main-content">
+            <!-- Header bar -->
+            <header style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; flex-wrap: wrap; gap: 16px; position: relative;">
+                <div style="display: flex; align-items: center; gap: 16px;">
+                    <button class="sidebar-toggle" onclick="toggleSidebar()"><i class="fas fa-bars"></i></button>
+                </div>
+                
+                <div style="display: flex; align-items: center; gap: 16px; position: relative;">
+                    <!-- Theme Toggle -->
+                    <button class="theme-toggle-btn" onclick="toggleTheme()" style="background: var(--bg-secondary); border: 1px solid var(--border-color); width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--text-primary);">
+                        <i class="fas fa-sun"></i>
+                    </button>
+                    
+                    <!-- Notification Bell Container -->
+                    <div style="position: relative;">
+                        <button onclick="toggleNotifDropdown()" style="background: var(--bg-secondary); border: 1px solid var(--border-color); width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--text-primary); position: relative;">
+                            <i class="fas fa-bell" style="pointer-events: none;"></i>
+                            <span class="badge badge-danger" id="nav-notif-count" style="position: absolute; top: -5px; right: -5px; width: 18px; height: 18px; border-radius: 50%; background: var(--danger); color: white; font-size: 0.65rem; font-weight: 800; display: flex; align-items: center; justify-content: center; display: none; pointer-events: none;">0</span>
+                        </button>
+                        
+                        <!-- Dropdown list -->
+                        <div class="notif-dropdown" id="notif-dropdown-pane">
+                            <div class="notif-dropdown-header">
+                                <span>Notifications</span>
+                                <button onclick="markAllNotifRead()" style="background:none; border:none; color:var(--primary); font-weight:700; font-size:0.75rem; cursor:pointer;">Mark all as read</button>
+                            </div>
+                            <div id="notif-dropdown-list">
+                                <!-- Populated dynamically from portal.js -->
+                            </div>
+                            <div class="notif-dropdown-footer" style="padding: 12px 16px; text-align: center; border-top: 1px solid var(--border-color); background: var(--bg-tertiary);">
+                                <button onclick="viewAllNotifications()" style="background: none; border: none; color: var(--primary); font-weight: 700; font-size: 0.8rem; cursor: pointer; width: 100%; display: block;">View All Notifications</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Page Title Block -->
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 32px; flex-wrap: wrap; gap: 16px; border-bottom: 1px solid var(--border-color); padding-bottom: 20px;">
+                <div>
+                    <h2 id="welcome-title" style="font-size: 1.8rem; font-weight: 800;">Welcome back, User!</h2>
+                    <p style="color: var(--text-secondary); font-size: 0.95rem; margin-top: 4px;">Buy and sell gift cards instantly, track balances, and cashout direct to bank.</p>
+                </div>
+            </div>
+
+            <!-- SECTION 1: OVERVIEW DASHBOARD -->
+            <section id="section-dashboard" class="portal-section active">
+                <!-- Warnings banner for empty bank profile -->
+                <div class="bank-banner" id="dashboard-bank-warning" style="display: none;">
+                    <div style="display: flex; gap: 16px; align-items: center;">
+                        <i class="fas fa-triangle-exclamation" style="font-size: 2rem; color: var(--warning);"></i>
+                        <div>
+                            <h4 style="font-weight: 700; color: var(--text-primary);">Bank Account Pending Setup</h4>
+                            <p style="color: var(--text-secondary); font-size: 0.85rem;">You need to link your bank account to initiate direct cash withdrawals.</p>
+                        </div>
+                    </div>
+                    <button class="btn btn-accent btn-sm" onclick="switchSection('bank', document.querySelector('[onclick*=\'bank\']'))">Configure Bank Details</button>
+                </div>
+
+                <!-- Wallet Hero Card -->
+                <div class="wallet-hero-card">
+                    <div style="font-size: 0.85rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; opacity: 0.8; display: flex; align-items: center; gap: 8px;">
+                        <span>Total Available Wallet Balance</span>
+                        <button id="toggle-balance-btn" onclick="toggleBalanceVisibility()" style="background: none; border: none; padding: 0; color: inherit; cursor: pointer; display: inline-flex; align-items: center; transition: opacity 0.2s;" title="Hide Balance">
+                            <i class="fas fa-eye" id="toggle-balance-icon" style="font-size: 0.95rem;"></i>
+                        </button>
+                    </div>
+                    <div class="wallet-hero-balance" id="stat-wallet-balance-hero">₦0.00</div>
+                    
+                    <!-- Wallet actions grid -->
+                    <div class="wallet-actions-grid">
+                        <div class="wallet-action-btn" onclick="switchSection('buy', document.querySelector('[onclick*=\'buy\']'))">
+                            <i class="fas fa-cart-shopping"></i>
+                            <span>Buy Cards</span>
+                        </div>
+                        <div class="wallet-action-btn" onclick="switchSection('sell', document.querySelector('[onclick*=\'sell\']'))">
+                            <i class="fas fa-wallet"></i>
+                            <span>Sell Cards</span>
+                        </div>
+                        <div class="wallet-action-btn" onclick="switchSection('withdraw', document.querySelector('[onclick*=\'withdraw\']'))">
+                            <i class="fas fa-money-bill-transfer"></i>
+                            <span>Withdraw</span>
+                        </div>
+                        <div class="wallet-action-btn" onclick="switchSection('bank', document.querySelector('[onclick*=\'bank\']'))">
+                            <i class="fas fa-building-columns"></i>
+                            <span>Link Bank</span>
+                        </div>
+                        <div class="wallet-action-btn" onclick="showToast('To fund your wallet, please transfer to your linked bank account or contact support.', 'info');">
+                            <i class="fas fa-circle-plus"></i>
+                            <span>Fund Wallet</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Summary Cards grid -->
+                <div class="dash-grid" style="margin-bottom: 30px;">
+                    <div class="card stats-card" style="margin-bottom: 0; padding: 20px;">
+                        <div class="stats-icon icon-wallet" style="width: 38px; height: 38px; font-size: 1.1rem;"><i class="fas fa-wallet"></i></div>
+                        <div>
+                            <span style="font-size: 0.75rem; color: var(--text-secondary); font-weight: 700;">WALLET BALANCE</span>
+                            <h4 style="font-size: 1.25rem; font-weight: 800; margin-top: 4px;" id="stat-wallet-balance">₦0.00</h4>
+                        </div>
+                    </div>
+                    <div class="card stats-card" style="margin-bottom: 0; padding: 20px;">
+                        <div class="stats-icon icon-pending" style="width: 38px; height: 38px; font-size: 1.1rem;"><i class="fas fa-hourglass-half"></i></div>
+                        <div>
+                            <span style="font-size: 0.75rem; color: var(--text-secondary); font-weight: 700;">PENDING ORDERS</span>
+                            <h4 style="font-size: 1.25rem; font-weight: 800; margin-top: 4px;" id="stat-pending-balance">₦0.00</h4>
+                        </div>
+                    </div>
+                    <div class="card stats-card" style="margin-bottom: 0; padding: 20px;">
+                        <div class="stats-icon icon-cards" style="width: 38px; height: 38px; font-size: 1.1rem;"><i class="fas fa-ticket"></i></div>
+                        <div>
+                            <span style="font-size: 0.75rem; color: var(--text-secondary); font-weight: 700;">TOTAL CARD SALES</span>
+                            <h4 style="font-size: 1.25rem; font-weight: 800; margin-top: 4px;" id="stat-card-trades">0</h4>
+                        </div>
+                    </div>
+                    <div class="card stats-card" style="margin-bottom: 0; padding: 20px;">
+                        <div class="stats-icon icon-withdraw" style="width: 38px; height: 38px; font-size: 1.1rem;"><i class="fas fa-circle-down"></i></div>
+                        <div>
+                            <span style="font-size: 0.75rem; color: var(--text-secondary); font-weight: 700;">TOTAL PURCHASES</span>
+                            <h4 style="font-size: 1.25rem; font-weight: 800; margin-top: 4px;" id="stat-purchases">0</h4>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recent transactions -->
+                <h3 style="font-size: 1.25rem; font-weight: 800; margin-bottom: 20px;"><i class="fas fa-receipt" style="color: var(--primary); margin-right: 8px;"></i> Recent Transaction History</h3>
+                <div class="card" style="padding: 0; overflow: hidden;">
+                    <div class="table-container">
+                        <table class="data-table compact-table">
+                            <thead>
+                                <tr>
+                                    <th style="width: 15%;">Tx ID</th>
+                                    <th style="width: 20%;">Date</th>
+                                    <th style="width: 18%;">Type</th>
+                                    <th style="width: 25%;">Details</th>
+                                    <th style="width: 12%; text-align: right;" class="text-right">Amount</th>
+                                    <th style="width: 10%; text-align: center;" class="text-center">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="dashboard-tx-tbody">
+                                <!-- Populated dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <section id="section-sell" class="portal-section">
+                <div class="sell-workspace-grid">
+                    <!-- Submission Form -->
+                    <div class="card" style="margin-bottom: 0;">
+                        <h3 style="font-size: 1.3rem; font-weight: 800; margin-bottom: 24px;"><i class="fas fa-ticket" style="color: var(--secondary); margin-right: 8px;"></i> Submit Gift Card for Trade</h3>
+                        
+                        <form id="card-submission-form">
+                            <div class="input-group">
+                                <label class="input-label">Gift Card Brand</label>
+                                <select id="sell-brand" class="input-field" onchange="updateSellRate()"></select>
+                            </div>
+                            <div class="input-group">
+                                <label class="input-label">Currency Type</label>
+                                <select id="sell-currency" class="input-field" onchange="updateSellRate()"></select>
+                            </div>
+                            <div class="input-group">
+                                <label class="input-label">Card Denomination (Face Value)</label>
+                                <input type="number" id="sell-value" class="input-field" min="5" max="1000" placeholder="100" oninput="updateSellRate()" required>
+                                <div style="display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap;" id="sell-denom-chips">
+                                    <span class="denom-chip" onclick="selectDenomination(10)">10</span>
+                                    <span class="denom-chip" onclick="selectDenomination(15)">15</span>
+                                    <span class="denom-chip" onclick="selectDenomination(20)">20</span>
+                                    <span class="denom-chip" onclick="selectDenomination(25)">25</span>
+                                    <span class="denom-chip" onclick="selectDenomination(30)">30</span>
+                                    <span class="denom-chip" onclick="selectDenomination(50)">50</span>
+                                    <span class="denom-chip" onclick="selectDenomination(100)">100</span>
+                                    <span class="denom-chip" onclick="selectDenomination(200)">200</span>
+                                    <span class="denom-chip" onclick="selectDenomination(500)">500</span>
+                                </div>
+                            </div>
+                            <div class="input-group">
+                                <label class="input-label">Card Code / PIN Code</label>
+                                <input type="text" id="sell-code" class="input-field" placeholder="Enter card serial/pin pin key" required>
+                                <span style="font-size: 0.75rem; color: var(--text-muted);">Double-check codes. Fraud duplicate submissions will result in suspension.</span>
+                            </div>
+                            
+                            <div class="grid-2" style="margin-bottom: 24px; gap: 16px;">
+                                <div class="input-group" style="margin-bottom:0;">
+                                    <label class="input-label">Card Front Scan</label>
+                                    <div class="upload-box">
+                                        <i class="fas fa-camera" style="font-size: 1.5rem; color: var(--text-muted); margin-bottom: 8px;"></i>
+                                        <p style="font-size: 0.75rem; color: var(--text-secondary);">Upload scan front</p>
+                                        <input type="file" id="sell-img-front" accept="image/*" onchange="previewUpload(this, 'preview-front')">
+                                        <img id="preview-front" class="upload-preview">
+                                    </div>
+                                </div>
+                                <div class="input-group" style="margin-bottom:0;">
+                                    <label class="input-label">Card Back Scan</label>
+                                    <div class="upload-box">
+                                        <i class="fas fa-camera" style="font-size: 1.5rem; color: var(--text-muted); margin-bottom: 8px;"></i>
+                                        <p style="font-size: 0.75rem; color: var(--text-secondary);">Upload scan back</p>
+                                        <input type="file" id="sell-img-back" accept="image/*" onchange="previewUpload(this, 'preview-back')">
+                                        <img id="preview-back" class="upload-preview">
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <button type="submit" class="btn btn-primary" style="width: 100%;">Submit Card to Admin Review</button>
+                        </form>
+                    </div>
+ 
+                    <!-- Live payout estimator & Submission History panel -->
+                    <div style="display: flex; flex-direction: column; gap: 20px; height: 100%;">
+                        <!-- Payout Wallet Amount Card -->
+                        <div class="card glass-card payout-preview-box" style="border: 1px solid var(--accent); background: rgba(16, 185, 129, 0.02); padding: 18px 24px; border-radius: 12px; margin-bottom: 0;">
+                            <span style="font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); display: block; margin-bottom: 4px;">Payout Wallet Amount</span>
+                            <h2 style="font-size: 1.8rem; font-weight: 800; color: var(--accent); margin: 0; line-height: 1.2;" id="sell-payout-result">₦0.00</h2>
+                        </div>
+ 
+                        <!-- Card trade history checklist card -->
+                        <div class="card" style="flex: 1; display: flex; flex-direction: column; overflow: hidden; margin-bottom: 0; padding: 24px;">
+                            <h4 style="font-weight: 800; margin-bottom: 16px; font-size: 0.95rem; display: flex; align-items: center; gap: 8px;"><i class="fas fa-list-check" style="color: var(--primary);"></i> Submission History</h4>
+                            <div class="table-container" style="border: none; margin: 0; background: transparent; overflow-y: auto; flex: 1;">
+                                <table class="data-table submission-history-table compact-table" style="width: 100%;">
+                                    <thead>
+                                        <tr>
+                                            <th>Card Brand</th>
+                                            <th>Face Value</th>
+                                            <th>Payout</th>
+                                            <th>Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="sell-history-tbody">
+                                        <!-- Populated dynamically -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- SECTION 3: WITHDRAW CASH -->
+            <section id="section-withdraw" class="portal-section">
+                <!-- Warning banner: Block withdrawals if no bank details -->
+                <div class="bank-banner" id="withdraw-bank-warning" style="display: none;">
+                    <div style="display: flex; gap: 16px; align-items: center;">
+                        <i class="fas fa-triangle-exclamation" style="font-size: 2rem; color: var(--danger);"></i>
+                        <div>
+                            <h4 style="font-weight: 700; color: var(--text-primary);">Linking Bank Details Required</h4>
+                            <p style="color: var(--text-secondary); font-size: 0.85rem;">Withdrawals are disabled until you configure your destination bank coordinates.</p>
+                        </div>
+                    </div>
+                    <button class="btn btn-secondary btn-sm" onclick="switchSection('bank', document.querySelector('[onclick*=\'bank\']'))">Configure Bank Details</button>
+                </div>
+
+                <div class="grid-2" id="withdraw-workspace">
+                    <!-- Withdrawal form -->
+                    <div class="card">
+                        <h3 style="font-size: 1.3rem; font-weight: 800; margin-bottom: 24px;"><i class="fas fa-paper-plane" style="color: var(--accent); margin-right: 8px;"></i> Request Bank Withdrawal</h3>
+                        
+                        <form id="withdrawal-request-form">
+                            <div class="input-group">
+                                <label class="input-label">Wallet Available Balance</label>
+                                <h3 style="font-size: 1.8rem; font-weight: 800; color: var(--accent);" id="withdraw-avail-balance">₦0.00</h3>
+                            </div>
+                            
+                            <div class="input-group" style="margin-top: 16px;">
+                                <label class="input-label">Withdrawal Amount (NGN)</label>
+                                <input type="number" id="withdraw-amount" class="input-field" placeholder="Enter amount to cashout (e.g. 50000)" min="1000" step="100" required>
+                                <span style="font-size: 0.75rem; color: var(--text-muted);">Minimum withdrawal: ₦1,000.00. Standard transfers verify in 5-30 minutes.</span>
+                            </div>
+                            
+                            <!-- Destination Bank Coordinates Preview -->
+                            <div style="padding: 16px; border: 1px solid var(--border-color); background: var(--bg-tertiary); border-radius: var(--radius-md); margin-bottom: 24px;">
+                                <span class="input-label" style="display: block; margin-bottom: 8px; font-size: 0.75rem;">Destination Account Profile</span>
+                                <div style="font-size: 0.85rem; line-height: 1.5; color: var(--text-secondary);">
+                                    <strong>Bank:</strong> <span id="withdraw-bank-name">-</span><br>
+                                    <strong>Account:</strong> <span id="withdraw-bank-number">-</span><br>
+                                    <strong>Beneficiary Name:</strong> <span id="withdraw-bank-holder">-</span>
+                                </div>
+                            </div>
+                            
+                            <button type="submit" class="btn btn-accent" style="width: 100%;">Initiate Instant Withdrawal</button>
+                        </form>
+                    </div>
+
+                    <!-- Withdrawal History list -->
+                    <div>
+                        <h3 style="font-size: 1.25rem; font-weight: 800; margin-bottom: 20px;"><i class="fas fa-history" style="color: var(--secondary); margin-right: 8px;"></i> Withdrawal Ledger</h3>
+                        <div class="card" style="padding:0; overflow:hidden;">
+                            <table class="data-table compact-table">
+                                <thead>
+                                    <tr>
+                                        <th style="width: 25%;">Date</th>
+                                        <th style="width: 22%; text-align: right;" class="text-right">Amount</th>
+                                        <th style="width: 35%;">Destination</th>
+                                        <th style="width: 18%; text-align: center;" class="text-center">Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="withdraw-history-tbody">
+                                    <!-- Populated dynamically -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- SECTION 7: BUY GIFT CARD -->
+            <section id="section-buy" class="portal-section">
+                <div class="grid-2">
+                    <!-- Stock browser -->
+                    <div class="card" style="padding: 24px;">
+                        <h3 style="font-size: 1.3rem; font-weight: 800; margin-bottom: 12px;"><i class="fas fa-cart-shopping" style="color: var(--secondary); margin-right: 8px;"></i> Available Gift Card Stock</h3>
+                        <p style="color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 24px;">Browse and buy gift cards instantly using your wallet available balance.</p>
+                        
+                        <!-- Search, Filter, and Sort Toolbar -->
+                        <div style="display: flex; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; background: var(--bg-tertiary); padding: 14px; border-radius: var(--radius-md); border: 1px solid var(--border-color);">
+                            <!-- Search -->
+                            <div style="flex: 1; min-width: 180px; position: relative;">
+                                <i class="fas fa-search" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-size: 0.85rem;"></i>
+                                <input type="text" id="buy-search-input" class="input-field" placeholder="Search brands..." oninput="filterAndRenderBuyStock()" style="padding-left: 36px; height: 38px; font-size: 0.85rem; margin-bottom: 0; background: var(--bg-secondary);">
+                            </div>
+                            
+                            <!-- Country/Region Filter -->
+                            <div style="width: 140px;">
+                                <select id="buy-country-filter" class="input-field" onchange="filterAndRenderBuyStock()" style="height: 38px; font-size: 0.85rem; margin-bottom: 0; padding: 4px 10px; background: var(--bg-secondary);">
+                                    <option value="ALL">All Regions</option>
+                                    <option value="USA">USA</option>
+                                    <option value="UK">UK</option>
+                                    <option value="Canada">Canada</option>
+                                    <option value="Europe (EUR)">Europe</option>
+                                    <option value="Australia">Australia</option>
+                                </select>
+                            </div>
+                            
+                            <!-- Price Sorting -->
+                            <div style="width: 140px;">
+                                <select id="buy-sort-filter" class="input-field" onchange="filterAndRenderBuyStock()" style="height: 38px; font-size: 0.85rem; margin-bottom: 0; padding: 4px 10px; background: var(--bg-secondary);">
+                                    <option value="DEFAULT">Sort By</option>
+                                    <option value="PRICE_LOW_HIGH">Price: Low to High</option>
+                                    <option value="PRICE_HIGH_LOW">Price: High to Low</option>
+                                    <option value="STOCK_HIGH_LOW">Available Stock</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <!-- Product cards list grid -->
+                        <div class="product-grid" id="buy-stock-grid">
+                            <!-- Populated dynamically from portal.js -->
+                        </div>
+                    </div>
+
+                    <!-- Purchased cards logs with revealed codes -->
+                    <div>
+                        <h3 style="font-size: 1.25rem; font-weight: 800; margin-bottom: 20px;"><i class="fas fa-key" style="color: var(--accent); margin-right: 8px;"></i> Purchased Codes History</h3>
+                        <div class="card" style="padding:0; overflow:hidden;">
+                            <table class="data-table compact-table">
+                                <thead>
+                                    <tr>
+                                        <th style="width: 20%;">Date</th>
+                                        <th style="width: 32%;">Card Info</th>
+                                        <th style="width: 22%; text-align: right;" class="text-right">Price Paid</th>
+                                        <th style="width: 26%; text-align: center;" class="text-center">Revealed PIN</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="buy-history-tbody">
+                                    <!-- Populated dynamically -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- SECTION 4: SETTINGS & SECURITY -->
+            <section id="section-bank" class="portal-section">
+                <div class="card" style="max-width: 620px; margin: 0 auto; padding: 28px;">
+                    <h3 style="font-size: 1.4rem; font-weight: 800; margin-bottom: 20px;">
+                        <i class="fas fa-gear" style="color: var(--primary); margin-right: 8px;"></i> Account Settings & Security
+                    </h3>
+                    
+                    <!-- Settings Tab Headers -->
+                    <div class="segment-tab-headers">
+                        <div class="tab-btn active" onclick="switchSettingsTab('bank-details', this)">
+                            <i class="fas fa-building-columns" style="margin-right: 4px;"></i> Bank Details
+                        </div>
+                        <div class="tab-btn" onclick="switchSettingsTab('security-password', this)">
+                            <i class="fas fa-key" style="margin-right: 4px;"></i> Change Password
+                        </div>
+                        <div class="tab-btn" onclick="switchSettingsTab('security-pin', this)">
+                            <i class="fas fa-shield-halved" style="margin-right: 4px;"></i> Transaction PIN
+                        </div>
+                    </div>
+                    
+                    <!-- Tab 1: Bank Details Form -->
+                    <div id="settings-tab-bank-details" class="settings-tab-content">
+                        <p style="color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 20px; line-height: 1.5;">This account will be targeted for manual payout transfers and instant automated payment settlements.</p>
+                        <form id="bank-settings-form">
+                            <div class="input-group" style="margin-bottom: 20px;">
+                                <label class="input-label" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                                    <span>Popular Banks Quick Select</span>
+                                    <span style="font-size: 0.65rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Click to Instant-Fill</span>
+                                </label>
+                                <div class="popular-banks-grid">
+                                    <div class="popular-bank-card" onclick="selectPopularBank('Guaranty Trust Bank (GTBank)')">
+                                        <div class="popular-bank-logo gtbank">GT</div>
+                                        <span>GTBank</span>
+                                    </div>
+                                    <div class="popular-bank-card" onclick="selectPopularBank('Zenith Bank')">
+                                        <div class="popular-bank-logo zenith">ZB</div>
+                                        <span>Zenith</span>
+                                    </div>
+                                    <div class="popular-bank-card" onclick="selectPopularBank('Access Bank')">
+                                        <div class="popular-bank-logo access">AC</div>
+                                        <span>Access</span>
+                                    </div>
+                                    <div class="popular-bank-card" onclick="selectPopularBank('United Bank for Africa (UBA)')">
+                                        <div class="popular-bank-logo uba">UB</div>
+                                        <span>UBA</span>
+                                    </div>
+                                    <div class="popular-bank-card" onclick="selectPopularBank('Kuda Bank')">
+                                        <div class="popular-bank-logo kuda">KU</div>
+                                        <span>Kuda</span>
+                                    </div>
+                                    <div class="popular-bank-card" onclick="selectPopularBank('OPay')">
+                                        <div class="popular-bank-logo opay">OP</div>
+                                        <span>OPay</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="input-group">
+                                 <label class="input-label">Other Nigerian Banks</label>
+                                 <div class="custom-select-search-container" id="bank-name-search-container">
+                                     <input type="hidden" id="bank-name" required>
+                                     <div class="custom-select-search-trigger" id="bank-name-trigger" onclick="toggleBankDropdown(event)" style="display: flex; align-items: center; gap: 10px;">
+                                         <div class="bank-avatar" id="bank-name-trigger-logo" style="display: none; width: 24px; height: 24px; font-size: 0.65rem;"></div>
+                                         <span id="bank-name-trigger-text">Select Bank Name</span>
+                                         <i class="fas fa-chevron-down" style="margin-left: auto;"></i>
+                                     </div>
+                                     <div class="custom-select-search-dropdown" id="bank-name-dropdown">
+                                         <div class="custom-select-search-input-wrapper">
+                                             <i class="fas fa-search"></i>
+                                             <input type="text" id="bank-search-input" placeholder="Search Nigerian banks..." oninput="filterBanks(this.value)" onclick="event.stopPropagation()">
+                                         </div>
+                                         <ul class="custom-select-search-list" id="bank-list-ul">
+                                             <!-- Populated dynamically -->
+                                         </ul>
+                                     </div>
+                                 </div>
+                             </div>
+                             <div class="input-group">
+                                 <label class="input-label">Account Number (10 digits)</label>
+                                 <input type="text" id="bank-account-number" class="input-field" placeholder="0123456789" maxlength="10" oninput="handleBankAccountInput()" required>
+                             </div>
+                             <div class="input-group">
+                                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                                     <label class="input-label" style="margin-bottom: 0;">Account Holder Name</label>
+                                     <div id="account-verification-status" style="display: flex; align-items: center; gap: 6px;"></div>
+                                 </div>
+                                 <div style="position: relative;">
+                                     <input type="text" id="bank-account-holder" class="input-field" placeholder="Awaiting account details..." readonly required style="background: var(--bg-secondary); cursor: not-allowed; padding-right: 40px;">
+                                     <i class="fas fa-user" style="position: absolute; right: 16px; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-size: 0.9rem;"></i>
+                                 </div>
+                             </div>
+                             <button type="submit" id="save-bank-btn" class="btn btn-accent btn-lg" style="width: 100%; margin-top: 16px; padding: 14px 20px; font-size: 0.95rem; font-weight: 700;" disabled>Save Bank Account</button>
+                        </form>
+                    </div>
+                    
+                    <!-- Tab 2: Change Password Form -->
+                    <div id="settings-tab-security-password" class="settings-tab-content" style="display: none;">
+                        <p style="color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 20px; line-height: 1.5;">Update your login password. We recommend using a strong password with a mix of letters, numbers, and symbols.</p>
+                        <form id="password-settings-form">
+                            <div class="input-group">
+                                <label class="input-label">Current Password</label>
+                                <input type="password" id="settings-current-password" class="input-field" placeholder="••••••••" required>
+                            </div>
+                            <div class="input-group">
+                                <label class="input-label">New Password</label>
+                                <input type="password" id="settings-new-password" class="input-field" placeholder="Minimum 8 characters" required>
+                            </div>
+                            <div class="input-group">
+                                <label class="input-label">Confirm New Password</label>
+                                <input type="password" id="settings-confirm-password" class="input-field" placeholder="••••••••" required>
+                            </div>
+                            <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 12px;">Update Password</button>
+                        </form>
+                    </div>
+                    
+                    <!-- Tab 3: Transaction PIN Form -->
+                    <div id="settings-tab-security-pin" class="settings-tab-content" style="display: none;">
+                        <p style="color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 20px; line-height: 1.5;">Set or update your 4-digit transaction PIN to authorize payments and withdrawal transfers.</p>
+                        <form id="pin-settings-form">
+                            <div class="input-group" id="settings-current-pin-group" style="display: none;">
+                                <label class="input-label">Current Transaction PIN</label>
+                                <input type="password" id="settings-current-pin" class="input-field" placeholder="••••" maxlength="4" pattern="\d{4}">
+                            </div>
+                            <div class="input-group">
+                                <label class="input-label">New 4-Digit PIN</label>
+                                <input type="password" id="settings-new-pin" class="input-field" placeholder="••••" maxlength="4" pattern="\d{4}" required>
+                            </div>
+                            <div class="input-group">
+                                <label class="input-label">Confirm New PIN</label>
+                                <input type="password" id="settings-confirm-pin" class="input-field" placeholder="••••" maxlength="4" pattern="\d{4}" required>
+                            </div>
+                            <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 12px;">Save Transaction PIN</button>
+                        </form>
+                    </div>
+                </div>
+            </section>
+
+            <!-- SECTION 5: NOTIFICATIONS -->
+            <section id="section-notifications" class="portal-section">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+                    <h3 style="font-size: 1.3rem; font-weight: 800;"><i class="fas fa-bell" style="color: var(--danger); margin-right: 8px;"></i> Notifications Inbox</h3>
+                    <button class="btn btn-secondary btn-sm" onclick="markAllNotificationsRead()"><i class="fas fa-envelope-open"></i> Mark all as read</button>
+                </div>
+                
+                <div id="notifications-list-container">
+                    <!-- Populated dynamically -->
+                </div>
+            </section>
+
+            <!-- SECTION 6: SECURITY LOGS -->
+            <section id="section-logs" class="portal-section">
+                <h3 style="font-size: 1.3rem; font-weight: 800; margin-bottom: 24px;"><i class="fas fa-shield-halved" style="color: var(--primary); margin-right: 8px;"></i> Account Activity Audit Logs</h3>
+                <div class="card" style="padding:0; overflow:hidden;">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Timestamp</th>
+                                <th>Activity Log Event</th>
+                                <th>Device IP Location</th>
+                            </tr>
+                        </thead>
+                        <tbody id="logs-tbody">
+                            <!-- Populated dynamically -->
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- SECTION: HELP & SUPPORT -->
+            <section id="section-support" class="portal-section">
+                <div class="page-title-block">
+                    <div>
+                        <h2 class="page-title">Help & Support Desk</h2>
+                        <p class="page-subtitle">File support tickets, report transaction failures, review FAQs, and chat with admin representatives in real-time.</p>
+                    </div>
+                </div>
+
+                <div class="support-grid">
+                    <!-- Left: Submit & FAQs -->
+                    <div style="display: flex; flex-direction: column; gap: 24px;">
+                        <!-- File Ticket Card -->
+                        <div class="card">
+                            <h3 style="font-size: 1.25rem; font-weight: 800; margin-bottom: 16px;"><i class="fas fa-file-invoice" style="color: var(--primary); margin-right: 8px;"></i> Open Support Ticket</h3>
+                            <form id="user-ticket-form" onsubmit="handleUserSubmitTicket(event)">
+                                <div class="ticket-form-grid">
+                                    <!-- Subject -->
+                                    <div class="form-group form-span-full">
+                                        <label for="tkt-subject">Ticket Subject <span class="required-asterisk">*</span></label>
+                                        <input type="text" id="tkt-subject" class="input-field" placeholder="Brief summary of the issue..." required oninput="validateTicketForm()">
+                                    </div>
+                                    
+                                    <!-- Category -->
+                                    <div class="form-group">
+                                        <label for="tkt-category">Issue Category <span class="required-asterisk">*</span></label>
+                                        <select id="tkt-category" class="input-field" onchange="onCategoryChange(); validateTicketForm();" required>
+                                            <option value="General Support">General Support</option>
+                                            <option value="Failed Gift Card Transaction">Failed Gift Card Transaction</option>
+                                            <option value="Failed Withdrawal">Failed Withdrawal</option>
+                                            <option value="Report Payment Delay">Report Payment Delay</option>
+                                            <option value="Report Bug">Report Bug</option>
+                                            <option value="Security Center (Fraud/Suspicious)">Security Center (Fraud/Suspicious)</option>
+                                        </select>
+                                    </div>
+                                    
+                                    <!-- Priority -->
+                                    <div class="form-group">
+                                        <label for="tkt-priority">Priority <span class="required-asterisk">*</span></label>
+                                        <select id="tkt-priority" class="input-field" onchange="validateTicketForm()" required>
+                                            <option value="LOW">Low</option>
+                                            <option value="MEDIUM" selected>Medium</option>
+                                            <option value="HIGH">High</option>
+                                            <option value="CRITICAL">Urgent / Critical</option>
+                                        </select>
+                                    </div>
+                                    
+                                    <!-- Linked Transaction -->
+                                    <div class="form-group form-span-full" id="tkt-link-tx-group" style="display: none;">
+                                        <label id="tkt-link-tx-label" for="tkt-linked-tx">Link Related Transaction</label>
+                                        <select id="tkt-linked-tx" class="input-field" onchange="validateTicketForm()">
+                                            <!-- Populated dynamically based on category -->
+                                        </select>
+                                    </div>
+                                    
+                                    <!-- Description -->
+                                    <div class="form-group form-span-full">
+                                        <label for="tkt-description">Detailed Description <span class="required-asterisk">*</span></label>
+                                        <textarea id="tkt-description" class="input-field" rows="4" placeholder="Explain the problem in detail so our support staff can assist..." required oninput="validateTicketForm()"></textarea>
+                                    </div>
+                                    
+                                    <!-- Drag & Drop Upload Zone -->
+                                    <div class="form-group form-span-full">
+                                        <label>Attach Screenshot / Document (Max 1.5MB)</label>
+                                        <input type="file" id="tkt-attachment" style="display:none;" onchange="handleUserTicketAttachmentSelect()">
+                                        <div class="drag-drop-zone" id="tkt-dropzone">
+                                            <div class="dropzone-default" id="tkt-dz-default">
+                                                <i class="fas fa-cloud-arrow-up" style="font-size: 2.2rem; color: var(--primary); margin-bottom: 12px; display: block;"></i>
+                                                <p class="dropzone-text" style="font-weight: 700; font-size: 0.9rem; margin-bottom: 4px; color: var(--text-primary);">Drag & drop file here or <span style="color:var(--primary); text-decoration: underline; cursor:pointer;">click to upload</span></p>
+                                                <p class="dropzone-subtext" style="font-size: 0.72rem; color: var(--text-secondary);">Supports: JPG, PNG, PDF (Max 1.5MB)</p>
+                                            </div>
+                                            <!-- Loading progress indicator -->
+                                            <div class="upload-progress-container" id="tkt-progress-container" style="display: none; padding: 12px 24px; width: 100%;">
+                                                <div style="display:flex; justify-content:space-between; font-size:0.75rem; margin-bottom: 6px;">
+                                                    <span style="font-weight:700; color: var(--text-primary);">Uploading attachment...</span>
+                                                    <span id="tkt-progress-percentage" style="color: var(--primary); font-weight: 700;">0%</span>
+                                                </div>
+                                                <div style="background:var(--bg-tertiary); border-radius:50px; height: 6px; overflow:hidden; width: 100%;">
+                                                    <div class="upload-progress-bar" id="tkt-progress-bar" style="background: var(--primary); height: 100%; width: 0%; transition: width 0.1s;"></div>
+                                                </div>
+                                            </div>
+                                            <!-- Uploaded File preview box -->
+                                            <div class="file-preview-box" id="tkt-preview-box" style="display: none; align-items: center; justify-content: space-between; padding: 12px 20px; width: 100%; border: 1px dashed var(--border-color); border-radius: var(--radius-md); background: var(--bg-tertiary);">
+                                                <div style="display:flex; align-items:center; gap: 12px;">
+                                                    <div id="tkt-preview-thumbnail-container" style="width: 48px; height: 48px; border-radius: 6px; overflow:hidden; display:none; background:var(--bg-secondary); border: 1px solid var(--border-color);">
+                                                        <img id="tkt-preview-img" src="" alt="Preview" style="width: 100%; height: 100%; object-fit: cover;">
+                                                    </div>
+                                                    <div id="tkt-preview-icon-container" style="font-size: 1.8rem; color: var(--text-secondary);">
+                                                        <i class="fas fa-file-pdf"></i>
+                                                    </div>
+                                                    <div style="text-align: left;">
+                                                        <span id="tkt-preview-filename" style="font-weight: 700; font-size: 0.82rem; color: var(--text-primary); display:block; max-width: 200px; text-overflow:ellipsis; overflow:hidden; white-space:nowrap;"></span>
+                                                        <span id="tkt-preview-filesize" style="font-size: 0.72rem; color: var(--text-secondary);">0 KB</span>
+                                                    </div>
+                                                </div>
+                                                <button type="button" class="btn-remove-file" onclick="clearSelectedAttachment(event)" style="background:none; border:none; color:var(--danger); font-size:1.1rem; cursor:pointer;" title="Remove Attachment"><i class="fas fa-circle-xmark"></i></button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <button type="submit" class="btn btn-primary" id="tkt-submit-btn" style="width: 100%; margin-top: 24px;" disabled><i class="fas fa-paper-plane"></i> Submit Support Ticket</button>
+                            </form>
+                        </div>
+
+                        <!-- FAQ Help Accordion Card -->
+                        <div class="card">
+                            <h3 style="font-size: 1.25rem; font-weight: 800; margin-bottom: 12px;"><i class="fas fa-circle-question" style="color: var(--primary); margin-right: 8px;"></i> Help Center FAQs</h3>
+                            <input type="text" id="faq-search" class="input-field" placeholder="Search FAQs..." oninput="filterFAQs()" style="margin-bottom: 16px;">
+                            <div class="faq-list" id="faq-container">
+                                <div class="faq-item">
+                                    <div class="faq-trigger" onclick="toggleFAQ(this)">
+                                        <span>How long do gift card reviews take?</span>
+                                        <i class="fas fa-chevron-down"></i>
+                                    </div>
+                                    <div class="faq-content">
+                                        <p>Generally, gift card reviews are completed within 10 to 30 minutes depending on the card brand. You will receive an instant notification in your security logs when the review updates.</p>
+                                    </div>
+                                </div>
+                                <div class="faq-item">
+                                    <div class="faq-trigger" onclick="toggleFAQ(this)">
+                                        <span>What are the withdrawal processing times?</span>
+                                        <i class="fas fa-chevron-down"></i>
+                                    </div>
+                                    <div class="faq-content">
+                                        <p>Withdrawals are processed instantly upon validation. If your bank network is experiencing delays, it can take up to 2 hours for standard settlements to post.</p>
+                                    </div>
+                                </div>
+                                <div class="faq-item">
+                                    <div class="faq-trigger" onclick="toggleFAQ(this)">
+                                        <span>How do I set up my Transaction PIN?</span>
+                                        <i class="fas fa-chevron-down"></i>
+                                    </div>
+                                    <div class="faq-content">
+                                        <p>You can configure or update your secure 4-digit Transaction PIN directly from the Settings / Bank Details tab in the sidebar navigation menu.</p>
+                                    </div>
+                                </div>
+                                <div class="faq-item">
+                                    <div class="faq-trigger" onclick="toggleFAQ(this)">
+                                        <span>What is the minimum withdrawal amount?</span>
+                                        <i class="fas fa-chevron-down"></i>
+                                    </div>
+                                    <div class="faq-content">
+                                        <p>The minimum withdrawal amount permitted on the platform is ₦1,000. Maximum limits vary based on account activity levels.</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Right: Ticket History & Active Chat -->
+                    <div style="display: flex; flex-direction: column; gap: 24px;">
+                        <!-- Tickets Queue List -->
+                        <div class="card" style="flex: 1; display: flex; flex-direction: column;">
+                            <h3 style="font-size: 1.25rem; font-weight: 800; margin-bottom: 16px;"><i class="fas fa-list-check" style="color: var(--primary); margin-right: 8px;"></i> My Support Tickets</h3>
+                            <div class="user-tickets-list" id="user-tickets-container">
+                                <!-- Populated dynamically -->
+                            </div>
+                        </div>
+
+                        <!-- Chat Console Pane -->
+                        <div class="card support-chat-console" id="user-chat-console" style="display: none; height: 550px; flex-direction: column;">
+                            <div class="chat-header">
+                                <div>
+                                    <h4 id="user-chat-subject" style="font-weight:800; font-size:1rem; margin:0;">Ticket Chat</h4>
+                                    <span id="user-chat-meta" style="font-size:0.75rem; color: var(--text-secondary);">Ticket ID: TKT-000</span>
+                                </div>
+                                <div style="display:flex; gap: 8px; align-items:center;">
+                                    <span id="user-chat-status" class="currency-pill-badge">OPEN</span>
+                                </div>
+                            </div>
+
+                            <!-- Chat Feed Messages Scroll Box -->
+                            <div class="chat-messages-box" id="user-chat-feed">
+                                <!-- Messages list -->
+                            </div>
+
+                            <!-- Live Typing Indicator -->
+                            <div class="typing-indicator" id="user-chat-typing" style="display: none;">
+                                <span></span><span></span><span></span> Admin is typing...
+                            </div>
+
+                            <!-- Input Reply Area -->
+                            <form id="user-chat-reply-form" onsubmit="handleUserChatReply(event)" style="border-top: 1px solid var(--border-color); padding-top: 16px; margin-top: auto;">
+                                <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 8px;">
+                                    <input type="file" id="user-chat-attachment" style="display:none;" onchange="handleUserChatAttachmentSelect()">
+                                    <button type="button" class="btn btn-secondary btn-sm" onclick="document.getElementById('user-chat-attachment').click()" title="Attach File"><i class="fas fa-paperclip"></i></button>
+                                    <span id="user-chat-filename" style="font-size: 0.75rem; color: var(--text-secondary); max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"></span>
+                                </div>
+                                <div style="display: flex; gap: 10px;">
+                                    <input type="text" id="user-chat-input" class="input-field" placeholder="Type a message to Support..." oninput="handleUserTyping()" required>
+                                    <button type="submit" class="btn btn-primary"><i class="fas fa-paper-plane"></i></button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- TRADE INSPECT MODAL -->
+    <div class="modal-overlay" id="trade-inspect-modal">
+        <div class="modal-content" style="max-width: 600px;">
+            <div class="modal-header">
+                <h3 style="font-weight: 800; font-size: 1.3rem;"><i class="fas fa-ticket" style="color: var(--primary); margin-right: 8px;"></i> Trade Submission Details</h3>
+                <button class="modal-close" onclick="closeTradeInspectModal()"><i class="fas fa-xmark"></i></button>
+            </div>
+            <div id="trade-inspect-body" style="margin-top: 16px;">
+                <!-- Populated dynamically -->
+            </div>
+        </div>
+    </div>
+
+    <!-- TRANSACTION PIN VERIFICATION MODAL -->
+    <div class="modal-overlay" id="pin-verification-modal">
+        <div class="modal-content" style="max-width: 400px; padding: 24px; text-align: center;">
+            <div style="width: 56px; height: 56px; background: rgba(99, 102, 241, 0.1); color: var(--primary); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; margin: 0 auto 16px;">
+                <i class="fas fa-lock"></i>
+            </div>
+            <h3 style="font-weight: 800; font-size: 1.25rem; margin-bottom: 8px;">Enter Transaction PIN</h3>
+            <p style="color: var(--text-secondary); font-size: 0.85rem; line-height: 1.4; margin-bottom: 20px;">
+                Please enter your secure 4-digit Transaction PIN to authorize this withdrawal request.
+            </p>
+            <form id="pin-auth-form" onsubmit="handlePinAuthSubmit(event)">
+                <div style="display: flex; gap: 12px; justify-content: center; margin-bottom: 24px;">
+                    <input type="password" maxlength="1" class="pin-box" inputmode="numeric" pattern="[0-9]*" required oninput="handlePinInput(this, 1)" onkeydown="handlePinKeydown(event, this, 1)">
+                    <input type="password" maxlength="1" class="pin-box" inputmode="numeric" pattern="[0-9]*" required oninput="handlePinInput(this, 2)" onkeydown="handlePinKeydown(event, this, 2)">
+                    <input type="password" maxlength="1" class="pin-box" inputmode="numeric" pattern="[0-9]*" required oninput="handlePinInput(this, 3)" onkeydown="handlePinKeydown(event, this, 3)">
+                    <input type="password" maxlength="1" class="pin-box" inputmode="numeric" pattern="[0-9]*" required oninput="handlePinInput(this, 4)" onkeydown="handlePinKeydown(event, this, 4)">
+                </div>
+                <div style="display: flex; gap: 12px;">
+                    <button type="button" class="btn btn-secondary" style="flex: 1;" onclick="closePinVerificationModal()">Cancel</button>
+                    <button type="submit" class="btn btn-primary" style="flex: 1;">Verify PIN</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Core Scripts -->
+    <script src="js/app.js"></script>
+    <script src="js/portal.js"></script>
+</body>
+</html>

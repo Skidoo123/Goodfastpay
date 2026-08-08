@@ -1,0 +1,707 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Goodfastpay - Premium Gift Card Trading Platform</title>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Style CSS -->
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        /* Landing page custom hero styling */
+        .hero {
+            padding: 120px 0 80px;
+            text-align: center;
+            background: radial-gradient(circle at top left, rgba(6, 182, 212, 0.1), transparent 50%),
+                        radial-gradient(circle at bottom right, rgba(99, 102, 241, 0.12), transparent 50%);
+        }
+        .hero-title {
+            font-size: 3.5rem;
+            font-weight: 800;
+            line-height: 1.2;
+            margin-bottom: 24px;
+            letter-spacing: -1px;
+        }
+        .hero-subtitle {
+            font-size: 1.2rem;
+            color: var(--text-secondary);
+            max-width: 600px;
+            margin: 0 auto 40px;
+            line-height: 1.6;
+        }
+        .feature-card {
+            border: 1px solid var(--border-color);
+            background: var(--bg-secondary);
+            border-radius: var(--radius-lg);
+            padding: 40px;
+            text-align: center;
+            transition: all var(--transition-normal);
+        }
+        .feature-card:hover {
+            transform: translateY(-8px);
+            border-color: var(--secondary);
+            box-shadow: 0 20px 40px -15px var(--secondary-glow);
+        }
+        .feature-icon {
+            width: 64px;
+            height: 64px;
+            background: var(--primary-glow);
+            color: var(--primary);
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            margin-bottom: 24px;
+        }
+        .feature-card:nth-child(2) .feature-icon {
+            background: var(--secondary-glow);
+            color: var(--secondary);
+        }
+        .feature-card:nth-child(3) .feature-icon {
+            background: var(--accent-glow);
+            color: var(--accent);
+        }
+        
+        .rate-calculator {
+            max-width: 480px;
+            width: 100%;
+            margin: 0 auto;
+        }
+        
+        .auth-toggle {
+            display: flex;
+            background: var(--bg-tertiary);
+            padding: 4px;
+            border-radius: var(--radius-md);
+            margin-bottom: 24px;
+        }
+        .auth-toggle-btn {
+            flex: 1;
+            padding: 10px;
+            text-align: center;
+            font-weight: 700;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            transition: all var(--transition-fast);
+        }
+        .auth-toggle-btn.active {
+            background: var(--bg-secondary);
+            color: var(--primary);
+            box-shadow: var(--card-shadow);
+        }
+    </style>
+</head>
+<body>
+
+    <!-- NAVBAR -->
+    <nav class="navbar">
+        <div class="container nav-container">
+            <a href="index.html" class="logo">
+                <img src="images/logo.png" alt="Goodfastpay Logo" style="height: 32px; width: 32px; background: #ffffff; border-radius: 6px; padding: 3px; vertical-align: middle; margin-right: 8px; object-fit: contain;">
+                <span>Good<span class="gradient-text">fast</span>pay</span>
+            </a>
+            <button class="nav-toggle" onclick="toggleNavMenu()" aria-label="Toggle Navigation">
+                <i class="fas fa-bars"></i>
+            </button>
+            <div class="nav-links" id="nav-links-menu">
+                <a href="#calculator" class="nav-link" onclick="toggleNavMenu()">Rates</a>
+                <a href="#how-it-works" class="nav-link" onclick="toggleNavMenu()">How it Works</a>
+                <a href="#security" class="nav-link" onclick="toggleNavMenu()">Security</a>
+                <button class="theme-toggle-btn" onclick="toggleTheme()" title="Toggle Theme">
+                    <i class="fas fa-sun"></i>
+                </button>
+                <button class="btn btn-secondary btn-sm" onclick="openAuthModal('login'); toggleNavMenu();">Sign In</button>
+                <button class="btn btn-primary btn-sm" onclick="openAuthModal('register'); toggleNavMenu();">Register</button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- HERO SECTION -->
+    <section class="hero">
+        <div class="container">
+            <h1 class="hero-title">Buy & Sell Gift Cards Instantly.<br>Get Paid <span class="gradient-text">Fast & Secure</span>.</h1>
+            <p class="hero-subtitle">Buy loaded cards or convert your Amazon, Steam, iTunes, and Sephora cards to cash. Purchase cards instantly using your wallet or withdraw direct cash to your bank account.</p>
+            
+            <div class="grid-2" style="align-items: center; text-align: left; max-width: 1100px; margin: 0 auto;">
+                <!-- Left Side Copy -->
+                <div>
+                    <h2 style="font-size: 2rem; font-weight: 800; margin-bottom: 20px;">Why trade with Goodfastpay?</h2>
+                    <ul style="list-style: none; display: flex; flex-direction: column; gap: 16px;">
+                        <li style="display: flex; gap: 12px; align-items: flex-start;">
+                            <i class="fas fa-circle-check" style="color: var(--accent); margin-top: 4px; font-size: 1.1rem;"></i>
+                            <div>
+                                <h4 style="font-weight: 700;">Buy Gift Cards Instantly</h4>
+                                <p style="color: var(--text-secondary); font-size: 0.9rem;">Purchase loaded card pin codes directly using your internal wallet balance at the best prices.</p>
+                            </div>
+                        </li>
+                        <li style="display: flex; gap: 12px; align-items: flex-start;">
+                            <i class="fas fa-circle-check" style="color: var(--accent); margin-top: 4px; font-size: 1.1rem;"></i>
+                            <div>
+                                <h4 style="font-weight: 700;">Top Exchange Rates</h4>
+                                <p style="color: var(--text-secondary); font-size: 0.9rem;">We offer the highest industry rates updated live dynamically for both buying and selling.</p>
+                            </div>
+                        </li>
+                        <li style="display: flex; gap: 12px; align-items: flex-start;">
+                            <i class="fas fa-circle-check" style="color: var(--accent); margin-top: 4px; font-size: 1.1rem;"></i>
+                            <div>
+                                <h4 style="font-weight: 700;">100% Direct Payouts</h4>
+                                <p style="color: var(--text-secondary); font-size: 0.9rem;">Withdraw card sale earnings to any bank account instantly upon admin verification.</p>
+                            </div>
+                        </li>
+                    </ul>
+                    
+                    <!-- Demo account helper -->
+                    <div class="card" style="margin-top: 32px; padding: 20px; border-left: 4px solid var(--secondary);">
+                        <h4 style="font-weight: 700; margin-bottom: 8px;"><i class="fas fa-info-circle" style="color: var(--secondary);"></i> Prototype Testing Credentials</h4>
+                        <div style="font-size: 0.8rem; line-height: 1.6; color: var(--text-secondary);">
+                            <strong>Client Sandbox:</strong> <code>user@goodfastpay.com</code> / <code>user123</code><br>
+                            <strong>Admin Dashboard:</strong> <code>admin@goodfastpay.com</code> / <code>AdminGoodfastpay2026!</code>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Side Calculator -->
+                <div id="calculator" class="card glass-card rate-calculator">
+                    <h3 style="font-size: 1.4rem; font-weight: 800; margin-bottom: 24px; text-align: center;"><i class="fa-solid fa-calculator" style="color: var(--secondary);"></i> Rate Calculator</h3>
+                    <div class="calculator-box">
+                        <div class="input-group">
+                            <label class="input-label">Gift Card Brand</label>
+                            <select id="calc-brand" class="input-field" onchange="updateCalcRate()">
+                                <!-- Populated dynamically -->
+                            </select>
+                        </div>
+                        <div class="input-group">
+                            <label class="input-label">Currency</label>
+                            <select id="calc-currency" class="input-field" onchange="updateCalcRate()">
+                                <!-- Populated dynamically -->
+                            </select>
+                        </div>
+                        <div class="input-group">
+                            <label class="input-label">Card Value</label>
+                            <input type="number" id="calc-value" class="input-field" min="10" max="1000" value="100" oninput="updateCalcRate()">
+                        </div>
+                        
+                        <div style="margin-top: 16px; padding: 20px; background: var(--bg-tertiary); border-radius: var(--radius-md); text-align: center;">
+                            <span style="font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted);">Payout Estimate</span>
+                            <h2 style="font-size: 2.2rem; font-weight: 800; color: var(--accent); margin-top: 4px;" id="calc-result">₦0.00</h2>
+                            <span style="font-size: 0.75rem; color: var(--text-muted); display: block; margin-top: 6px;" id="calc-exchange-text">Rate: ₦0 / $1</span>
+                        </div>
+                        
+                        <button class="btn btn-cyan" style="width: 100%; margin-top: 12px;" onclick="openAuthModal('register')">Sell This Card Now</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- HOW IT WORKS -->
+    <section id="how-it-works" style="padding: 80px 0; border-top: 1px solid var(--border-color);">
+        <div class="container" style="text-align: center;">
+            <h2 style="font-size: 2.2rem; font-weight: 800; margin-bottom: 12px;">Three Simple Steps to Cash</h2>
+            <p style="color: var(--text-secondary); max-width: 500px; margin: 0 auto 56px;">How we process your gift card trade and payout.</p>
+            
+            <div class="grid-3">
+                <div class="feature-card">
+                    <div class="feature-icon"><i class="fas fa-upload"></i></div>
+                    <h3 style="font-weight: 700; margin-bottom: 12px;">1. Submit Card</h3>
+                    <p style="color: var(--text-secondary); font-size: 0.9rem; line-height: 1.5;">Select card, enter details, upload front/back image verification scans securely.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon"><i class="fas fa-shield-halved"></i></div>
+                    <h3 style="font-weight: 700; margin-bottom: 12px;">2. Admin Approval</h3>
+                    <p style="color: var(--text-secondary); font-size: 0.9rem; line-height: 1.5;">Our administrators verify card validity and credit your wallet immediately.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon"><i class="fas fa-money-bill-transfer"></i></div>
+                    <h3 style="font-weight: 700; margin-bottom: 12px;">3. Direct Cashout</h3>
+                    <p style="color: var(--text-secondary); font-size: 0.9rem; line-height: 1.5;">Input bank account details and withdraw your balance straight into your account.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- SECURITY COMPLIANCE -->
+    <section id="security" style="padding: 80px 0; background: var(--bg-tertiary); border-top: 1px solid var(--border-color);">
+        <div class="container" style="text-align: center;">
+            <h2 style="font-size: 2.2rem; font-weight: 800; margin-bottom: 12px;"><i class="fas fa-lock" style="color: var(--primary);"></i> Bank-Grade Security</h2>
+            <p style="color: var(--text-secondary); max-width: 500px; margin: 0 auto 56px;">We protect your digital wallet assets and user transactions.</p>
+            
+            <div class="grid-2" style="text-align: left; max-width: 960px; margin: 0 auto;">
+                <div class="card" style="background: var(--bg-secondary);">
+                    <h4 style="font-weight: 700; margin-bottom: 10px;"><i class="fas fa-key" style="color: var(--primary); margin-right: 8px;"></i> Two-Factor Auth & OTP</h4>
+                    <p style="color: var(--text-secondary); font-size: 0.875rem; line-height: 1.6;">OTP codes generated on registration/login simulate verification checks to secure sessions.</p>
+                </div>
+                <div class="card" style="background: var(--bg-secondary);">
+                    <h4 style="font-weight: 700; margin-bottom: 10px;"><i class="fas fa-circle-nodes" style="color: var(--secondary); margin-right: 8px;"></i> Fraud Anti-Duplicate Logs</h4>
+                    <p style="color: var(--text-secondary); font-size: 0.875rem; line-height: 1.6;">Card validation scans input pin sequences to intercept duplicate or previously submitted cards.</p>
+                </div>
+                <div class="card" style="background: var(--bg-secondary);">
+                    <h4 style="font-weight: 700; margin-bottom: 10px;"><i class="fas fa-list-check" style="color: var(--accent); margin-right: 8px;"></i> Administrator Audit Trail</h4>
+                    <p style="color: var(--text-secondary); font-size: 0.875rem; line-height: 1.6;">Every wallet credit, payout validation, and database modification records logs for auditing.</p>
+                </div>
+                <div class="card" style="background: var(--bg-secondary);">
+                    <h4 style="font-weight: 700; margin-bottom: 10px;"><i class="fas fa-shield-virus" style="color: var(--danger); margin-right: 8px;"></i> Rate Limiting Defense</h4>
+                    <p style="color: var(--text-secondary); font-size: 0.875rem; line-height: 1.6;">Strict rate-limiting checks protect authorization entry ports from bot-net credentials stuffing.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- FOOTER -->
+    <footer style="padding: 40px 0; border-top: 1px solid var(--border-color); text-align: center; font-size: 0.85rem; color: var(--text-secondary);">
+        <div class="container">
+            <p style="margin-bottom: 12px;">© 2026 Goodfastpay Inc. All rights reserved.</p>
+            <p>Designed with premium glassmorphism for secure gift card settlements.</p>
+        </div>
+    </footer>
+
+    <!-- AUTHENTICATION MODAL (Login / Register) -->
+    <div class="modal-overlay" id="auth-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 style="font-weight: 800; font-size: 1.3rem;" id="auth-modal-title">Sign In</h3>
+                <button class="modal-close" onclick="closeAuthModal()"><i class="fas fa-xmark"></i></button>
+            </div>
+            
+            <div class="auth-toggle">
+                <div class="auth-toggle-btn active" id="btn-toggle-login" onclick="toggleAuthTab('login')">Sign In</div>
+                <div class="auth-toggle-btn" id="btn-toggle-register" onclick="toggleAuthTab('register')">Register</div>
+            </div>
+            
+            <!-- Login Form -->
+            <form id="login-form" onsubmit="handleLoginSubmit(event)">
+                <div class="input-group">
+                    <label class="input-label">Email Address</label>
+                    <input type="email" id="login-email" class="input-field" placeholder="user@goodfastpay.com" required>
+                </div>
+                <div class="input-group">
+                    <label class="input-label">Password</label>
+                    <input type="password" id="login-password" class="input-field" placeholder="••••••••" required>
+                </div>
+                <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 12px;">Authorize Account</button>
+            </form>
+            
+            <!-- Register Form -->
+            <form id="register-form" style="display: none;" onsubmit="handleRegisterSubmit(event)">
+                <div class="input-group">
+                    <label class="input-label">Full Name</label>
+                    <input type="text" id="reg-name" class="input-field" placeholder="Abdallah" required>
+                </div>
+                <div class="input-group">
+                    <label class="input-label">Email Address</label>
+                    <input type="email" id="reg-email" class="input-field" placeholder="abdallah@email.com" required>
+                </div>
+                <div class="input-group">
+                    <label class="input-label">Phone Number</label>
+                    <input type="tel" id="reg-phone" class="input-field" placeholder="+1 555-0199" required>
+                </div>
+                <div class="input-group">
+                    <label class="input-label">Password</label>
+                    <input type="password" id="reg-password" class="input-field" placeholder="Minimum 8 characters" oninput="validateRegPasswordStrength(this.value)" required>
+                    <div class="pw-meter">
+                        <div class="pw-strength-bar" id="reg-pw-strength"></div>
+                    </div>
+                    <span style="font-size: 0.75rem; color: var(--text-muted);" id="reg-pw-text">Strength: Very Weak</span>
+                </div>
+                <div class="input-group">
+                    <label class="input-label">Confirm Password</label>
+                    <input type="password" id="reg-confirm" class="input-field" placeholder="••••••••" required>
+                </div>
+                <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 12px;">Create Account</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- OTP VERIFICATION MODAL -->
+    <div class="modal-overlay" id="otp-modal">
+        <div class="modal-content">
+            <div class="modal-header" style="text-align: center; display: block; position: relative;">
+                <h3 style="font-weight: 800; font-size: 1.3rem;">Verification Code Sent</h3>
+                <button class="modal-close" onclick="closeOtpModal()" style="position: absolute; right: 0; top: 0;"><i class="fas fa-xmark"></i></button>
+            </div>
+            <div style="text-align: center; margin-bottom: 24px;">
+                <i class="fas fa-envelope-open-text" style="font-size: 2.5rem; color: var(--secondary); margin-bottom: 16px;"></i>
+                <p style="color: var(--text-secondary); font-size: 0.9rem; line-height: 1.5;">We simulated sending a 6-digit OTP verification code. Check your developer console logs to retrieve it.</p>
+            </div>
+            
+            <form onsubmit="handleOtpSubmit(event)">
+                <input type="hidden" id="otp-target-email">
+                <input type="hidden" id="otp-target-action"> <!-- 'login' or 'register' -->
+                
+                <div class="input-group">
+                    <label class="input-label" style="text-align: center;">Enter OTP Code</label>
+                    <input type="text" id="otp-input" class="input-field" maxlength="6" placeholder="000000" style="text-align: center; font-size: 1.5rem; letter-spacing: 6px; font-weight: 700;" required>
+                </div>
+                
+                <button type="submit" class="btn btn-cyan" style="width: 100%; margin-top: 12px;">Confirm & Verify</button>
+            </form>
+            
+            <p style="text-align: center; font-size: 0.8rem; margin-top: 20px; color: var(--text-muted);">
+                Didn't receive code? <span style="color: var(--primary); cursor: pointer; font-weight: 600;" onclick="resendOtp()">Resend Code</span>
+            </p>
+        </div>
+    </div>
+
+    <!-- Core Scripts -->
+    <script src="js/app.js"></script>
+    <script>
+        function toggleNavMenu() {
+            if (window.getComputedStyle(document.querySelector('.nav-toggle')).display !== 'none') {
+                const menu = document.getElementById("nav-links-menu");
+                menu.classList.toggle("active");
+            }
+        }
+
+        // Check if user session already active
+        window.addEventListener("DOMContentLoaded", () => {
+            initTheme();
+            
+            // Check for suspension or ban query param
+            const params = new URLSearchParams(window.location.search);
+            if (params.get("suspended") === "true") {
+                showToast("Your account has been suspended. Please contact support.", "danger");
+                window.history.replaceState(null, null, window.location.pathname);
+            } else if (params.get("banned") === "true") {
+                showToast("Your account has been permanently banned. Contact support if you believe this is an error.", "danger");
+                window.history.replaceState(null, null, window.location.pathname);
+            }
+            
+            const user = getSessionUser();
+            if (user) {
+                const db = getDB();
+                const dbUser = db.users[user.email];
+                if (dbUser && (dbUser.status === "SUSPENDED" || dbUser.status === "BANNED")) {
+                    clearSession();
+                } else {
+                    if (user.role === "ADMIN") {
+                        window.location.href = "admin.html";
+                    } else {
+                        window.location.href = "portal.html";
+                    }
+                }
+            }
+            populateCalcOptions();
+        });
+
+        // Populate calculator selection options
+        function populateCalcOptions() {
+            const db = getDB();
+            const rates = db.settings.rates;
+            
+            const brandSelect = document.getElementById("calc-brand");
+            brandSelect.innerHTML = "";
+            
+            Object.keys(rates).forEach(brand => {
+                const opt = document.createElement("option");
+                opt.value = brand;
+                opt.textContent = brand;
+                brandSelect.appendChild(opt);
+            });
+            
+            updateCurrencyOptions();
+        }
+
+        function updateCurrencyOptions() {
+            const db = getDB();
+            const rates = db.settings.rates;
+            const selectedBrand = document.getElementById("calc-brand").value;
+            const currencySelect = document.getElementById("calc-currency");
+            
+            currencySelect.innerHTML = "";
+            
+            const activeCurrencies = db.currencies || {};
+            
+            if (rates[selectedBrand]) {
+                Object.keys(rates[selectedBrand]).forEach(curr => {
+                    let isAllowed = true;
+                    if (curr === "USD" || curr === "USA" || ["Canada", "Australia", "Switzerland (CHF)", "Japan (JPY)", "China (CNY)", "Hong Kong (HKD)", "Singapore (SGD)", "New Zealand (NZD)", "UAE (AED)", "Saudi Arabia (SAR)", "South Africa (ZAR)", "India (INR)"].includes(curr)) {
+                        isAllowed = activeCurrencies["USD"] ? activeCurrencies["USD"].status === "ACTIVE" : true;
+                    } else if (curr === "EUR" || curr === "Europe (EUR)" || ["Germany", "France", "Italy", "Spain", "Netherlands", "UK"].includes(curr)) {
+                        isAllowed = activeCurrencies["EUR"] ? activeCurrencies["EUR"].status === "ACTIVE" : true;
+                    } else if (curr === "NGN") {
+                        isAllowed = activeCurrencies["NGN"] ? activeCurrencies["NGN"].status === "ACTIVE" : true;
+                    } else if (activeCurrencies[curr]) {
+                        isAllowed = activeCurrencies[curr].status === "ACTIVE";
+                    }
+                    
+                    if (isAllowed) {
+                        const opt = document.createElement("option");
+                        opt.value = curr;
+                        opt.textContent = curr;
+                        currencySelect.appendChild(opt);
+                    }
+                });
+            }
+            updateCalcRate();
+        }
+
+        // Calculate and update rate output
+        function updateCalcRate() {
+            const db = getDB();
+            const rates = db.settings.rates;
+            const brand = document.getElementById("calc-brand").value;
+            const currency = document.getElementById("calc-currency").value;
+            const valueInput = document.getElementById("calc-value");
+            
+            let val = parseFloat(valueInput.value);
+            if (isNaN(val) || val <= 0) val = 0;
+            
+            let rate = 0;
+            if (rates[brand] && rates[brand][currency]) {
+                rate = rates[brand][currency];
+            }
+            
+            const payout = val * rate;
+            
+            // Format NGN output
+            document.getElementById("calc-result").textContent = "₦" + payout.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+            
+            let symbol = "$";
+            if (currency === "UK") symbol = "£";
+            if (["Europe (EUR)", "Germany", "France", "Italy", "Spain", "Netherlands"].includes(currency)) symbol = "€";
+            
+            document.getElementById("calc-exchange-text").textContent = `Rate: ₦${rate.toLocaleString()} / ${symbol}1`;
+        }
+
+        // Modify Calculator Currency options when Brand changes
+        document.getElementById("calc-brand").addEventListener("change", updateCurrencyOptions);
+
+        // Modals Toggle
+        function openAuthModal(tab = "login") {
+            document.getElementById("auth-modal").classList.add("active");
+            toggleAuthTab(tab);
+        }
+
+        function closeAuthModal() {
+            document.getElementById("auth-modal").classList.remove("active");
+        }
+
+        function toggleAuthTab(tab) {
+            const loginForm = document.getElementById("login-form");
+            const registerForm = document.getElementById("register-form");
+            const btnLogin = document.getElementById("btn-toggle-login");
+            const btnRegister = document.getElementById("btn-toggle-register");
+            const modalTitle = document.getElementById("auth-modal-title");
+            
+            if (tab === "login") {
+                loginForm.style.display = "block";
+                registerForm.style.display = "none";
+                btnLogin.classList.add("active");
+                btnRegister.classList.remove("active");
+                modalTitle.textContent = "Sign In";
+            } else {
+                loginForm.style.display = "none";
+                registerForm.style.display = "block";
+                btnLogin.classList.remove("active");
+                btnRegister.classList.add("active");
+                modalTitle.textContent = "Create Account";
+            }
+        }
+
+        function openOtpModal(email, action) {
+            document.getElementById("otp-target-email").value = email;
+            document.getElementById("otp-target-action").value = action;
+            document.getElementById("otp-input").value = "";
+            
+            closeAuthModal();
+            document.getElementById("otp-modal").classList.add("active");
+        }
+
+        function closeOtpModal() {
+            document.getElementById("otp-modal").classList.remove("active");
+        }
+
+        // Live Password meter
+        function validateRegPasswordStrength(pw) {
+            const strength = checkPasswordStrength(pw);
+            const bar = document.getElementById("reg-pw-strength");
+            const txt = document.getElementById("reg-pw-text");
+            
+            let color = "var(--danger)";
+            let label = "Very Weak";
+            let width = "25%";
+            
+            if (strength === 2) {
+                color = "var(--warning)";
+                label = "Fair / Medium";
+                width = "50%";
+            } else if (strength === 3) {
+                color = "var(--secondary)";
+                label = "Good";
+                width = "75%";
+            } else if (strength === 4) {
+                color = "var(--accent)";
+                label = "Strong / Secure";
+                width = "100%";
+            }
+            
+            bar.style.width = width;
+            bar.style.backgroundColor = color;
+            txt.textContent = `Strength: ${label}`;
+            txt.style.color = color;
+        }
+
+        // Auth Submit Handlers
+        function handleLoginSubmit(e) {
+            e.preventDefault();
+            const email = document.getElementById("login-email").value.trim().toLowerCase();
+            const password = document.getElementById("login-password").value;
+            
+            // Rate Limit Verification
+            const limit = checkRateLimit(email, 5, 60);
+            if (!limit.allowed) {
+                showToast(`Too many failed attempts. Cooldown: ${limit.cooldown} seconds.`, "danger");
+                return;
+            }
+            
+            const db = getDB();
+            const user = db.users[email];
+            
+            if (!user || user.passwordHash !== password) {
+                showToast("Incorrect email address or password combination.", "danger");
+                return;
+            }
+            
+            if (user.status === "SUSPENDED") {
+                showToast("Your account has been suspended. Please contact support.", "danger");
+                return;
+            }
+            
+            if (user.status === "BANNED") {
+                showToast("Your account has been permanently banned. Contact support if you believe this is an error.", "danger");
+                return;
+            }
+            
+            // Send OTP
+            generateOTP(email);
+            showToast(`Simulated security code sent to email.`, "success");
+            openOtpModal(email, "login");
+        }
+
+        function handleRegisterSubmit(e) {
+            e.preventDefault();
+            const name = document.getElementById("reg-name").value.trim();
+            const email = document.getElementById("reg-email").value.trim().toLowerCase();
+            const phone = document.getElementById("reg-phone").value.trim();
+            const password = document.getElementById("reg-password").value;
+            const confirm = document.getElementById("reg-confirm").value;
+            
+            if (password !== confirm) {
+                showToast("Password confirmation mismatch. Try again.", "danger");
+                return;
+            }
+            
+            if (checkPasswordStrength(password) < 2) {
+                showToast("Password is too weak. Please include letters, numbers, or symbols.", "warning");
+                return;
+            }
+            
+            const db = getDB();
+            if (db.users[email]) {
+                showToast("An account with this email address already exists.", "danger");
+                return;
+            }
+            
+            // Generate OTP for registration verification
+            generateOTP(email);
+            
+            // Stash registration values in sessionStorage temporarily until OTP matches
+            sessionStorage.setItem("pending_registration", JSON.stringify({
+                name, email, phone, passwordHash: password
+            }));
+            
+            showToast(`Simulated security registration code sent.`, "success");
+            openOtpModal(email, "register");
+        }
+
+        function handleOtpSubmit(e) {
+            e.preventDefault();
+            const email = document.getElementById("otp-target-email").value;
+            const action = document.getElementById("otp-target-action").value;
+            const enteredOtp = document.getElementById("otp-input").value;
+            
+            const verify = verifyOTP(email, enteredOtp);
+            if (!verify.success) {
+                showToast(verify.message, "danger");
+                return;
+            }
+            
+            const db = getDB();
+            
+            if (action === "register") {
+                const pending = JSON.parse(sessionStorage.getItem("pending_registration"));
+                if (!pending || pending.email !== email) {
+                    showToast("Registration session lost. Please reload and register again.", "danger");
+                    return;
+                }
+                
+                // Save new user in database
+                db.users[email] = {
+                    name: pending.name,
+                    email: pending.email,
+                    passwordHash: pending.passwordHash,
+                    phone: pending.phone,
+                    role: "USER",
+                    status: "ACTIVE",
+                    createdAt: new Date().toISOString(),
+                    bankDetails: null, // empty initially
+                    wallet: {
+                        balance: 0.00,
+                        pendingBalance: 0.00
+                    },
+                    logs: [
+                        { event: "Account Created & Verified", timestamp: new Date().toISOString(), ip: "197.34.120.44" }
+                    ],
+                    notifications: [
+                        { id: "nt-" + Math.floor(Math.random()*100000), title: "Verification Completed", message: "Your email has been verified. Welcome aboard!", read: false, createdAt: new Date().toISOString() }
+                    ]
+                };
+                
+                // Log event
+                db.auditTrail.unshift({
+                    operator: "system",
+                    event: "User Registered",
+                    timestamp: new Date().toISOString(),
+                    details: `New account created: ${email}`
+                });
+                
+                saveDB(db);
+                sessionStorage.removeItem("pending_registration");
+                
+                showToast("Account verified successfully! Logging you in...", "success");
+            } else {
+                showToast("OTP verified successfully. Connecting to dashboard...", "success");
+            }
+            
+            // Establish session and redirect
+            setSessionUser(email);
+            
+            // Add session log
+            const updatedDb = getDB();
+            updatedDb.users[email].logs.unshift({
+                event: "Successful Login (OTP Checked)",
+                timestamp: new Date().toISOString(),
+                ip: "197.34.120.44"
+            });
+            saveDB(updatedDb);
+            
+            setTimeout(() => {
+                const checkUser = getSessionUser();
+                if (checkUser && checkUser.role === "ADMIN") {
+                    window.location.href = "admin.html";
+                } else {
+                    window.location.href = "portal.html";
+                }
+            }, 1000);
+        }
+
+        function resendOtp() {
+            const email = document.getElementById("otp-target-email").value;
+            generateOTP(email);
+            showToast("New simulated OTP code dispatched. Check console log.", "success");
+        }
+    </script>
+</body>
+</html>
