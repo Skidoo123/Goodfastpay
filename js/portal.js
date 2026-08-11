@@ -141,6 +141,8 @@ function loadSession() {
     renderPurchasedHistoryTable();
     renderNotifications();
     renderSecurityLogs();
+    renderLinkedBanks();
+    renderSettingsProfile();
     
     // Update tab title and play notification sound if new notification arrives
     const unreadCount = currentUser.notifications ? currentUser.notifications.filter(n => !n.read).length : 0;
@@ -178,11 +180,31 @@ function switchSection(sectionId, element) {
     const links = document.querySelectorAll(".sidebar-link");
     links.forEach(lnk => lnk.classList.remove("active"));
     
-    if (element) {
+    if (element && element.classList.contains("sidebar-link")) {
         element.classList.add("active");
     } else {
         const matchingLink = Array.from(links).find(lnk => lnk.getAttribute("onclick") && lnk.getAttribute("onclick").includes(`'${sectionId}'`));
         if (matchingLink) matchingLink.classList.add("active");
+    }
+
+    // Sync Mobile Bottom Navigation Items
+    const mobItems = document.querySelectorAll(".mobile-nav-item");
+    mobItems.forEach(item => item.classList.remove("active"));
+    if (sectionId === "dashboard") {
+        const h = document.getElementById("mob-nav-home");
+        if (h) h.classList.add("active");
+    } else if (sectionId === "buy") {
+        const b = document.getElementById("mob-nav-buy");
+        if (b) b.classList.add("active");
+    } else if (sectionId === "sell") {
+        const s = document.getElementById("mob-nav-sell");
+        if (s) s.classList.add("active");
+    } else if (sectionId === "withdraw") {
+        const w = document.getElementById("mob-nav-wallet");
+        if (w) w.classList.add("active");
+    } else if (sectionId === "settings" || sectionId === "bank" || sectionId === "logs") {
+        const m = document.getElementById("mob-nav-settings");
+        if (m) m.classList.add("active");
     }
     
     // Close sidebar and overlay on mobile
@@ -195,10 +217,16 @@ function switchSection(sectionId, element) {
     if (sectionId === "withdraw") {
         populateWithdrawConfirmDetails();
     } else if (sectionId === "bank") {
-        prepopulateBankForm();
+        renderLinkedBanks();
+    } else if (sectionId === "logs") {
+        renderSecurityLogs();
+    } else if (sectionId === "settings") {
+        renderSettingsProfile();
     } else if (sectionId === "support") {
         loadSupportPortal();
     }
+
+    window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
 // Check if user has bank account details linked
@@ -413,6 +441,34 @@ function populateBuyCountryFilters() {
     }
 }
 
+// Select Brand Card via Visual Chips (Screen 1 Fidelity)
+function selectBrandCard(brandName, element) {
+    const brandChips = document.querySelectorAll("#brand-select-chips .brand-card-item");
+    brandChips.forEach(chip => chip.classList.remove("active"));
+    if (element) element.classList.add("active");
+
+    const brandSelect = document.getElementById("sell-brand");
+    if (brandSelect) {
+        // Map alias if needed
+        let targetValue = brandName;
+        if (brandName === "STEAM") targetValue = "Steam";
+        else if (brandName === "AMAZON") targetValue = "Amazon";
+        else if (brandName === "GOOGLE_PLAY") targetValue = "Google Play";
+        else if (brandName === "APPLE") targetValue = "Apple / iTunes";
+        else if (brandName === "RAZER_GOLD") targetValue = "Razer Gold";
+        else if (brandName === "SEPHORA") targetValue = "Sephora";
+        
+        // Find closest match in select options
+        const match = Array.from(brandSelect.options).find(o => o.value.toLowerCase().includes(targetValue.toLowerCase()) || targetValue.toLowerCase().includes(o.value.toLowerCase()));
+        if (match) {
+            brandSelect.value = match.value;
+        } else if (brandSelect.options.length > 0) {
+            brandSelect.value = brandSelect.options[0].value;
+        }
+        updateSellCurrencyOptions();
+    }
+}
+
 // Update live estimation rate in trade workspace
 function updateSellRate() {
     const db = getDB();
@@ -432,17 +488,27 @@ function updateSellRate() {
     let rate = 0;
     if (brand && currency && rates[brand] && rates[brand][currency]) {
         rate = rates[brand][currency];
+    } else {
+        // Default fallback estimation rate
+        rate = 850;
     }
     
     const payout = val * rate;
+    const symbol = getCurrencySymbol(currency) || "$";
     
-    const symbol = getCurrencySymbol(currency);
-    
+    // Update Currency Symbol Prefix in Input
+    const currSymEl = document.getElementById("sell-currency-symbol");
+    if (currSymEl) currSymEl.textContent = symbol;
+
+    // Update Live Rate Tag Pill
+    const rateBadgeEl = document.getElementById("sell-rate-badge-text");
+    if (rateBadgeEl) rateBadgeEl.textContent = `Current Rate: ₦${rate.toLocaleString()} / ${symbol}1`;
+
     const exchangeTextEl = document.getElementById("sell-exchange-text");
     if (exchangeTextEl) exchangeTextEl.textContent = `₦${rate.toLocaleString()} / ${symbol}1`;
     
     const payoutResultEl = document.getElementById("sell-payout-result");
-    if (payoutResultEl) payoutResultEl.textContent = "₦" + payout.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+    if (payoutResultEl) payoutResultEl.textContent = payout.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
 }
 
 // Process base64 file preview uploads and downscale/compress with HTML5 Canvas to prevent database quota overflow
@@ -629,18 +695,76 @@ function handleCardSubmit(e) {
     }, 850);
 }
 
-// Populate Withdrawal panel confirmation details
+// Populate Withdrawal panel confirmation details (Screen 3 Fidelity)
 function populateWithdrawConfirmDetails() {
     const db = getDB();
     const user = db.users[currentUser.email];
     
-    document.getElementById("withdraw-avail-balance").textContent = "₦" + user.wallet.balance.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
-    
-    if (user.bankDetails) {
-        document.getElementById("withdraw-bank-name").textContent = user.bankDetails.bankName;
-        document.getElementById("withdraw-bank-number").textContent = user.bankDetails.accountNumber;
-        document.getElementById("withdraw-bank-holder").textContent = user.bankDetails.accountHolderName;
+    const balNum = user.wallet.balance;
+    const availBalDisplay = document.getElementById("withdraw-avail-balance-num");
+    if (availBalDisplay) {
+        availBalDisplay.textContent = balNum.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
     }
+
+    const availBalHidden = document.getElementById("withdraw-avail-balance");
+    if (availBalHidden) {
+        availBalHidden.textContent = "₦" + balNum.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+    }
+    
+    const bankSelect = document.getElementById("withdraw-bank-select");
+    if (bankSelect) {
+        bankSelect.innerHTML = "";
+        if (user.bankDetails) {
+            const masked = user.bankDetails.accountNumber.length >= 4 
+                ? "**** " + user.bankDetails.accountNumber.slice(-4)
+                : user.bankDetails.accountNumber;
+            const opt = document.createElement("option");
+            opt.value = "PRIMARY";
+            opt.textContent = `${user.bankDetails.bankName} - ${masked}`;
+            bankSelect.appendChild(opt);
+
+            const nameEl = document.getElementById("withdraw-bank-name");
+            if (nameEl) nameEl.textContent = user.bankDetails.bankName;
+            const numEl = document.getElementById("withdraw-bank-number");
+            if (numEl) numEl.textContent = user.bankDetails.accountNumber;
+            const holderEl = document.getElementById("withdraw-bank-holder");
+            if (holderEl) holderEl.textContent = user.bankDetails.accountHolderName;
+        } else {
+            const opt = document.createElement("option");
+            opt.value = "";
+            opt.textContent = "No Bank Linked (Link in Settings)";
+            bankSelect.appendChild(opt);
+        }
+    }
+
+    updateWithdrawalBreakdown();
+}
+
+// Quick "Withdraw All" handler
+function handleWithdrawAll() {
+    const user = currentUser;
+    if (!user) return;
+    const amountInput = document.getElementById("withdraw-amount");
+    if (amountInput) {
+        amountInput.value = user.wallet.balance;
+        updateWithdrawalBreakdown();
+    }
+}
+
+// Update Withdrawal Breakdown Calculation (Screen 3 Fidelity)
+function updateWithdrawalBreakdown() {
+    const amountInput = document.getElementById("withdraw-amount");
+    let amount = amountInput ? parseFloat(amountInput.value) : 0;
+    if (isNaN(amount) || amount < 0) amount = 0;
+
+    const fee = 50.00;
+    const net = Math.max(0, amount - fee);
+
+    const calcAmountEl = document.getElementById("calc-withdraw-amount");
+    if (calcAmountEl) calcAmountEl.textContent = "₦" + amount.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+
+    const calcNetEl = document.getElementById("calc-net-payout");
+    if (calcNetEl) calcNetEl.textContent = "₦" + net.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
 }
 
 // State for custom PIN verification modal
@@ -1239,22 +1363,291 @@ function viewAllNotifications() {
     if (pane) pane.classList.remove("active");
 }
 
-// Render Security logs
+// Render Security logs (Screen 5 Fidelity)
 function renderSecurityLogs() {
     const db = getDB();
     const user = db.users[currentUser.email];
-    const tbody = document.getElementById("logs-tbody");
-    tbody.innerHTML = "";
+    const container = document.getElementById("security-logs-cards-container");
+    if (!container) return;
+    container.innerHTML = "";
     
+    if (!user.logs || user.logs.length === 0) {
+        container.innerHTML = `<div class="card" style="text-align:center; padding:32px; color:var(--text-muted);">No activity recorded yet.</div>`;
+        return;
+    }
+
     user.logs.forEach(log => {
-        const tr = document.createElement("tr");
-        tr.innerHTML = `
-            <td style="font-size: 0.85rem; color: var(--text-secondary);">${new Date(log.timestamp).toLocaleString()}</td>
-            <td><strong>${log.event}</strong></td>
-            <td><code>${log.ip}</code></td>
+        const card = document.createElement("div");
+        card.className = "security-log-card";
+
+        const evLower = (log.event || "").toLowerCase();
+        let iconClass = "fa-solid fa-arrow-right-to-bracket";
+        let iconType = "icon-login";
+
+        if (evLower.includes("login")) {
+            iconClass = "fa-solid fa-arrow-right-to-bracket";
+            iconType = "icon-login";
+        } else if (evLower.includes("withdraw")) {
+            iconClass = "fa-solid fa-money-bill-transfer";
+            iconType = "icon-withdraw";
+        } else if (evLower.includes("password") || evLower.includes("pin")) {
+            iconClass = "fa-solid fa-key";
+            iconType = "icon-security";
+        } else if (evLower.includes("bank")) {
+            iconClass = "fa-solid fa-building-columns";
+            iconType = "icon-bank";
+        } else if (evLower.includes("fail") || evLower.includes("suspend") || evLower.includes("warn")) {
+            iconClass = "fa-solid fa-triangle-exclamation";
+            iconType = "icon-warning";
+        } else {
+            iconClass = "fa-solid fa-shield-halved";
+            iconType = "icon-security";
+        }
+
+        const logDate = new Date(log.timestamp);
+        const timeStr = logDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        const dateStr = logDate.toLocaleDateString([], { month: 'short', day: 'numeric' });
+
+        card.innerHTML = `
+            <div style="display: flex; align-items: center; flex: 1;">
+                <div class="log-icon-pill ${iconType}">
+                    <i class="${iconClass}"></i>
+                </div>
+                <div class="security-log-content">
+                    <div class="security-log-title">${log.event}</div>
+                    <div class="security-log-subtitle">Nigeria • Web Browser</div>
+                    <div class="security-log-ip">IP: ${log.ip || '197.34.120.44'}</div>
+                </div>
+            </div>
+            <div class="security-log-time">${timeStr} <span style="font-size:0.7rem; color:var(--text-muted); display:block; text-align:right;">${dateStr}</span></div>
         `;
-        tbody.appendChild(tr);
+        container.appendChild(card);
     });
+}
+
+// Render Linked Bank Accounts (Screen 4 Fidelity)
+function renderLinkedBanks() {
+    const db = getDB();
+    const user = db.users[currentUser.email];
+    const container = document.getElementById("linked-banks-list-container");
+    if (!container) return;
+    container.innerHTML = "";
+
+    if (!user.bankDetails) {
+        container.innerHTML = `
+            <div class="card" style="text-align:center; padding: 36px 20px; border-radius: 16px; margin-bottom: 16px;">
+                <div class="bank-card-icon-pill" style="margin: 0 auto 14px; width: 56px; height: 56px; font-size: 1.5rem;">
+                    <i class="fa-solid fa-building-columns"></i>
+                </div>
+                <h4 style="font-weight: 800; margin-bottom: 4px;">No Bank Account Linked</h4>
+                <p style="color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 18px;">Link your bank account to start withdrawing cash directly.</p>
+                <button type="button" onclick="openAddBankModal()" class="btn btn-primary btn-sm">Add Bank Account</button>
+            </div>
+        `;
+        return;
+    }
+
+    const b = user.bankDetails;
+    const masked = b.accountNumber && b.accountNumber.length >= 4 
+        ? "**** " + b.accountNumber.slice(-4) 
+        : (b.accountNumber || "**** 0000");
+
+    const card = document.createElement("div");
+    card.className = "linked-bank-card";
+    card.innerHTML = `
+        <div style="display: flex; align-items: center; flex: 1;">
+            <div class="bank-card-icon-pill">
+                <i class="fa-solid fa-building-columns"></i>
+            </div>
+            <div class="bank-card-details">
+                <div class="bank-name-text">${b.bankName}</div>
+                <div class="account-holder-text">${b.accountHolderName || user.name}</div>
+                <div class="account-number-masked">${masked}</div>
+            </div>
+        </div>
+        <div class="bank-card-actions">
+            <div class="bank-card-action-icon" onclick="openAddBankModal(true)" title="Edit Bank Details">
+                <i class="fa-solid fa-pen"></i>
+            </div>
+            <div class="bank-card-action-icon delete-icon" onclick="deleteLinkedBankAccount()" title="Remove Bank Account">
+                <i class="fa-regular fa-trash-can"></i>
+            </div>
+        </div>
+    `;
+    container.appendChild(card);
+}
+
+// Render Settings Profile Details (Screen 2 Fidelity)
+function renderSettingsProfile() {
+    if (!currentUser) return;
+    const nameEl = document.getElementById("settings-user-fullname");
+    if (nameEl) nameEl.textContent = currentUser.name;
+}
+
+// Open / Close Add Bank Modal
+function openAddBankModal(isEdit = false) {
+    const modal = document.getElementById("add-bank-modal");
+    if (modal) {
+        modal.classList.add("active");
+        if (currentUser && currentUser.bankDetails) {
+            const b = currentUser.bankDetails;
+            const nameSel = document.getElementById("modal-bank-name");
+            if (nameSel) nameSel.value = b.bankName;
+            const numIn = document.getElementById("bank-account-number");
+            if (numIn) numIn.value = b.accountNumber;
+            const holdIn = document.getElementById("bank-account-holder");
+            if (holdIn) holdIn.value = b.accountHolderName;
+        }
+    }
+}
+
+function closeAddBankModal() {
+    const modal = document.getElementById("add-bank-modal");
+    if (modal) modal.classList.remove("active");
+}
+
+function handleSaveBankForm(e) {
+    e.preventDefault();
+    const bankName = document.getElementById("modal-bank-name").value;
+    const accountNumber = document.getElementById("bank-account-number").value.trim();
+    const accountHolderName = document.getElementById("bank-account-holder").value.trim();
+
+    if (!bankName || !accountNumber || !accountHolderName) {
+        showToast("Please fill in all bank details.", "warning");
+        return;
+    }
+
+    const db = getDB();
+    db.users[currentUser.email].bankDetails = {
+        bankName,
+        accountNumber,
+        accountHolderName
+    };
+    db.users[currentUser.email].logs.unshift({
+        event: "New Bank Account Added",
+        timestamp: new Date().toISOString(),
+        ip: "197.34.120.44"
+    });
+    saveDB(db);
+    closeAddBankModal();
+    loadSession();
+    renderLinkedBanks();
+    showToast("Bank account linked successfully!", "success");
+}
+
+function deleteLinkedBankAccount() {
+    if (confirm("Are you sure you want to unlink this bank account?")) {
+        const db = getDB();
+        db.users[currentUser.email].bankDetails = null;
+        db.users[currentUser.email].logs.unshift({
+            event: "Bank Account Removed",
+            timestamp: new Date().toISOString(),
+            ip: "197.34.120.44"
+        });
+        saveDB(db);
+        loadSession();
+        renderLinkedBanks();
+        showToast("Bank account removed.", "info");
+    }
+}
+
+// Profile & Password Modal Handlers
+function openEditProfileModal() {
+    const modal = document.getElementById("edit-profile-modal");
+    if (modal && currentUser) {
+        document.getElementById("edit-profile-name").value = currentUser.name || "";
+        document.getElementById("edit-profile-phone").value = currentUser.phone || "";
+        modal.classList.add("active");
+    }
+}
+
+function closeEditProfileModal() {
+    const modal = document.getElementById("edit-profile-modal");
+    if (modal) modal.classList.remove("active");
+}
+
+function handleEditProfileSubmit(e) {
+    e.preventDefault();
+    const name = document.getElementById("edit-profile-name").value.trim();
+    const phone = document.getElementById("edit-profile-phone").value.trim();
+
+    const db = getDB();
+    db.users[currentUser.email].name = name;
+    db.users[currentUser.email].phone = phone;
+    db.users[currentUser.email].logs.unshift({
+        event: "Profile Updated",
+        timestamp: new Date().toISOString(),
+        ip: "197.34.120.44"
+    });
+    saveDB(db);
+    closeEditProfileModal();
+    loadSession();
+    renderSettingsProfile();
+    showToast("Profile updated successfully.", "success");
+}
+
+function openChangePasswordModal() {
+    const modal = document.getElementById("change-password-modal");
+    if (modal) modal.classList.add("active");
+}
+
+function closeChangePasswordModal() {
+    const modal = document.getElementById("change-password-modal");
+    if (modal) modal.classList.remove("active");
+}
+
+function handleChangePasswordSubmit(e) {
+    e.preventDefault();
+    const current = document.getElementById("settings-current-password").value;
+    const newPw = document.getElementById("settings-new-password").value;
+    const confirmPw = document.getElementById("settings-confirm-password").value;
+
+    if (currentUser.passwordHash !== current) {
+        showToast("Current password incorrect.", "danger");
+        return;
+    }
+    if (newPw !== confirmPw) {
+        showToast("New passwords do not match.", "danger");
+        return;
+    }
+    if (newPw.length < 8) {
+        showToast("Password must be at least 8 characters.", "warning");
+        return;
+    }
+
+    const db = getDB();
+    db.users[currentUser.email].passwordHash = newPw;
+    db.users[currentUser.email].logs.unshift({
+        event: "Password Changed",
+        timestamp: new Date().toISOString(),
+        ip: "197.34.120.44"
+    });
+    saveDB(db);
+    closeChangePasswordModal();
+    showToast("Password updated successfully!", "success");
+}
+
+function handle2faToggle(checkbox) {
+    const status = checkbox.checked ? "Enabled" : "Disabled";
+    const db = getDB();
+    db.users[currentUser.email].logs.unshift({
+        event: `Two-Factor Authentication ${status}`,
+        timestamp: new Date().toISOString(),
+        ip: "197.34.120.44"
+    });
+    saveDB(db);
+    showToast(`Two-Factor Authentication ${status}.`, "success");
+}
+
+function applyUserThemeSelection(val) {
+    if (val === "dark") {
+        document.documentElement.setAttribute("data-theme", "dark");
+        localStorage.setItem("goodfastpay_theme", "dark");
+    } else {
+        document.documentElement.setAttribute("data-theme", "light");
+        localStorage.setItem("goodfastpay_theme", "light");
+    }
+    showToast(`Theme updated to ${val} mode.`, "info");
 }
 
 // Handle User logout
