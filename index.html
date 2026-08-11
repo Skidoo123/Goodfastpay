@@ -1,512 +1,394 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="dark">
+<html class="dark" lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover">
-    <title>Goodfastpay - Premier Gift Card & Digital Asset Exchange</title>
-    <!-- Google Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>Goodfastpay - Accelerated Trust</title>
+    <!-- Tailwind CSS with Plugins -->
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <!-- Google Fonts & Material Symbols -->
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&amp;family=JetBrains+Mono:wght@500&amp;display=swap" rel="stylesheet"/>
     <!-- FontAwesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Main Style Sheet with Cache Buster -->
-    <link rel="stylesheet" href="css/style.css?v=3.0">
-    <style>
-        /* Embedded Critical 1400px 2-Column Landing System (Bypasses all browser caching) */
-        body {
-            background-color: #050713 !important;
-            margin: 0;
-            padding: 0;
-            overflow-x: hidden;
+    
+    <script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface": "#10131f",
+                        "background": "#10131f",
+                        "primary": "#adc6ff",
+                        "secondary": "#4cd7f6",
+                        "tertiary": "#4edea3",
+                        "outline": "#8c909f",
+                        "outline-variant": "#424754",
+                        "surface-bright": "#363847",
+                        "surface-container-low": "#181b28",
+                        "surface-container": "#1c1f2c",
+                        "surface-container-high": "#272937",
+                        "surface-container-highest": "#323442",
+                        "on-surface": "#e0e1f4",
+                        "on-surface-variant": "#c2c6d6",
+                        "primary-container": "#4d8eff",
+                        "secondary-container": "#03b5d3",
+                        "on-primary": "#002e6a"
+                    },
+                    "borderRadius": {
+                        "lg": "0.5rem",
+                        "xl": "0.75rem"
+                    },
+                    "spacing": {
+                        "stack-md": "16px",
+                        "gutter": "16px",
+                        "container-margin": "24px",
+                        "stack-lg": "32px",
+                        "unit": "4px",
+                        "stack-sm": "8px"
+                    },
+                    "fontFamily": {
+                        "body": ["Inter", "sans-serif"],
+                        "mono": ["JetBrains Mono", "monospace"]
+                    }
+                }
+            }
         }
-        .landing-navbar {
-            height: 84px;
+    </script>
+    <style>
+        .glass-fill {
+            background-color: rgba(44, 48, 62, 0.4);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+        }
+        .glass-border {
+            border: 1px solid rgba(140, 144, 159, 0.3);
+        }
+        .glow-accent {
+            box-shadow: 0 0 40px rgba(77, 142, 255, 0.2);
+        }
+        .gradient-text {
+            background: linear-gradient(to right, #adc6ff, #4cd7f6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        /* Modal Overlays */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(8, 10, 20, 0.85);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
             display: flex;
             align-items: center;
-            background: rgba(7, 9, 19, 0.88);
-            backdrop-filter: blur(24px);
-            -webkit-backdrop-filter: blur(24px);
-            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-            position: sticky;
-            top: 0;
-            z-index: 1000;
-            width: 100%;
+            justify-content: center;
+            z-index: 9999;
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            padding: 20px;
         }
-        .landing-nav-container {
+        .modal-overlay.active {
+            opacity: 1;
+            visibility: visible;
+            pointer-events: all;
+        }
+        .modal-content {
+            background: #141726;
+            border: 1px solid rgba(140, 144, 159, 0.25);
+            border-radius: 1.25rem;
+            padding: 28px;
             width: 100%;
-            max-width: 1400px;
-            margin: 0 auto;
-            padding: 0 clamp(20px, 4vw, 48px);
+            max-width: 460px;
+            box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.8), 0 0 35px rgba(77, 142, 255, 0.15);
+            transform: scale(0.95);
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+        }
+        .modal-overlay.active .modal-content {
+            transform: scale(1);
+        }
+        .modal-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            box-sizing: border-box;
+            margin-bottom: 20px;
         }
-        .landing-hero {
-            position: relative;
-            padding: clamp(40px, 6vw, 80px) 0;
-            background-color: #050713;
-            background-image: 
-                radial-gradient(circle at 10% 25%, rgba(59, 130, 246, 0.18), transparent 50%),
-                radial-gradient(circle at 90% 40%, rgba(6, 182, 212, 0.16), transparent 50%),
-                radial-gradient(circle at 50% 90%, rgba(139, 92, 246, 0.12), transparent 60%),
-                radial-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 0);
-            background-size: 100% 100%, 100% 100%, 100% 100%, 32px 32px;
-            min-height: calc(100vh - 84px);
+        .modal-close {
+            color: #8c909f;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            width: 34px;
+            height: 34px;
+            border-radius: 50%;
             display: flex;
             align-items: center;
-            overflow: hidden;
-            width: 100%;
-            box-sizing: border-box;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
         }
-        .landing-hero-container {
-            width: 100%;
-            max-width: 1400px;
-            margin: 0 auto;
-            padding: 0 clamp(20px, 4vw, 48px);
-            position: relative;
-            z-index: 2;
-            box-sizing: border-box;
+        .modal-close:hover {
+            color: #ef4444;
+            background: rgba(239, 68, 68, 0.15);
         }
-        .landing-hero-grid {
+        .auth-toggle {
             display: grid;
-            grid-template-columns: 1.15fr 0.85fr;
-            gap: clamp(32px, 5vw, 64px);
-            align-items: center;
-            width: 100%;
-            box-sizing: border-box;
+            grid-template-columns: 1fr 1fr;
+            gap: 6px;
+            background: #1c1f2c;
+            padding: 4px;
+            border-radius: 0.75rem;
+            margin-bottom: 20px;
+            border: 1px solid rgba(140, 144, 159, 0.15);
         }
-        .hero-left-content {
+        .auth-toggle-btn {
+            text-align: center;
+            padding: 10px;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            font-size: 0.9rem;
+            color: #8c909f;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .auth-toggle-btn.active {
+            background: #4d8eff;
+            color: #002e6a;
+            font-weight: 700;
+        }
+        .input-group {
+            margin-bottom: 16px;
             display: flex;
             flex-direction: column;
-            align-items: flex-start;
+            gap: 6px;
             text-align: left;
+        }
+        .input-label {
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: #c2c6d6;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .input-field {
             width: 100%;
+            padding: 12px 16px;
+            border-radius: 0.6rem;
+            background: #1c1f2c;
+            border: 1px solid rgba(140, 144, 159, 0.25);
+            color: #e0e1f4;
+            font-size: 0.95rem;
+            outline: none;
+            transition: all 0.2s ease;
         }
-        .hero-stats-row {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 16px;
-            width: 100%;
-            max-width: 600px;
-            box-sizing: border-box;
+        .input-field:focus {
+            border-color: #4d8eff;
+            box-shadow: 0 0 0 3px rgba(77, 142, 255, 0.2);
+            background: #232738;
         }
-        .hero-calc-card {
-            background: linear-gradient(145deg, rgba(14, 19, 38, 0.94), rgba(7, 10, 22, 0.98));
-            backdrop-filter: blur(28px);
-            -webkit-backdrop-filter: blur(28px);
-            border: 1px solid rgba(255, 255, 255, 0.12);
-            border-radius: 28px;
-            padding: clamp(24px, 3.5vw, 36px);
-            box-shadow: 0 30px 70px -15px rgba(0, 0, 0, 0.8), 0 0 45px rgba(59, 130, 246, 0.12);
-            width: 100%;
-            max-width: 540px;
-            margin-left: auto;
-            position: relative;
-            box-sizing: border-box;
+
+        /* Toast holder */
+        .toast-container {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            z-index: 100000;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
         }
-        @media (max-width: 960px) {
-            .landing-hero-grid {
-                grid-template-columns: 1fr;
-                gap: 40px;
-            }
-            .hero-left-content {
-                align-items: center;
-                text-align: center;
-            }
-            .hero-subtext {
-                margin: 0 auto 28px;
-            }
-            .hero-cta-group {
-                justify-content: center;
-            }
-            .hero-stats-row {
-                margin: 0 auto;
-            }
-            .hero-calc-card {
-                margin: 0 auto;
-            }
+        .toast {
+            background: #1c1f2c;
+            border: 1px solid rgba(140, 144, 159, 0.3);
+            color: #e0e1f4;
+            padding: 14px 20px;
+            border-radius: 0.75rem;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            max-width: 380px;
         }
+        .toast.active {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        .toast.success { border-color: #4edea3; }
+        .toast.danger { border-color: #ef4444; }
+        .toast.warning { border-color: #f59e0b; }
+        .toast.info { border-color: #4cd7f6; }
     </style>
 </head>
-<body>
-
-    <!-- TOP NAVIGATION BAR -->
-    <header class="landing-navbar">
-        <div class="landing-nav-container">
-            <!-- Brand Logo -->
-            <a href="index.html" class="landing-logo">
-                <img src="images/logo.png" alt="Goodfastpay Logo" style="height: 36px; width: 36px; background: #ffffff; border-radius: 8px; padding: 3px; vertical-align: middle; object-fit: contain;">
-                <span>Good<span class="gradient-text">fast</span>pay</span>
-            </a>
-            
-            <!-- Desktop Navigation Menu -->
-            <nav class="landing-nav-menu" id="nav-links-menu">
-                <a href="#rates" class="landing-nav-link" onclick="toggleNavMenu()">Live Rates</a>
-                <a href="#how-it-works" class="landing-nav-link" onclick="toggleNavMenu()">How It Works</a>
-                <a href="#security" class="landing-nav-link" onclick="toggleNavMenu()">Security</a>
-                <a href="#faq" class="landing-nav-link" onclick="toggleNavMenu()">FAQ</a>
-                <a href="#support" class="landing-nav-link" onclick="toggleNavMenu()">Support</a>
-            </nav>
-            
-            <!-- Actions (Theme Toggle & Auth) -->
-            <div class="landing-nav-actions">
-                <button class="theme-toggle-btn" onclick="toggleTheme()" title="Toggle Dark/Light Theme">
-                    <i class="fas fa-sun"></i>
-                </button>
-                
-                <div id="unauth-actions" style="display: flex; gap: 10px; align-items: center;">
-                    <button class="btn btn-secondary btn-sm" onclick="openAuthModal('login')">Login</button>
-                    <button class="btn btn-primary btn-sm" onclick="openAuthModal('register')">Get Started</button>
+<body class="bg-background text-on-surface font-body min-h-screen flex flex-col antialiased">
+    <!-- TopNavBar -->
+    <nav class="fixed top-0 w-full z-50 bg-surface/60 backdrop-blur-xl border-b border-outline-variant/20">
+        <div class="flex justify-between items-center h-20 px-container-margin max-w-7xl mx-auto">
+            <div class="flex items-center gap-3">
+                <a href="index.html" class="flex items-center gap-2">
+                    <img alt="Goodfastpay Logo" class="h-10 w-10 rounded-xl object-contain bg-white/10 p-1 border border-white/20" src="images/logo.png" onerror="this.onerror=null; this.src='https://lh3.googleusercontent.com/aida/AP1WRLtU10Nmghy4wzIQ-SxgirTFAv7BLNE5qoOF0-HwTQxJ6rCUr58WWuUdtLpoooMpeZGgLfmP0CiE82elQ-m8QC5rMDBFH_jT1-yOJiJ13TRoup_drN8ox0xNPLux3EfbZ0i6UIncpXYAc4DRl9RZE0ZWA6tczUQ5mSxyUXwvgIbEg7FPrxFFhmSumMwF7w49idE3C4-ZXZfA0K5quHqoH0hEkM9XCo3OxypLyslTd8WAm6kqbPzvqZEhsA6U';"/>
+                    <span class="text-2xl font-bold tracking-tight text-on-surface">Good<span class="gradient-text">fast</span>pay</span>
+                </a>
+            </div>
+            <div class="hidden md:flex items-center gap-8">
+                <a class="text-primary font-bold border-b-2 border-primary pb-1" href="#product">Product</a>
+                <a class="text-on-surface-variant font-medium hover:text-primary transition-colors" href="#solutions">Solutions</a>
+                <a class="text-on-surface-variant font-medium hover:text-primary transition-colors" href="#security">Security</a>
+                <a class="text-on-surface-variant font-medium hover:text-primary transition-colors" href="#stats">Performance</a>
+            </div>
+            <div class="flex items-center gap-4">
+                <div id="unauth-actions" class="flex items-center gap-3">
+                    <button onclick="openAuthModal('login')" class="text-on-surface-variant hover:text-primary transition-colors font-medium px-3 py-1.5">Sign In</button>
+                    <button onclick="openAuthModal('register')" class="bg-gradient-to-r from-primary-container to-secondary-container text-on-primary px-4 py-2 rounded-lg font-medium hover:opacity-90 transition-opacity glow-accent">Get Started</button>
                 </div>
-                
-                <div id="auth-actions" style="display: none; gap: 10px; align-items: center;">
-                    <a href="portal.html" class="btn btn-primary btn-sm"><i class="fas fa-wallet"></i> My Portal</a>
+                <div id="auth-actions" style="display: none;" class="flex items-center gap-3">
+                    <a href="portal.html" class="bg-gradient-to-r from-primary-container to-secondary-container text-on-primary px-4 py-2 rounded-lg font-medium hover:opacity-90 transition-opacity glow-accent flex items-center gap-2">
+                        <i class="fas fa-wallet"></i> My Portal
+                    </a>
                 </div>
-                
-                <button class="nav-toggle" onclick="toggleNavMenu()" aria-label="Toggle Navigation Menu">
-                    <i class="fas fa-bars"></i>
-                </button>
             </div>
         </div>
-    </header>
+    </nav>
 
-    <!-- HERO SECTION -->
-    <section class="landing-hero">
-        <div class="landing-hero-container">
-            <div class="landing-hero-grid">
-                
-                <!-- Left Hero Content -->
-                <div class="hero-left-content">
-                    <div class="hero-pill-badge">
-                        <span class="live-dot"></span> Next-Gen Digital Asset & Gift Card Liquidity
+    <main class="flex-grow">
+        <!-- Hero Section -->
+        <section class="relative min-h-screen flex items-center pt-20 overflow-hidden" id="product">
+            <!-- Background Shader -->
+            <div class="absolute inset-0 w-full h-full -z-10">
+                <canvas id="shader-canvas" class="w-full h-full"></canvas>
+            </div>
+            <div class="max-w-7xl mx-auto px-container-margin w-full grid md:grid-cols-2 gap-stack-lg items-center relative z-10 py-16">
+                <div class="space-y-stack-md">
+                    <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-mono tracking-wide">
+                        <span class="w-2 h-2 rounded-full bg-tertiary animate-pulse"></span>
+                        QUANTUM-VAULT PROTOCOL ACTIVE
                     </div>
-                    
-                    <h1 class="hero-main-title">
-                        Instant Settlements for<br>
-                        <span class="gradient-text">Global Gift Cards & Assets</span>
+                    <h1 class="text-5xl md:text-7xl font-bold text-on-surface leading-tight">
+                        The Speed of Light.<br/>
+                        <span class="gradient-text">The Security of Code.</span>
                     </h1>
-                    
-                    <p class="hero-subtext">
-                        Convert Apple, Steam, Amazon, Google Play, and 70+ global gift cards to instant cash at market-leading rates. Automated payouts within 3–5 minutes with zero hidden fees.
+                    <p class="text-lg md:text-xl text-on-surface-variant max-w-xl">
+                        Experience the next generation of fintech with Goodfastpay. Instant global gift card & digital asset settlements secured by our proprietary quantum-vault protocol.
                     </p>
-                    
-                    <div class="hero-cta-group">
-                        <button class="btn btn-primary btn-lg" onclick="openAuthModal('register')">
-                            Trade Now <i class="fas fa-arrow-right"></i>
+                    <div class="flex flex-wrap gap-4 pt-4">
+                        <button onclick="openAuthModal('register')" class="bg-gradient-to-r from-primary-container to-secondary-container text-on-primary px-6 py-3 rounded-lg font-medium hover:opacity-90 transition-opacity glow-accent flex items-center gap-2 cursor-pointer">
+                            Get Started <span class="material-symbols-outlined">arrow_forward</span>
                         </button>
-                        <a href="#rates" class="btn btn-secondary btn-lg">
-                            <i class="fas fa-bolt" style="color: #fbbf24;"></i> Explore Live Rates
-                        </a>
-                    </div>
-                    
-                    <!-- 3 Horizontal Statistics Cards -->
-                    <div class="hero-stats-row">
-                        <div class="hero-stat-card">
-                            <div class="hero-stat-number">₦2.5B+</div>
-                            <div class="hero-stat-label">Total Payouts</div>
-                        </div>
-                        <div class="hero-stat-card">
-                            <div class="hero-stat-number">98.8%</div>
-                            <div class="hero-stat-label">Success Rate</div>
-                        </div>
-                        <div class="hero-stat-card">
-                            <div class="hero-stat-number">3 Mins</div>
-                            <div class="hero-stat-label">Avg. Settlement</div>
-                        </div>
+                        <button onclick="openAuthModal('login')" class="glass-fill glass-border text-on-surface px-6 py-3 rounded-lg font-medium hover:bg-surface-container-high transition-colors cursor-pointer">
+                            Explore Protocol
+                        </button>
                     </div>
                 </div>
-                
-                <!-- Right Hero Quick Exchange Estimate Card -->
-                <div class="hero-calc-card" id="calculator">
-                    <div class="calc-card-header">
-                        <span class="badge badge-success" style="font-size: 0.75rem; padding: 6px 14px;">
-                            <i class="fas fa-signal-stream"></i> REAL-TIME RATES
-                        </span>
-                        <span style="font-size: 0.8rem; color: #94a3b8; display: flex; align-items: center; gap: 6px;">
-                            <i class="fas fa-arrows-rotate fa-spin-pulse"></i> Auto-refreshed
-                        </span>
-                    </div>
-                    
-                    <h3 class="calc-card-title">
-                        <i class="fas fa-calculator" style="color: var(--primary);"></i> Quick Exchange Estimate
-                    </h3>
-                    
-                    <!-- Brand Select -->
-                    <div class="input-group">
-                        <label class="input-label">Select Gift Card Brand</label>
-                        <select id="calc-brand" class="input-field" onchange="updateCalcRate()" style="height: 48px;">
-                            <!-- Populated Dynamically -->
-                        </select>
-                    </div>
-                    
-                    <!-- Currency & Value Row -->
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
-                        <div class="input-group">
-                            <label class="input-label">Region / Currency</label>
-                            <select id="calc-currency" class="input-field" onchange="updateCalcRate()" style="height: 48px;">
-                                <!-- Populated Dynamically -->
-                            </select>
-                        </div>
-                        <div class="input-group">
-                            <label class="input-label">Card Value</label>
-                            <input type="number" id="calc-value" class="input-field" min="10" max="5000" value="100" oninput="updateCalcRate()" style="height: 48px;">
-                        </div>
-                    </div>
+                <div class="relative h-[400px] md:h-[600px] w-full hidden md:block" id="threejs-container">
+                    <!-- Three.js Scene will render here -->
+                </div>
+            </div>
+        </section>
 
-                    <!-- Quick Denomination Selection Chips -->
-                    <div style="margin-top: -8px; margin-bottom: 12px;">
-                        <div class="calc-denom-row">
-                            <div class="calc-denom-chip" onclick="setCalcValue(25)">$25</div>
-                            <div class="calc-denom-chip" onclick="setCalcValue(50)">$50</div>
-                            <div class="calc-denom-chip active" onclick="setCalcValue(100)">$100</div>
-                            <div class="calc-denom-chip" onclick="setCalcValue(200)">$200</div>
-                            <div class="calc-denom-chip" onclick="setCalcValue(500)">$500</div>
+        <!-- Stats Strip -->
+        <section class="bg-surface-container-low border-y border-outline-variant/10 py-stack-lg" id="stats">
+            <div class="max-w-7xl mx-auto px-container-margin">
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-gutter font-mono text-sm">
+                    <div class="flex flex-col gap-1">
+                        <span class="text-outline uppercase tracking-wider text-xs">System Uptime</span>
+                        <span class="text-tertiary text-xl font-bold">99.999%</span>
+                    </div>
+                    <div class="flex flex-col gap-1">
+                        <span class="text-outline uppercase tracking-wider text-xs">TPS (Live)</span>
+                        <span class="text-secondary text-xl font-bold">142,504</span>
+                    </div>
+                    <div class="flex flex-col gap-1">
+                        <span class="text-outline uppercase tracking-wider text-xs">Active Nodes</span>
+                        <span class="text-primary text-xl font-bold">8,432</span>
+                    </div>
+                    <div class="flex flex-col gap-1">
+                        <span class="text-outline uppercase tracking-wider text-xs">Avg Latency</span>
+                        <span class="text-secondary-container text-xl font-bold">12ms</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Solutions Section -->
+        <section class="py-24 relative" id="solutions">
+            <div class="max-w-7xl mx-auto px-container-margin">
+                <div class="text-center max-w-2xl mx-auto mb-16">
+                    <h2 class="text-3xl md:text-5xl font-bold text-on-surface mb-4">Engineered for Instant Liquidity</h2>
+                    <p class="text-on-surface-variant">Automated gift card validation and payout mechanisms executed in under 3 minutes.</p>
+                </div>
+                <div class="grid md:grid-cols-3 gap-8">
+                    <div class="glass-fill glass-border p-8 rounded-2xl space-y-4 hover:border-primary/50 transition-colors">
+                        <div class="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center text-primary text-2xl font-bold">
+                            <i class="fas fa-bolt"></i>
                         </div>
+                        <h3 class="text-xl font-bold text-on-surface">Sub-3 Minute Payouts</h3>
+                        <p class="text-on-surface-variant text-sm leading-relaxed">Direct automated bank credit settlements with zero hidden fees across 70+ global gift card brands.</p>
                     </div>
-                    
-                    <!-- Payout Calculation Box -->
-                    <div class="calc-payout-box">
-                        <div class="calc-payout-label">Estimated Direct Payout</div>
-                        <div class="calc-payout-val" id="calc-result">₦0.00</div>
-                        <div class="calc-rate-info" id="calc-exchange-text">Rate: Loading...</div>
+                    <div class="glass-fill glass-border p-8 rounded-2xl space-y-4 hover:border-secondary/50 transition-colors">
+                        <div class="w-12 h-12 rounded-xl bg-secondary/10 flex items-center justify-center text-secondary text-2xl font-bold">
+                            <i class="fas fa-shield-halved"></i>
+                        </div>
+                        <h3 class="text-xl font-bold text-on-surface">Double-Spending Shield</h3>
+                        <p class="text-on-surface-variant text-sm leading-relaxed">AI duplicate interceptors and proprietary cryptographic PIN hash protection prevent fraudulent attempts.</p>
                     </div>
-                    
-                    <button class="btn btn-cyan calc-cta-btn" onclick="openAuthModal('register')">
-                        Proceed to Trade <i class="fas fa-chevron-right"></i>
+                    <div class="glass-fill glass-border p-8 rounded-2xl space-y-4 hover:border-tertiary/50 transition-colors">
+                        <div class="w-12 h-12 rounded-xl bg-tertiary/10 flex items-center justify-center text-tertiary text-2xl font-bold">
+                            <i class="fas fa-chart-pie"></i>
+                        </div>
+                        <h3 class="text-xl font-bold text-on-surface">Market Leading Rates</h3>
+                        <p class="text-on-surface-variant text-sm leading-relaxed">Dynamic exchange rate oracle reflecting real-time market liquidity and optimal currency conversion yields.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Security / Architecture Section -->
+        <section class="py-20 border-t border-outline-variant/10 bg-surface-container-low/50" id="security">
+            <div class="max-w-7xl mx-auto px-container-margin text-center space-y-6">
+                <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-secondary/10 border border-secondary/20 text-secondary text-xs font-mono">
+                    ENTERPRISE-GRADE INFRASTRUCTURE
+                </div>
+                <h2 class="text-3xl md:text-4xl font-bold text-on-surface">Ready to start trading with total confidence?</h2>
+                <p class="text-on-surface-variant max-w-xl mx-auto">Join thousands of verified traders enjoying instant settlements on Goodfastpay.</p>
+                <div class="pt-4">
+                    <button onclick="openAuthModal('register')" class="bg-gradient-to-r from-primary-container to-secondary-container text-on-primary px-8 py-4 rounded-xl font-bold text-lg hover:opacity-90 transition-opacity glow-accent cursor-pointer">
+                        Create Your Free Account
                     </button>
                 </div>
-                
             </div>
-        </div>
-    </section>
+        </section>
+    </main>
 
-    <!-- LIVE RATES TICKER STRIP -->
-    <div class="rates-ticker-strip">
-        <div class="rates-ticker-container">
-            <span style="font-size: 0.75rem; font-weight: 800; color: var(--primary); text-transform: uppercase; letter-spacing: 1px; display: flex; align-items: center; gap: 6px;">
-                <i class="fas fa-chart-line"></i> TOP MARKET RATES:
-            </span>
-            <div class="rates-ticker-item" onclick="selectTickerCard('Apple/iTunes')">
-                <i class="fa-brands fa-apple" style="color: #cbd5e1;"></i> Apple: <span class="rates-ticker-rate">₦1,990/$</span>
+    <!-- Footer -->
+    <footer class="border-t border-outline-variant/20 bg-surface py-12">
+        <div class="max-w-7xl mx-auto px-container-margin flex flex-col md:flex-row justify-between items-center gap-6">
+            <div class="flex items-center gap-2">
+                <img alt="Goodfastpay Logo" class="h-8 w-8 rounded-lg object-contain bg-white/10 p-1" src="images/logo.png" onerror="this.onerror=null; this.src='https://lh3.googleusercontent.com/aida/AP1WRLtU10Nmghy4wzIQ-SxgirTFAv7BLNE5qoOF0-HwTQxJ6rCUr58WWuUdtLpoooMpeZGgLfmP0CiE82elQ-m8QC5rMDBFH_jT1-yOJiJ13TRoup_drN8ox0xNPLux3EfbZ0i6UIncpXYAc4DRl9RZE0ZWA6tczUQ5mSxyUXwvgIbEg7FPrxFFhmSumMwF7w49idE3C4-ZXZfA0K5quHqoH0hEkM9XCo3OxypLyslTd8WAm6kqbPzvqZEhsA6U';"/>
+                <span class="text-lg font-bold text-on-surface">Goodfastpay Technologies Ltd</span>
             </div>
-            <div class="rates-ticker-item" onclick="selectTickerCard('Steam')">
-                <i class="fa-brands fa-steam" style="color: #60a5fa;"></i> Steam: <span class="rates-ticker-rate">₦2,200/$</span>
+            <div class="flex gap-6 text-sm text-on-surface-variant">
+                <a href="#product" class="hover:text-primary transition-colors">Product</a>
+                <a href="#solutions" class="hover:text-primary transition-colors">Solutions</a>
+                <a href="#security" class="hover:text-primary transition-colors">Security</a>
+                <a href="portal.html" class="hover:text-primary transition-colors">Portal</a>
             </div>
-            <div class="rates-ticker-item" onclick="selectTickerCard('Google Play')">
-                <i class="fa-brands fa-google-play" style="color: #34d399;"></i> Google Play: <span class="rates-ticker-rate">₦2,360/$</span>
-            </div>
-            <div class="rates-ticker-item" onclick="selectTickerCard('Amazon')">
-                <i class="fa-brands fa-amazon" style="color: #fbbf24;"></i> Amazon: <span class="rates-ticker-rate">₦1,980/$</span>
-            </div>
-            <div class="rates-ticker-item" onclick="selectTickerCard('Razer Gold')">
-                <i class="fas fa-gamepad" style="color: #a855f7;"></i> Razer Gold: <span class="rates-ticker-rate">₦2,100/$</span>
-            </div>
-            <div class="rates-ticker-item" onclick="selectTickerCard('Sephora')">
-                <i class="fas fa-gem" style="color: #f43f5e;"></i> Sephora: <span class="rates-ticker-rate">₦1,390/$</span>
-            </div>
-            <div class="rates-ticker-item" onclick="selectTickerCard('Nike')">
-                <i class="fas fa-tag" style="color: #f97316;"></i> Nike: <span class="rates-ticker-rate">₦1,520/$</span>
-            </div>
-        </div>
-    </div>
-
-    <!-- LIVE RATES SECTION -->
-    <section class="section" id="rates" style="background: var(--bg-secondary); padding: 90px 0;">
-        <div class="landing-hero-container">
-            <div class="section-title">
-                <h2>Today's Live Exchange Rates</h2>
-                <p>We provide the highest and most transparent exchange rates updated real-time by our liquidity algorithms.</p>
-            </div>
-            
-            <div class="grid-4" id="popular-rates-grid">
-                <!-- Dynamically Populated with high-yield gift cards -->
-            </div>
-        </div>
-    </section>
-
-    <!-- HOW IT WORKS SECTION -->
-    <section class="section" id="how-it-works" style="padding: 90px 0;">
-        <div class="landing-hero-container">
-            <div class="section-title">
-                <h2>Three Steps to Your Payout</h2>
-                <p>Selling your gift cards is lightning fast and straightforward on Goodfastpay.</p>
-            </div>
-            
-            <div class="grid-3">
-                <div class="card" style="padding: 36px 28px; text-align: center; border-radius: 22px;">
-                    <div style="width: 72px; height: 72px; background: rgba(59, 130, 246, 0.12); color: var(--primary); border: 1px solid rgba(59, 130, 246, 0.3); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.85rem; margin: 0 auto 24px; box-shadow: 0 0 25px rgba(59, 130, 246, 0.2);">
-                        <i class="fas fa-user-plus"></i>
-                    </div>
-                    <h3 style="font-size: 1.25rem; font-weight: 800; margin-bottom: 12px;">1. Create Free Account</h3>
-                    <p style="color: var(--text-secondary); font-size: 0.92rem; line-height: 1.6;">
-                        Sign up in 30 seconds with your email and set up your secure 4-digit transaction PIN.
-                    </p>
-                </div>
-                
-                <div class="card" style="padding: 36px 28px; text-align: center; border-radius: 22px;">
-                    <div style="width: 72px; height: 72px; background: rgba(6, 182, 212, 0.12); color: var(--secondary); border: 1px solid rgba(6, 182, 212, 0.3); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.85rem; margin: 0 auto 24px; box-shadow: 0 0 25px rgba(6, 182, 212, 0.2);">
-                        <i class="fas fa-cloud-arrow-up"></i>
-                    </div>
-                    <h3 style="font-size: 1.25rem; font-weight: 800; margin-bottom: 12px;">2. Upload Card Details</h3>
-                    <p style="color: var(--text-secondary); font-size: 0.92rem; line-height: 1.6;">
-                        Select brand, country, denomination, and upload front & back images of physical cards or enter E-code.
-                    </p>
-                </div>
-                
-                <div class="card" style="padding: 36px 28px; text-align: center; border-radius: 22px;">
-                    <div style="width: 72px; height: 72px; background: rgba(16, 185, 129, 0.12); color: var(--success); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.85rem; margin: 0 auto 24px; box-shadow: 0 0 25px rgba(16, 185, 129, 0.2);">
-                        <i class="fas fa-building-columns"></i>
-                    </div>
-                    <h3 style="font-size: 1.25rem; font-weight: 800; margin-bottom: 12px;">3. Instant Bank Credit</h3>
-                    <p style="color: var(--text-secondary); font-size: 0.92rem; line-height: 1.6;">
-                        Once automatically verified, payout is credited to your wallet and instantly transferred to your bank.
-                    </p>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- TRUST & SECURITY FEATURES -->
-    <section class="section" id="security" style="background: var(--bg-secondary); padding: 90px 0;">
-        <div class="landing-hero-container">
-            <div class="section-title">
-                <h2>Built for Uncompromised Security</h2>
-                <p>Enterprise-grade infrastructure designed to protect your assets, identity, and transactions.</p>
-            </div>
-            
-            <div class="grid-2" style="max-width: 1080px; margin: 0 auto; gap: 24px;">
-                <div class="card" style="padding: 28px; display: flex; gap: 20px; align-items: flex-start; border-radius: 18px;">
-                    <div style="width: 52px; height: 52px; border-radius: 14px; background: rgba(37, 99, 235, 0.15); color: var(--primary); display: flex; align-items: center; justify-content: center; font-size: 1.5rem; flex-shrink: 0;">
-                        <i class="fas fa-lock"></i>
-                    </div>
-                    <div>
-                        <h4 style="font-weight: 800; font-size: 1.1rem; margin-bottom: 8px;">256-bit SSL Encryption</h4>
-                        <p style="color: var(--text-secondary); font-size: 0.9rem; line-height: 1.6;">Every communication and transaction data packet is protected with end-to-end encryption protocols.</p>
-                    </div>
-                </div>
-                
-                <div class="card" style="padding: 28px; display: flex; gap: 20px; align-items: flex-start; border-radius: 18px;">
-                    <div style="width: 52px; height: 52px; border-radius: 14px; background: rgba(6, 182, 212, 0.15); color: var(--secondary); display: flex; align-items: center; justify-content: center; font-size: 1.5rem; flex-shrink: 0;">
-                        <i class="fas fa-shield-virus"></i>
-                    </div>
-                    <div>
-                        <h4 style="font-weight: 800; font-size: 1.1rem; margin-bottom: 8px;">AI Fraud & Duplicate Shield</h4>
-                        <p style="color: var(--text-secondary); font-size: 0.9rem; line-height: 1.6;">Proprietary pattern scanning prevents double-spending, duplicate codes, and unauthorized activity.</p>
-                    </div>
-                </div>
-                
-                <div class="card" style="padding: 28px; display: flex; gap: 20px; align-items: flex-start; border-radius: 18px;">
-                    <div style="width: 52px; height: 52px; border-radius: 14px; background: rgba(245, 158, 11, 0.15); color: var(--warning); display: flex; align-items: center; justify-content: center; font-size: 1.5rem; flex-shrink: 0;">
-                        <i class="fas fa-key"></i>
-                    </div>
-                    <div>
-                        <h4 style="font-weight: 800; font-size: 1.1rem; margin-bottom: 8px;">2FA & Transaction PIN</h4>
-                        <p style="color: var(--text-secondary); font-size: 0.9rem; line-height: 1.6;">Withdrawals and key security changes require secondary authorization PIN and OTP confirmation.</p>
-                    </div>
-                </div>
-
-                <div class="card" style="padding: 28px; display: flex; gap: 20px; align-items: flex-start; border-radius: 18px;">
-                    <div style="width: 52px; height: 52px; border-radius: 14px; background: rgba(16, 185, 129, 0.15); color: var(--accent); display: flex; align-items: center; justify-content: center; font-size: 1.5rem; flex-shrink: 0;">
-                        <i class="fas fa-list-check"></i>
-                    </div>
-                    <div>
-                        <h4 style="font-weight: 800; font-size: 1.1rem; margin-bottom: 8px;">Administrator Audit Trail</h4>
-                        <p style="color: var(--text-secondary); font-size: 0.9rem; line-height: 1.6;">Every wallet credit, payout validation, and database modification records logs for complete auditing.</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- FAQ SECTION -->
-    <section class="section" id="faq" style="padding: 90px 0;">
-        <div class="landing-hero-container" style="max-width: 860px;">
-            <div class="section-title">
-                <h2>Frequently Asked Questions</h2>
-                <p>Have questions? We have direct answers.</p>
-            </div>
-            
-            <div style="display: flex; flex-direction: column; gap: 16px;">
-                <div class="card" style="padding: 24px; border-radius: 16px;">
-                    <h4 style="font-weight: 800; font-size: 1.05rem; margin-bottom: 10px;"><i class="fas fa-circle-question" style="color: var(--primary); margin-right: 8px;"></i> How long do payouts take?</h4>
-                    <p style="color: var(--text-secondary); font-size: 0.92rem; line-height: 1.6;">Card reviews take an average of 2–5 minutes. Once approved, the funds are instantly available in your wallet to withdraw to any Nigerian bank account immediately.</p>
-                </div>
-                
-                <div class="card" style="padding: 24px; border-radius: 16px;">
-                    <h4 style="font-weight: 800; font-size: 1.05rem; margin-bottom: 10px;"><i class="fas fa-circle-question" style="color: var(--primary); margin-right: 8px;"></i> Which gift cards are accepted?</h4>
-                    <p style="color: var(--text-secondary); font-size: 0.92rem; line-height: 1.6;">We accept over 70+ global brands including Apple/iTunes, Steam, Amazon, Google Play, Razer Gold, Sephora, Nike, Walmart, Visa/Mastercard Prepaid, and American Express.</p>
-                </div>
-                
-                <div class="card" style="padding: 24px; border-radius: 16px;">
-                    <h4 style="font-weight: 800; font-size: 1.05rem; margin-bottom: 10px;"><i class="fas fa-circle-question" style="color: var(--primary); margin-right: 8px;"></i> Is there any fee for withdrawal?</h4>
-                    <p style="color: var(--text-secondary); font-size: 0.92rem; line-height: 1.6;">Zero hidden fees! The rate displayed in the calculator is the exact amount you receive into your verified bank account.</p>
-                </div>
-
-                <div class="card" style="padding: 24px; border-radius: 16px;">
-                    <h4 style="font-weight: 800; font-size: 1.05rem; margin-bottom: 10px;"><i class="fas fa-circle-question" style="color: var(--primary); margin-right: 8px;"></i> Can I buy gift cards on Goodfastpay?</h4>
-                    <p style="color: var(--text-secondary); font-size: 0.92rem; line-height: 1.6;">Yes! You can browse available gift card stock in your Customer Portal and purchase loaded PIN codes instantly using your wallet balance.</p>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- FOOTER / SUPPORT SECTION -->
-    <footer class="footer" id="support" style="padding: 80px 0 40px; border-top: 1px solid var(--border-color); background: var(--bg-primary);">
-        <div class="landing-hero-container">
-            <div class="footer-grid" style="display: grid; grid-template-columns: 2fr 1fr 1fr 1.5fr; gap: 40px; margin-bottom: 50px;">
-                <div class="footer-brand">
-                    <a href="index.html" class="landing-logo" style="margin-bottom: 16px; display: inline-flex;">
-                        <img src="images/logo.png" alt="Goodfastpay Logo" style="height: 34px; width: 34px; background: #ffffff; border-radius: 8px; padding: 3px; vertical-align: middle; object-fit: contain;">
-                        <span>Good<span class="gradient-text">fast</span>pay</span>
-                    </a>
-                    <p style="color: var(--text-secondary); font-size: 0.9rem; line-height: 1.6; max-width: 320px;">
-                        Goodfastpay is Nigeria's premier automated digital asset exchange, offering highest market rates, sub-5 minute settlements, and institutional liquidity.
-                    </p>
-                </div>
-                
-                <div>
-                    <h4 style="color: var(--text-primary); font-size: 0.95rem; font-weight: 700; margin-bottom: 16px;">Quick Links</h4>
-                    <ul class="footer-links" style="list-style: none; display: flex; flex-direction: column; gap: 10px;">
-                        <li><a href="#rates">Live Rates</a></li>
-                        <li><a href="#how-it-works">How It Works</a></li>
-                        <li><a href="portal.html">Customer Portal</a></li>
-                        <li><a href="#faq">FAQ</a></li>
-                    </ul>
-                </div>
-                
-                <div>
-                    <h4 style="color: var(--text-primary); font-size: 0.95rem; font-weight: 700; margin-bottom: 16px;">Legal & Trust</h4>
-                    <ul class="footer-links" style="list-style: none; display: flex; flex-direction: column; gap: 10px;">
-                        <li><a href="#">Privacy Policy</a></li>
-                        <li><a href="#">Terms of Service</a></li>
-                        <li><a href="#">Anti-Money Laundering</a></li>
-                        <li><a href="#">Security Disclosure</a></li>
-                    </ul>
-                </div>
-                
-                <div>
-                    <h4 style="color: var(--text-primary); font-size: 0.95rem; font-weight: 700; margin-bottom: 16px;">Support Desk</h4>
-                    <p style="font-size: 0.88rem; color: var(--text-secondary); line-height: 1.6;">
-                        Email: support@goodfastpay.com<br>
-                        24/7 Live Desk Available<br>
-                        Lagos, Nigeria
-                    </p>
-                </div>
-            </div>
-            
-            <div class="footer-bottom" style="border-top: 1px solid rgba(255,255,255,0.06); padding-top: 24px; text-align: center; color: var(--text-muted); font-size: 0.85rem;">
-                <p>&copy; 2026 Goodfastpay Technologies Ltd. All Rights Reserved. Fully Encrypted & Regulated.</p>
-            </div>
+            <p class="text-xs text-outline font-mono">&copy; 2026 Goodfastpay. All rights reserved.</p>
         </div>
     </footer>
 
     <!-- AUTHENTICATION MODAL (Login / Register) -->
     <div class="modal-overlay" id="auth-modal">
-        <div class="modal-content" style="max-width: 460px;">
+        <div class="modal-content">
             <div class="modal-header">
-                <h3 style="font-weight: 800; font-size: 1.3rem;" id="auth-modal-title">Sign In</h3>
+                <h3 class="font-bold text-xl text-on-surface" id="auth-modal-title">Sign In</h3>
                 <button class="modal-close" onclick="closeAuthModal()"><i class="fas fa-xmark"></i></button>
             </div>
             
@@ -515,6 +397,30 @@
                 <div class="auth-toggle-btn" id="btn-toggle-register" onclick="toggleAuthTab('register')">Register</div>
             </div>
             
+            <!-- Social OAuth Buttons -->
+            <div class="mb-4 space-y-2">
+                <button type="button" onclick="supabaseAuthSignInWithOAuth('google')" class="w-full bg-[#1c1f2c] hover:bg-[#272937] border border-outline-variant/30 text-on-surface py-2.5 px-4 rounded-lg font-medium flex items-center justify-center gap-3 transition-colors cursor-pointer text-sm">
+                    <svg class="w-4 h-4" viewBox="0 0 24 24">
+                        <path fill="#EA4335" d="M12 5c1.6 0 3 .6 4.1 1.7l3.1-3.1C17.3 1.8 14.8 1 12 1 7.5 1 3.7 3.6 1.9 7.3l3.7 2.9C6.5 7.3 9 5 12 5z"/>
+                        <path fill="#4285F4" d="M23.5 12.3c0-.8-.1-1.7-.2-2.3H12v4.6h6.5c-.3 1.5-1.1 2.8-2.4 3.7l3.7 2.9c2.2-2 3.7-5 3.7-8.9z"/>
+                        <path fill="#FBBC05" d="M5.6 14.8c-.2-.7-.4-1.5-.4-2.8s.2-2.1.4-2.8L1.9 6.3C.7 8.7 0 10.3 0 12s.7 3.3 1.9 5.7l3.7-2.9z"/>
+                        <path fill="#34A853" d="M12 23c3.2 0 6-1.1 8-3l-3.7-2.9c-1.1.7-2.5 1.2-4.3 1.2-3 0-5.5-2.3-6.4-5.2L1.9 16C3.7 19.7 7.5 23 12 23z"/>
+                    </svg>
+                    Continue with Google
+                </button>
+                <button type="button" onclick="supabaseAuthSignInWithOAuth('github')" class="w-full bg-[#1c1f2c] hover:bg-[#272937] border border-outline-variant/30 text-on-surface py-2.5 px-4 rounded-lg font-medium flex items-center justify-center gap-3 transition-colors cursor-pointer text-sm">
+                    <i class="fa-brands fa-github text-base"></i>
+                    Continue with GitHub
+                </button>
+            </div>
+
+            <!-- Divider -->
+            <div class="flex items-center my-4">
+                <div class="flex-grow border-t border-outline-variant/20"></div>
+                <span class="px-3 text-xs text-outline uppercase font-mono tracking-wider">or with email</span>
+                <div class="flex-grow border-t border-outline-variant/20"></div>
+            </div>
+
             <!-- Login Form -->
             <form id="login-form" onsubmit="handleLoginSubmit(event)">
                 <div class="input-group">
@@ -525,7 +431,7 @@
                     <label class="input-label">Password</label>
                     <input type="password" id="login-password" class="input-field" placeholder="••••••••" required>
                 </div>
-                <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 12px; height: 48px;">Sign In to Portal</button>
+                <button type="submit" class="w-full bg-gradient-to-r from-primary-container to-secondary-container text-on-primary py-3 rounded-lg font-bold hover:opacity-90 transition-opacity mt-4 cursor-pointer">Sign In to Portal</button>
             </form>
             
             <!-- Register Form -->
@@ -545,16 +451,16 @@
                 <div class="input-group">
                     <label class="input-label">Password</label>
                     <input type="password" id="reg-password" class="input-field" placeholder="Minimum 8 characters" oninput="validateRegPasswordStrength(this.value)" required>
-                    <div class="pw-meter" style="height: 4px; border-radius: 2px; margin-top: 6px; background: var(--bg-tertiary);">
-                        <div class="pw-strength-bar" id="reg-pw-strength" style="height: 100%; border-radius: 2px; width: 0%;"></div>
+                    <div class="h-1 bg-surface-container-high rounded-full mt-2 overflow-hidden">
+                        <div id="reg-pw-strength" class="h-full w-0 transition-all duration-300"></div>
                     </div>
-                    <span style="font-size: 0.75rem; color: var(--text-muted); margin-top: 4px;" id="reg-pw-text">Strength: Very Weak</span>
+                    <span class="text-xs text-outline mt-1 block" id="reg-pw-text">Strength: Very Weak</span>
                 </div>
                 <div class="input-group">
                     <label class="input-label">Confirm Password</label>
                     <input type="password" id="reg-confirm" class="input-field" placeholder="••••••••" required>
                 </div>
-                <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 12px; height: 48px;">Create Free Account</button>
+                <button type="submit" class="w-full bg-gradient-to-r from-primary-container to-secondary-container text-on-primary py-3 rounded-lg font-bold hover:opacity-90 transition-opacity mt-4 cursor-pointer">Create Free Account</button>
             </form>
         </div>
     </div>
@@ -562,94 +468,47 @@
     <!-- OTP VERIFICATION MODAL -->
     <div class="modal-overlay" id="otp-modal">
         <div class="modal-content" style="max-width: 420px;">
-            <div class="modal-header" style="text-align: center; display: block; position: relative;">
-                <h3 style="font-weight: 800; font-size: 1.3rem;"><i class="fas fa-shield-halved" style="color: var(--secondary); margin-right: 6px;"></i> Security Verification</h3>
-                <button class="modal-close" onclick="closeOtpModal()" style="position: absolute; right: 0; top: 0;"><i class="fas fa-xmark"></i></button>
+            <div class="modal-header">
+                <h3 class="font-bold text-xl text-on-surface flex items-center gap-2">
+                    <i class="fas fa-shield-halved text-secondary"></i> Security Verification
+                </h3>
+                <button class="modal-close" onclick="closeOtpModal()"><i class="fas fa-xmark"></i></button>
             </div>
-            <div style="text-align: center; margin-bottom: 24px;">
-                <p style="color: var(--text-secondary); font-size: 0.9rem; line-height: 1.5;">We sent a 6-digit OTP verification code to your email.</p>
+            <div class="text-center mb-6">
+                <p class="text-on-surface-variant text-sm">We sent a 6-digit OTP verification code to your email.</p>
             </div>
             
             <form onsubmit="handleOtpSubmit(event)">
                 <input type="hidden" id="otp-target-email">
-                <input type="hidden" id="otp-target-action"> <!-- 'login' or 'register' -->
+                <input type="hidden" id="otp-target-action">
                 
-                <div class="input-group">
-                    <label class="input-label" style="text-align: center;">Enter OTP Code</label>
-                    <input type="text" id="otp-input" class="input-field" maxlength="6" placeholder="000000" style="text-align: center; font-size: 1.5rem; letter-spacing: 6px; font-weight: 700;" required>
+                <div class="input-group text-center">
+                    <label class="input-label text-center">Enter OTP Code</label>
+                    <input type="text" id="otp-input" class="input-field text-center text-2xl tracking-[8px] font-mono font-bold" maxlength="6" placeholder="000000" required>
                 </div>
                 
-                <button type="submit" class="btn btn-cyan" style="width: 100%; margin-top: 12px; height: 48px;">Confirm & Verify</button>
+                <button type="submit" class="w-full bg-gradient-to-r from-secondary-container to-primary-container text-on-primary py-3 rounded-lg font-bold hover:opacity-90 transition-opacity mt-4 cursor-pointer">Confirm & Verify</button>
             </form>
             
-            <p style="text-align: center; font-size: 0.8rem; margin-top: 20px; color: var(--text-muted);">
-                Didn't receive code? <span style="color: var(--primary); cursor: pointer; font-weight: 600;" onclick="resendOtp()">Resend Code</span>
+            <p class="text-center text-xs text-outline mt-5">
+                Didn't receive code? <span class="text-primary hover:underline cursor-pointer font-semibold" onclick="resendOtp()">Resend Code</span>
             </p>
         </div>
     </div>
 
-    <!-- Core Scripts (Database & State Utilities) -->
+    <!-- Supabase JS Client & Auth Config -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="js/supabase-config.js"></script>
+
+    <!-- Core App Database & State Scripts -->
     <script src="js/app.js"></script>
 
-    <!-- Firebase SDK (Compatibility Mode) & Cloud Sync -->
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-analytics-compat.js"></script>
-    <script src="js/firebase-config.js"></script>
+    <!-- Three.js Library -->
+    <script src="https://ajax.googleapis.com/ajax/libs/threejs/r125/three.min.js"></script>
+
     <script>
-        function toggleNavMenu() {
-            const menu = document.getElementById("nav-links-menu");
-            if (menu) menu.classList.toggle("active");
-        }
-
-        // Close mobile nav when clicking outside
-        document.addEventListener("click", (e) => {
-            const menu = document.getElementById("nav-links-menu");
-            const toggleBtn = document.querySelector(".nav-toggle");
-            if (menu && menu.classList.contains("active") && !menu.contains(e.target) && !toggleBtn.contains(e.target)) {
-                menu.classList.remove("active");
-            }
-        });
-
-        // Quick set denomination chip handler
-        function setCalcValue(val) {
-            const input = document.getElementById("calc-value");
-            if (input) {
-                input.value = val;
-                updateCalcRate();
-            }
-            document.querySelectorAll(".calc-denom-chip").forEach(chip => {
-                if (chip.textContent.trim() === `$${val}`) {
-                    chip.classList.add("active");
-                } else {
-                    chip.classList.remove("active");
-                }
-            });
-        }
-
-        function selectTickerCard(brand) {
-            const select = document.getElementById("calc-brand");
-            if (select) {
-                select.value = brand;
-                updateCurrencyOptions();
-                window.location.href = "#calculator";
-            }
-        }
-
-        // Check if user session already active
+        // Check if user session is already active
         window.addEventListener("DOMContentLoaded", () => {
-            initTheme();
-            
-            // Check for suspension or ban query param
-            const params = new URLSearchParams(window.location.search);
-            if (params.get("suspended") === "true") {
-                showToast("Your account has been suspended. Please contact support.", "danger");
-                window.history.replaceState(null, null, window.location.pathname);
-            } else if (params.get("banned") === "true") {
-                showToast("Your account has been permanently banned. Contact support if you believe this is an error.", "danger");
-                window.history.replaceState(null, null, window.location.pathname);
-            }
-            
             const user = getSessionUser();
             if (user) {
                 const db = getDB();
@@ -663,141 +522,162 @@
                     if (authAct) authAct.style.display = "flex";
                 }
             }
-            
-            populateLandingRates();
-            populateCalculatorBrands();
         });
 
-        function populateLandingRates() {
-            const grid = document.getElementById("popular-rates-grid");
-            if (!grid) return;
-            grid.innerHTML = "";
-            
-            const popularCards = [
-                { brand: "Apple/iTunes", icon: "fa-brands fa-apple", color: "#A2AAAD", bestRate: "₦1,990/$" },
-                { brand: "Steam", icon: "fa-brands fa-steam", color: "#60a5fa", bestRate: "₦2,200/$" },
-                { brand: "Google Play", icon: "fa-brands fa-google-play", color: "#34d399", bestRate: "₦2,360/$" },
-                { brand: "Amazon", icon: "fa-brands fa-amazon", color: "#fbbf24", bestRate: "₦1,980/$" },
-                { brand: "Walmart", icon: "fa-solid fa-cart-shopping", color: "#38bdf8", bestRate: "₦1,860/$" },
-                { brand: "Sephora", icon: "fa-solid fa-gem", color: "#f43f5e", bestRate: "₦1,390/$" },
-                { brand: "Nike", icon: "fa-solid fa-tag", color: "#f97316", bestRate: "₦1,520/$" },
-                { brand: "Razer Gold", icon: "fa-solid fa-gamepad", color: "#a855f7", bestRate: "₦2,100/$" }
-            ];
-            
-            popularCards.forEach(card => {
-                const cardEl = document.createElement("div");
-                cardEl.className = "card";
-                cardEl.style.padding = "24px";
-                cardEl.style.cursor = "pointer";
-                cardEl.style.borderRadius = "20px";
-                cardEl.onclick = () => {
-                    document.getElementById("calc-brand").value = card.brand;
-                    updateCurrencyOptions();
-                    window.location.href = "#calculator";
-                };
-                
-                cardEl.innerHTML = `
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
-                        <div style="width: 50px; height: 50px; border-radius: 14px; background: rgba(255,255,255,0.06); display: flex; align-items: center; justify-content: center; font-size: 1.55rem; color: ${card.color}; box-shadow: 0 0 15px rgba(255,255,255,0.05);">
-                            <i class="${card.icon}"></i>
-                        </div>
-                        <span class="badge badge-success" style="font-size: 0.72rem; padding: 4px 10px;">High Yield</span>
-                    </div>
-                    <h3 style="font-weight: 800; font-size: 1.15rem; margin-bottom: 4px; color: #ffffff;">${card.brand}</h3>
-                    <p style="color: var(--text-muted); font-size: 0.8rem; margin-bottom: 14px;">Physical & E-Codes</p>
-                    <div style="display: flex; justify-content: space-between; align-items: baseline; border-top: 1px dashed rgba(255,255,255,0.08); padding-top: 10px;">
-                        <span style="font-size: 0.8rem; color: var(--text-secondary);">Top Rate:</span>
-                        <span style="font-size: 1.2rem; font-weight: 800; color: #34d399;">${card.bestRate}</span>
-                    </div>
-                `;
-                grid.appendChild(cardEl);
-            });
-        }
+        // --- WebGL Background Shader ---
+        (function initShader() {
+            const canvas = document.getElementById('shader-canvas');
+            if (!canvas) return;
+            const gl = canvas.getContext('webgl');
+            if (!gl) return;
 
-        function populateCalculatorBrands() {
-            const select = document.getElementById("calc-brand");
-            if (!select) return;
-            select.innerHTML = "";
-            
-            Object.keys(GIFT_CARD_CATEGORIES).forEach(category => {
-                const optGroup = document.createElement("optgroup");
-                optGroup.label = category;
-                
-                GIFT_CARD_CATEGORIES[category].forEach(brand => {
-                    const opt = document.createElement("option");
-                    opt.value = brand;
-                    opt.textContent = brand;
-                    if (brand === "Apple/iTunes") opt.selected = true;
-                    optGroup.appendChild(opt);
-                });
-                select.appendChild(optGroup);
-            });
-            
-            updateCurrencyOptions();
-        }
-
-        function updateCurrencyOptions() {
-            const brand = document.getElementById("calc-brand").value;
-            const currencySelect = document.getElementById("calc-currency");
-            currencySelect.innerHTML = "";
-            
-            const db = getDB();
-            const activeCurrencies = db.currencies || {};
-            const rates = db.settings.rates;
-            
-            if (rates && rates[brand]) {
-                Object.keys(rates[brand]).forEach(curr => {
-                    let isAllowed = true;
-                    if (curr === "USD" || curr === "USA" || ["Canada", "Australia", "Switzerland (CHF)", "Japan (JPY)", "China (CNY)", "Hong Kong (HKD)", "Singapore (SGD)", "New Zealand (NZD)", "UAE (AED)", "Saudi Arabia (SAR)", "South Africa (ZAR)", "India (INR)"].includes(curr)) {
-                        isAllowed = activeCurrencies["USD"] ? activeCurrencies["USD"].status === "ACTIVE" : true;
-                    } else if (curr === "EUR" || curr === "Europe (EUR)" || ["Germany", "France", "Italy", "Spain", "Netherlands", "UK"].includes(curr)) {
-                        isAllowed = activeCurrencies["EUR"] ? activeCurrencies["EUR"].status === "ACTIVE" : true;
-                    } else if (curr === "NGN") {
-                        isAllowed = activeCurrencies["NGN"] ? activeCurrencies["NGN"].status === "ACTIVE" : true;
-                    } else if (activeCurrencies[curr]) {
-                        isAllowed = activeCurrencies[curr].status === "ACTIVE";
-                    }
-                    
-                    if (isAllowed) {
-                        const opt = document.createElement("option");
-                        opt.value = curr;
-                        opt.textContent = curr;
-                        currencySelect.appendChild(opt);
-                    }
-                });
+            function syncSize() {
+                canvas.width = canvas.clientWidth || window.innerWidth;
+                canvas.height = canvas.clientHeight || window.innerHeight;
+                gl.viewport(0, 0, canvas.width, canvas.height);
             }
-            updateCalcRate();
-        }
+            window.addEventListener('resize', syncSize);
+            syncSize();
 
-        // Calculate and update rate output
-        function updateCalcRate() {
-            const db = getDB();
-            const rates = db.settings.rates;
-            const brand = document.getElementById("calc-brand").value;
-            const currency = document.getElementById("calc-currency").value;
-            const valueInput = document.getElementById("calc-value");
-            
-            let val = parseFloat(valueInput.value);
-            if (isNaN(val) || val <= 0) val = 0;
-            
-            let rate = 0;
-            if (rates[brand] && rates[brand][currency]) {
-                rate = rates[brand][currency];
+            const vs = `attribute vec2 a_position;
+            void main() {
+                gl_Position = vec4(a_position, 0.0, 1.0);
+            }`;
+
+            const fs = `
+            precision highp float;
+            uniform float u_time;
+            uniform vec2 u_resolution;
+            uniform vec2 u_mouse;
+
+            void main() {
+                vec2 uv = gl_FragCoord.xy / u_resolution;
+                vec2 mouse = u_mouse / u_resolution;
+                float n1 = sin(uv.x * 8.0 + u_time * 0.4) * cos(uv.y * 6.0 - u_time * 0.3);
+                float n2 = sin(uv.y * 12.0 + u_time * 0.2) * 0.5;
+                vec3 color = vec3(0.02, 0.03, 0.08);
+                color += vec3(0.23, 0.51, 0.96) * smoothstep(-1.0, 1.0, n1) * 0.2;
+                color += vec3(0.02, 0.71, 0.83) * smoothstep(-1.0, 1.0, n2) * 0.15;
+                float d = distance(uv, mouse);
+                color += vec3(0.23, 0.51, 0.96) * smoothstep(0.4, 0.0, d) * 0.08;
+                gl_FragColor = vec4(color, 1.0);
             }
-            
-            const payout = val * rate;
-            
-            // Format NGN output
-            document.getElementById("calc-result").textContent = "₦" + payout.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
-            
-            let symbol = "$";
-            if (currency === "UK") symbol = "£";
-            if (["Europe (EUR)", "Germany", "France", "Italy", "Spain", "Netherlands"].includes(currency)) symbol = "€";
-            
-            document.getElementById("calc-exchange-text").textContent = `Rate: ₦${rate.toLocaleString()} / ${symbol}1`;
-        }
+            `;
 
-        // Modals Toggle
+            function createShader(gl, type, source) {
+                const s = gl.createShader(type);
+                gl.shaderSource(s, source);
+                gl.compileShader(s);
+                return s;
+            }
+
+            const program = gl.createProgram();
+            gl.attachShader(program, createShader(gl, gl.VERTEX_SHADER, vs));
+            gl.attachShader(program, createShader(gl, gl.FRAGMENT_SHADER, fs));
+            gl.linkProgram(program);
+            gl.useProgram(program);
+
+            const buffer = gl.createBuffer();
+            gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+            gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1, 1,-1, -1,1, 1,1]), gl.STATIC_DRAW);
+
+            const pos = gl.getAttribLocation(program, 'a_position');
+            gl.enableVertexAttribArray(pos);
+            gl.vertexAttribPointer(pos, 2, gl.FLOAT, false, 0, 0);
+
+            const utime = gl.getUniformLocation(program, 'u_time');
+            const ures = gl.getUniformLocation(program, 'u_resolution');
+            const umouse = gl.getUniformLocation(program, 'u_mouse');
+
+            let mouseX = canvas.width / 2, mouseY = canvas.height / 2;
+            window.addEventListener('mousemove', e => {
+                mouseX = e.clientX;
+                mouseY = canvas.height - e.clientY;
+            });
+
+            function render(t) {
+                gl.uniform1f(utime, t * 0.001);
+                gl.uniform2f(ures, canvas.width, canvas.height);
+                gl.uniform2f(umouse, mouseX, mouseY);
+                gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+                requestAnimationFrame(render);
+            }
+            render(0);
+        })();
+
+        // --- Three.js 3D Secure Core ---
+        (function initThree() {
+            const container = document.getElementById('threejs-container');
+            if (!container) return;
+
+            const scene = new THREE.Scene();
+            const camera = new THREE.PerspectiveCamera(75, container.clientWidth / container.clientHeight, 0.1, 1000);
+            const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+            
+            renderer.setSize(container.clientWidth, container.clientHeight);
+            container.appendChild(renderer.domElement);
+
+            const coreGroup = new THREE.Group();
+            scene.add(coreGroup);
+
+            const core = new THREE.Mesh(
+                new THREE.OctahedronGeometry(1.5, 0),
+                new THREE.MeshPhongMaterial({
+                    color: 0x3b82f6,
+                    emissive: 0x06b6d4,
+                    emissiveIntensity: 0.5,
+                    shininess: 100,
+                    transparent: true,
+                    opacity: 0.9
+                })
+            );
+            coreGroup.add(core);
+
+            const shield = new THREE.Mesh(
+                new THREE.IcosahedronGeometry(2.5, 1),
+                new THREE.MeshBasicMaterial({
+                    color: 0x06b6d4,
+                    wireframe: true,
+                    transparent: true,
+                    opacity: 0.3
+                })
+            );
+            coreGroup.add(shield);
+
+            scene.add(new THREE.AmbientLight(0xffffff, 0.4));
+            const light = new THREE.PointLight(0x3b82f6, 1.5, 15);
+            light.position.set(5, 5, 5);
+            scene.add(light);
+
+            camera.position.z = 6.5;
+
+            let targetX = 0, targetY = 0;
+            window.addEventListener('mousemove', e => {
+                targetX = (e.clientX / window.innerWidth) * 2 - 1;
+                targetY = -(e.clientY / window.innerHeight) * 2 + 1;
+            });
+
+            window.addEventListener('resize', () => {
+                if (container.clientWidth && container.clientHeight) {
+                    camera.aspect = container.clientWidth / container.clientHeight;
+                    camera.updateProjectionMatrix();
+                    renderer.setSize(container.clientWidth, container.clientHeight);
+                }
+            });
+
+            function animate() {
+                requestAnimationFrame(animate);
+                core.rotation.x += 0.008;
+                core.rotation.y += 0.012;
+                shield.rotation.y -= 0.004;
+                coreGroup.rotation.y += (targetX * 0.5 - coreGroup.rotation.y) * 0.05;
+                coreGroup.rotation.x += (-targetY * 0.5 - coreGroup.rotation.x) * 0.05;
+                renderer.render(scene, camera);
+            }
+            animate();
+        })();
+
+        // --- Modals & Authentication Handlers ---
         function openAuthModal(tab = "login") {
             document.getElementById("auth-modal").classList.add("active");
             toggleAuthTab(tab);
@@ -842,26 +722,25 @@
             document.getElementById("otp-modal").classList.remove("active");
         }
 
-        // Live Password meter
         function validateRegPasswordStrength(pw) {
             const strength = checkPasswordStrength(pw);
             const bar = document.getElementById("reg-pw-strength");
             const txt = document.getElementById("reg-pw-text");
             
-            let color = "var(--danger)";
+            let color = "#ef4444";
             let label = "Very Weak";
             let width = "25%";
             
             if (strength === 2) {
-                color = "var(--warning)";
+                color = "#f59e0b";
                 label = "Fair / Medium";
                 width = "50%";
             } else if (strength === 3) {
-                color = "var(--secondary)";
+                color = "#4cd7f6";
                 label = "Good";
                 width = "75%";
             } else if (strength === 4) {
-                color = "var(--accent)";
+                color = "#4edea3";
                 label = "Strong / Secure";
                 width = "100%";
             }
@@ -872,44 +751,50 @@
             txt.style.color = color;
         }
 
-        // Auth Submit Handlers
-        function handleLoginSubmit(e) {
+        async function handleLoginSubmit(e) {
             e.preventDefault();
             const email = document.getElementById("login-email").value.trim().toLowerCase();
             const password = document.getElementById("login-password").value;
             
-            // Rate Limit Verification
             const limit = checkRateLimit(email, 5, 60);
             if (!limit.allowed) {
                 showToast(`Too many failed attempts. Cooldown: ${limit.cooldown} seconds.`, "danger");
                 return;
             }
             
-            const db = getDB();
-            const user = db.users[email];
-            
-            if (!user || user.passwordHash !== password) {
-                showToast("Incorrect email address or password combination.", "danger");
-                return;
+            const submitBtn = e.target.querySelector("button[type='submit']");
+            const origText = submitBtn ? submitBtn.innerText : "Sign In";
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.innerText = "Authenticating...";
             }
-            
-            if (user.status === "SUSPENDED") {
-                showToast("Your account has been suspended. Please contact support.", "danger");
-                return;
+
+            try {
+                const res = await supabaseAuthSignIn(email, password);
+                if (!res.success) {
+                    showToast(res.message, "danger");
+                    if (submitBtn) {
+                        submitBtn.disabled = false;
+                        submitBtn.innerText = origText;
+                    }
+                    return;
+                }
+
+                // If Supabase live authentication or local fallback verified
+                generateOTP(email);
+                showToast(`Security verification code sent to email.`, "success");
+                openOtpModal(email, "login");
+            } catch (err) {
+                showToast("Authentication request error: " + err.message, "danger");
+            } finally {
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.innerText = origText;
+                }
             }
-            
-            if (user.status === "BANNED") {
-                showToast("Your account has been permanently banned. Contact support if you believe this is an error.", "danger");
-                return;
-            }
-            
-            // Send OTP
-            generateOTP(email);
-            showToast(`Simulated security code sent to email.`, "success");
-            openOtpModal(email, "login");
         }
 
-        function handleRegisterSubmit(e) {
+        async function handleRegisterSubmit(e) {
             e.preventDefault();
             const name = document.getElementById("reg-name").value.trim();
             const email = document.getElementById("reg-email").value.trim().toLowerCase();
@@ -926,23 +811,40 @@
                 showToast("Password is too weak. Please include letters, numbers, or symbols.", "warning");
                 return;
             }
-            
-            const db = getDB();
-            if (db.users[email]) {
-                showToast("An account with this email address already exists.", "danger");
-                return;
+
+            const submitBtn = e.target.querySelector("button[type='submit']");
+            const origText = submitBtn ? submitBtn.innerText : "Create Free Account";
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.innerText = "Creating Account...";
             }
-            
-            // Generate OTP for registration verification
-            generateOTP(email);
-            
-            // Stash registration values in sessionStorage temporarily until OTP matches
-            sessionStorage.setItem("pending_registration", JSON.stringify({
-                name, email, phone, passwordHash: password
-            }));
-            
-            showToast(`Simulated security registration code sent.`, "success");
-            openOtpModal(email, "register");
+
+            try {
+                const res = await supabaseAuthSignUp(email, password, { name, phone });
+                if (!res.success) {
+                    showToast(res.message, "danger");
+                    if (submitBtn) {
+                        submitBtn.disabled = false;
+                        submitBtn.innerText = origText;
+                    }
+                    return;
+                }
+
+                generateOTP(email);
+                sessionStorage.setItem("pending_registration", JSON.stringify({
+                    name, email, phone, passwordHash: password
+                }));
+                
+                showToast(`Verification code sent to your email.`, "success");
+                openOtpModal(email, "register");
+            } catch (err) {
+                showToast("Registration error: " + err.message, "danger");
+            } finally {
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.innerText = origText;
+                }
+            }
         }
 
         function handleOtpSubmit(e) {
@@ -966,7 +868,6 @@
                     return;
                 }
                 
-                // Save new user in database
                 db.users[email] = {
                     name: pending.name,
                     email: pending.email,
@@ -975,7 +876,7 @@
                     role: "USER",
                     status: "ACTIVE",
                     createdAt: new Date().toISOString(),
-                    bankDetails: null, // empty initially
+                    bankDetails: null,
                     wallet: {
                         balance: 0.00,
                         pendingBalance: 0.00
@@ -988,7 +889,6 @@
                     ]
                 };
                 
-                // Log event
                 db.auditTrail.unshift({
                     operator: "system",
                     event: "User Registered",
@@ -998,16 +898,13 @@
                 
                 saveDB(db);
                 sessionStorage.removeItem("pending_registration");
-                
                 showToast("Account verified successfully! Logging you in...", "success");
             } else {
                 showToast("OTP verified successfully. Connecting to dashboard...", "success");
             }
             
-            // Establish session and redirect
             setSessionUser(email);
             
-            // Add session log
             const updatedDb = getDB();
             updatedDb.users[email].logs.unshift({
                 event: "Successful Login (OTP Checked)",

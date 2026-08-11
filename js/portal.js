@@ -154,29 +154,6 @@ function loadSession() {
     } else {
         document.title = "Goodfastpay - Customer Portal";
     }
-
-    // Attach Cloud Firestore Realtime Sync Listener
-    initPortalFirestoreListeners();
-}
-
-let isFirestoreListening = false;
-function initPortalFirestoreListeners() {
-    if (isFirestoreListening || !currentUser) return;
-    if (typeof listenToUserCloudUpdates === "function") {
-        listenToUserCloudUpdates(currentUser.email, (cloudUser) => {
-            console.log("⚡ Realtime cloud update received for user profile");
-            loadSession();
-        });
-    }
-    if (typeof listenToCollectionCloudUpdates === "function") {
-        listenToCollectionCloudUpdates("submissions", () => {
-            loadSession();
-        });
-        listenToCollectionCloudUpdates("tickets", () => {
-            if (typeof renderUserTickets === "function") renderUserTickets();
-        });
-    }
-    isFirestoreListening = true;
 }
 
 // Side drawer toggling for mobile layout
@@ -1282,18 +1259,26 @@ function renderSecurityLogs() {
 
 // Handle User logout
 function handleLogout() {
-    const db = getDB();
-    db.users[currentUser.email].logs.unshift({
-        event: "User Logged Out",
-        timestamp: new Date().toISOString(),
-        ip: "197.34.120.44"
-    });
-    saveDB(db);
-    clearSession();
-    showToast("Signed out successfully.", "success");
-    setTimeout(() => {
-        window.location.href = "index.html";
-    }, 1000);
+    if (currentUser) {
+        const db = getDB();
+        if (db.users[currentUser.email]) {
+            db.users[currentUser.email].logs.unshift({
+                event: "User Logged Out",
+                timestamp: new Date().toISOString(),
+                ip: "197.34.120.44"
+            });
+            saveDB(db);
+        }
+    }
+    if (typeof supabaseAuthSignOut === "function") {
+        supabaseAuthSignOut();
+    } else {
+        clearSession();
+        showToast("Signed out successfully.", "success");
+        setTimeout(() => {
+            window.location.href = "index.html";
+        }, 1000);
+    }
 }
 
 // ================= BUY GIFT CARD SYSTEM =================

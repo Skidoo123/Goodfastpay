@@ -379,21 +379,6 @@ function saveDB(db) {
         }
     }
 
-    // Broadcast update asynchronously to Cloud Firestore in the background
-    if (typeof syncEntireDBToCloud === "function") {
-        syncEntireDBToCloud(db).catch(err => {
-            console.warn("Cloud background sync notice:", err.message);
-        });
-    }
-}
-
-// Automatically sync latest cloud state on page load
-if (typeof window !== "undefined") {
-    window.addEventListener("DOMContentLoaded", () => {
-        if (typeof pullCloudDBToLocal === "function") {
-            pullCloudDBToLocal().catch(() => {});
-        }
-    });
 }
 
 // Session Helpers
