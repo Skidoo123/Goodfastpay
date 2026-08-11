@@ -4914,14 +4914,105 @@ body {
 .verified-pill-badge {
     display: inline-flex;
     align-items: center;
-    gap: 4px;
-    background: rgba(16, 185, 129, 0.12);
-    color: #10b981;
+    gap: 5px;
     font-size: 0.72rem;
     font-weight: 700;
-    padding: 2px 8px;
+    padding: 3px 9px;
     border-radius: 100px;
     margin-top: 2px;
+    transition: all 0.2s ease;
+}
+
+.verified-pill-badge.badge-verified {
+    background: rgba(16, 185, 129, 0.12);
+    color: #10b981;
+    border: 1px solid rgba(16, 185, 129, 0.25);
+}
+
+.verified-pill-badge.badge-unverified {
+    background: rgba(245, 158, 11, 0.12);
+    color: #f59e0b;
+    border: 1px solid rgba(245, 158, 11, 0.25);
+    cursor: pointer;
+}
+
+.verified-pill-badge.badge-unverified:hover {
+    background: rgba(245, 158, 11, 0.2);
+}
+
+.sidebar-profile-status.status-verified {
+    color: #10b981;
+}
+
+.sidebar-profile-status.status-unverified {
+    color: #f59e0b;
+}
+
+/* Verification Checklist Modal */
+.verification-check-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 14px;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    border-radius: 14px;
+    gap: 10px;
+    width: 100%;
+    box-sizing: border-box;
+    transition: border-color 0.2s ease;
+}
+
+.verification-check-item.complete {
+    border-color: rgba(16, 185, 129, 0.3);
+}
+
+.check-icon-circle {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.85rem;
+    flex-shrink: 0;
+}
+
+.check-icon-circle.icon-done {
+    background: rgba(16, 185, 129, 0.15);
+    color: #10b981;
+}
+
+.check-icon-circle.icon-pending {
+    background: rgba(245, 158, 11, 0.15);
+    color: #f59e0b;
+}
+
+.check-done-pill {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #10b981;
+    background: rgba(16, 185, 129, 0.12);
+    padding: 4px 10px;
+    border-radius: 100px;
+    white-space: nowrap;
+}
+
+.btn-check-action {
+    background: var(--primary);
+    color: #ffffff;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 8px;
+    font-size: 0.78rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: opacity 0.2s;
+    white-space: nowrap;
+}
+
+.btn-check-action:hover {
+    opacity: 0.9;
 }
 
 /* ================= AVATAR ACTION SHEET & CROPPER SYSTEM ================= */

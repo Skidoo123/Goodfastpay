@@ -650,10 +650,41 @@ function populateBuyCountryFilters() {
     }
 }
 
+// Retrieve exact exchange rate synchronizing Currency Manager rates
+function getCardExchangeRate(brand, currency) {
+    const db = getDB();
+    const rates = db.settings ? (db.settings.rates || {}) : {};
+    const currencies = db.currencies || {};
+    
+    // Normalize currency keys if needed
+    let code = currency || "USD";
+    if (code === "USA") code = "USD";
+    else if (code === "Europe (EUR)" || ["Germany", "France", "Italy", "Spain", "Netherlands"].includes(code)) code = "EUR";
+    else if (code === "UK") code = "GBP";
+
+    // 1. Direct brand specific rate for exact currency or normalized code
+    if (brand && rates[brand]) {
+        if (rates[brand][currency] !== undefined && rates[brand][currency] > 0) return rates[brand][currency];
+        if (rates[brand][code] !== undefined && rates[brand][code] > 0) return rates[brand][code];
+    }
+
+    // 2. Direct currency manager rate from currencies table
+    if (currencies[code] && currencies[code].rate && currencies[code].rate > 0) {
+        return currencies[code].rate;
+    }
+    if (currencies[currency] && currencies[currency].rate && currencies[currency].rate > 0) {
+        return currencies[currency].rate;
+    }
+
+    // 3. Fallback to active USD base rate or default
+    if (currencies["USD"] && currencies["USD"].rate) {
+        return currencies["USD"].rate;
+    }
+    return 1200;
+}
+
 // Update live estimation rate in trade workspace
 function updateSellRate() {
-    const db = getDB();
-    const rates = db.settings.rates;
     const brandSelect = document.getElementById("sell-brand");
     const currencySelect = document.getElementById("sell-currency");
     const valueInput = document.getElementById("sell-value");
@@ -666,14 +697,7 @@ function updateSellRate() {
     let val = parseFloat(valueInput.value);
     if (isNaN(val) || val <= 0) val = 0;
     
-    let rate = 0;
-    if (brand && currency && rates[brand] && rates[brand][currency]) {
-        rate = rates[brand][currency];
-    } else {
-        // Default fallback estimation rate
-        rate = 850;
-    }
-    
+    const rate = getCardExchangeRate(brand, currency);
     const payout = val * rate;
     const symbol = getCurrencySymbol(currency) || "$";
     
@@ -1788,6 +1812,136 @@ function renderSettingsProfile() {
     const nameEl = document.getElementById("settings-user-fullname");
     if (nameEl) nameEl.textContent = currentUser.name;
     updateGlobalAvatars(currentUser.avatar);
+    updateVerificationBadges();
+}
+
+// ================= ACCOUNT SETTINGS VERIFICATION REQUIREMENTS =================
+
+function checkUserVerification(user) {
+    if (!user) return { isVerified: false, completed: 0, total: 4, items: [] };
+    
+    const items = [
+        {
+            id: "name",
+            title: "Full Legal Name",
+            desc: "Full name configured on profile",
+            isComplete: Boolean(user.name && user.name.trim().length >= 3),
+            actionText: "Set Name"
+        },
+        {
+            id: "phone",
+            title: "Phone Number",
+            desc: "Active mobile phone connected",
+            isComplete: Boolean(user.phone && user.phone.trim().length >= 7),
+            actionText: "Set Phone"
+        },
+        {
+            id: "bank",
+            title: "Linked Bank Account",
+            desc: "10-digit NUBAN bank account linked",
+            isComplete: Boolean(user.bankDetails && user.bankDetails.bankName && user.bankDetails.accountNumber && user.bankDetails.accountNumber.length === 10),
+            actionText: "Link Bank"
+        },
+        {
+            id: "2fa",
+            title: "Two-Factor Authentication",
+            desc: "2FA protection enabled in Settings",
+            isComplete: Boolean(user.twoFactorEnabled === true || user.transactionPin),
+            actionText: "Enable 2FA"
+        }
+    ];
+
+    const completed = items.filter(i => i.isComplete).length;
+    const isVerified = completed === items.length;
+    return { isVerified, completed, total: items.length, items };
+}
+
+function updateVerificationBadges() {
+    if (!currentUser) return;
+    const db = getDB();
+    const user = db.users[currentUser.email] || currentUser;
+    const status = checkUserVerification(user);
+
+    // 1. Settings Card Badge
+    const settingsBadge = document.getElementById("settings-verified-badge");
+    if (settingsBadge) {
+        if (status.isVerified) {
+            settingsBadge.className = "verified-pill-badge badge-verified";
+            settingsBadge.innerHTML = `<i class="fa-solid fa-circle-check"></i> Verified`;
+            settingsBadge.title = "All account verification requirements met";
+        } else {
+            settingsBadge.className = "verified-pill-badge badge-unverified";
+            settingsBadge.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i> Unverified (${status.completed}/${status.total})`;
+            settingsBadge.title = "Tap to view missing verification requirements";
+        }
+    }
+
+    // 2. Sidebar Profile Status
+    const sidebarStatus = document.getElementById("sidebar-profile-status");
+    if (sidebarStatus) {
+        if (status.isVerified) {
+            sidebarStatus.className = "sidebar-profile-status status-verified";
+            sidebarStatus.innerHTML = `<i class="fas fa-circle-check"></i> Verified`;
+            sidebarStatus.title = "Account Verified";
+        } else {
+            sidebarStatus.className = "sidebar-profile-status status-unverified";
+            sidebarStatus.innerHTML = `<i class="fas fa-circle-exclamation"></i> Unverified`;
+            sidebarStatus.title = "Tap Settings to complete verification";
+        }
+    }
+}
+
+function openVerificationModal() {
+    if (!currentUser) return;
+    const db = getDB();
+    const user = db.users[currentUser.email] || currentUser;
+    const status = checkUserVerification(user);
+    const container = document.getElementById("verification-checklist-container");
+    
+    if (container) {
+        container.innerHTML = "";
+        status.items.forEach(item => {
+            const row = document.createElement("div");
+            row.className = "verification-check-item " + (item.isComplete ? "complete" : "incomplete");
+            row.innerHTML = `
+                <div style="display: flex; align-items: center; gap: 12px; min-width: 0; flex: 1;">
+                    <div class="check-icon-circle ${item.isComplete ? 'icon-done' : 'icon-pending'}">
+                        <i class="${item.isComplete ? 'fa-solid fa-check' : 'fa-solid fa-clock'}"></i>
+                    </div>
+                    <div>
+                        <div style="font-weight: 700; font-size: 0.9rem; color: var(--text-primary);">${item.title}</div>
+                        <div style="font-size: 0.74rem; color: var(--text-secondary); margin-top: 1px;">${item.desc}</div>
+                    </div>
+                </div>
+                <div>
+                    ${item.isComplete 
+                        ? `<span class="check-done-pill">✓ Done</span>` 
+                        : `<button type="button" class="btn-check-action" onclick="handleVerificationAction('${item.id}')">${item.actionText}</button>`
+                    }
+                </div>
+            `;
+            container.appendChild(row);
+        });
+    }
+
+    const modal = document.getElementById("verification-requirements-modal");
+    if (modal) modal.classList.add("active");
+}
+
+function closeVerificationModal() {
+    const modal = document.getElementById("verification-requirements-modal");
+    if (modal) modal.classList.remove("active");
+}
+
+function handleVerificationAction(itemId) {
+    closeVerificationModal();
+    if (itemId === "name" || itemId === "phone") {
+        openEditProfileModal();
+    } else if (itemId === "bank") {
+        openAddBankModal();
+    } else if (itemId === "2fa") {
+        switchSection("settings");
+    }
 }
 
 // ================= PROFILE PICTURE INTERACTIVE CROP & MANAGEMENT =================

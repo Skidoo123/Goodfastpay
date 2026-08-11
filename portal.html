@@ -637,7 +637,7 @@
                             </div>
                             <div>
                                 <h3 style="font-size: 1.15rem; font-weight: 800; color: var(--text-primary); margin: 0 0 4px 0;" id="settings-user-fullname">John Doe</h3>
-                                <div class="verified-pill-badge">
+                                <div class="verified-pill-badge" id="settings-verified-badge" onclick="openVerificationModal()">
                                     <i class="fa-solid fa-circle-check"></i> Verified
                                 </div>
                             </div>
@@ -1193,6 +1193,25 @@
                     <i class="fa-solid fa-check"></i> Save Photo
                 </button>
             </div>
+        </div>
+    </div>
+
+    <!-- ACCOUNT VERIFICATION REQUIREMENTS MODAL -->
+    <div class="modal-overlay" id="verification-requirements-modal">
+        <div class="modal-content" style="max-width: 440px; padding: 24px; border-radius: 20px;">
+            <div class="modal-header">
+                <h3 style="font-weight: 800; font-size: 1.18rem;">
+                    <i class="fa-solid fa-shield-halved" style="color: #10b981; margin-right: 8px;"></i> Account Verification
+                </h3>
+                <button type="button" class="modal-close" onclick="closeVerificationModal()">&times;</button>
+            </div>
+            <p style="font-size: 0.82rem; color: var(--text-secondary); margin-bottom: 16px;">The <strong>Verified</strong> trust badge is granted when all essential profile and security settings are completed.</p>
+            
+            <div id="verification-checklist-container" style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px;">
+                <!-- Populated dynamically via portal.js -->
+            </div>
+            
+            <button type="button" class="btn btn-secondary" onclick="closeVerificationModal()" style="width: 100%; border-radius: 12px; height: 46px; font-weight: 700;">Close</button>
         </div>
     </div>
 
