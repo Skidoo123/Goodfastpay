@@ -4363,44 +4363,94 @@ body {
     gap: 6px;
 }
 
-/* Available Balance Dark Card (Screen 3) */
+/* Available Balance Dark Card (Screen 3 Fidelity) */
 .available-balance-card {
-    background: #0f172a;
+    background: #0b1120;
     color: #ffffff;
+    border: 1px solid rgba(255, 255, 255, 0.08);
     border-radius: 16px;
-    padding: 24px;
-    margin-bottom: 24px;
-    box-shadow: 0 10px 25px rgba(15, 23, 42, 0.15);
+    padding: 22px 20px;
+    margin-bottom: 20px;
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.35);
+    width: 100%;
+    box-sizing: border-box;
 }
 
 .available-balance-card .balance-caption {
     font-size: 0.72rem;
-    font-weight: 700;
+    font-weight: 800;
     letter-spacing: 1.2px;
     text-transform: uppercase;
     color: #94a3b8;
-    margin-bottom: 8px;
+    margin-bottom: 6px;
 }
 
 .available-balance-card .balance-number {
-    font-size: 2rem;
+    font-size: clamp(38px, 9.5vw, 44px);
     font-weight: 800;
     color: #ffffff;
     display: flex;
     align-items: baseline;
-    gap: 6px;
+    gap: 4px;
+    line-height: 1.1;
 }
 
-/* Withdrawal Calculation Summary Box */
+.available-balance-card .balance-curr-sym {
+    font-size: clamp(30px, 7.5vw, 36px);
+    font-weight: 700;
+    color: #10b981;
+}
+
+/* Custom Bank Destination Select with Chevron */
+.custom-bank-select-wrapper {
+    position: relative;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.custom-bank-select {
+    width: 100% !important;
+    height: 48px !important;
+    padding: 0 38px 0 14px !important;
+    background: var(--bg-tertiary) !important;
+    border: 1px solid var(--border-color) !important;
+    border-radius: 12px !important;
+    font-weight: 600 !important;
+    font-size: 0.9rem !important;
+    appearance: none !important;
+    -webkit-appearance: none !important;
+    color: var(--text-primary) !important;
+    cursor: pointer;
+    box-sizing: border-box !important;
+}
+
+.custom-bank-select:focus {
+    border-color: #10b981 !important;
+    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15) !important;
+}
+
+.select-chevron-icon {
+    position: absolute;
+    right: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    pointer-events: none;
+    color: var(--text-muted);
+    font-size: 0.85rem;
+}
+
+/* Withdrawal Calculation Summary Box (Screen 3 Fidelity) */
 .withdraw-calc-box {
     background: var(--bg-tertiary);
     border: 1px solid var(--border-color);
-    border-radius: 12px;
-    padding: 18px 20px;
-    margin-bottom: 24px;
+    border-radius: 14px;
+    padding: 16px 18px;
+    margin-bottom: 20px;
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 10px;
+    width: 100%;
+    box-sizing: border-box;
 }
 
 .withdraw-calc-row {
@@ -4411,12 +4461,60 @@ body {
     color: var(--text-secondary);
 }
 
+.withdraw-calc-row .calc-val-right {
+    font-weight: 700;
+    color: var(--text-primary);
+    text-align: right;
+}
+
 .withdraw-calc-row.total-row {
     border-top: 1px solid var(--border-color);
     padding-top: 12px;
-    font-size: 1rem;
+    margin-top: 2px;
+}
+
+.calc-net-highlight {
     font-weight: 800;
-    color: var(--text-primary);
+    font-size: 1.15rem;
+    color: #10b981;
+    text-align: right;
+    text-shadow: 0 0 16px rgba(16, 185, 129, 0.25);
+}
+
+/* Withdrawal Ledger Cards */
+.withdraw-ledger-card {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 14px;
+    padding: 14px 16px;
+    margin-bottom: 12px;
+    box-shadow: var(--card-shadow);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    width: 100%;
+    box-sizing: border-box;
+    transition: border-color 0.2s;
+}
+
+.withdraw-ledger-card:hover {
+    border-color: #10b981;
+}
+
+.withdraw-ledger-card-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+}
+
+.withdraw-ledger-card-bottom {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    border-top: 1px dashed var(--border-color);
+    padding-top: 8px;
+    width: 100%;
 }
 
 /* Settings Profile & Grouped Cards (Screen 2) */
@@ -4859,6 +4957,80 @@ div:has(> table) {
         grid-template-columns: repeat(3, 1fr) !important;
         gap: 8px !important;
         width: 100% !important;
+    .main-content {
+        margin-left: 0 !important;
+        padding: 16px 24px 115px 24px !important;
+        width: 100% !important;
+        max-width: 100vw !important;
+        min-height: 100vh !important;
+        min-height: 100dvh !important;
+        height: auto !important;
+        box-sizing: border-box !important;
+        overflow-x: hidden !important;
+    }
+
+    .container {
+        padding: 0 24px !important;
+    }
+
+    /* Grids to Single Column */
+    .grid-2, .grid-3, .grid-4, .support-grid {
+        grid-template-columns: 1fr !important;
+        gap: 16px !important;
+        width: 100% !important;
+    }
+
+    /* Cards */
+    .card {
+        padding: 18px 16px !important;
+        border-radius: 16px !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        box-sizing: border-box !important;
+    }
+
+    /* Header Bar */
+    header {
+        margin-bottom: 20px !important;
+        gap: 8px !important;
+    }
+
+    .mobile-header-logo {
+        display: flex !important;
+    }
+
+    /* Wallet Hero & Balance Cards */
+    .wallet-hero-card {
+        padding: 20px 16px !important;
+        border-radius: 16px !important;
+        width: 100% !important;
+    }
+
+    .wallet-hero-card .hero-balance-text {
+        font-size: clamp(1.4rem, 6.5vw, 2.1rem) !important;
+        word-break: break-all;
+    }
+
+    .available-balance-card {
+        padding: 20px 18px !important;
+        border-radius: 16px !important;
+        width: 100% !important;
+        margin-bottom: 18px !important;
+    }
+
+    .available-balance-card .balance-number {
+        font-size: clamp(36px, 9.5vw, 44px) !important;
+    }
+
+    .available-balance-card .balance-curr-sym {
+        font-size: clamp(28px, 7.5vw, 34px) !important;
+    }
+
+    /* Brand Selector Grid (Screen 1) */
+    .brand-select-grid {
+        grid-template-columns: repeat(3, 1fr) !important;
+        gap: 8px !important;
+        width: 100% !important;
         margin-bottom: 16px !important;
     }
 
@@ -4882,7 +5054,8 @@ div:has(> table) {
     /* Inputs & Currency Fields */
     .input-field {
         font-size: 0.9rem !important;
-        height: 44px !important;
+        height: 46px !important;
+        border-radius: 12px !important;
     }
 
     .input-currency-wrapper {
@@ -4890,14 +5063,15 @@ div:has(> table) {
     }
 
     .input-currency-prefix {
-        font-size: 1.25rem !important;
-        padding-left: 12px !important;
+        font-size: 1.35rem !important;
+        left: 14px !important;
     }
 
     .input-currency-field {
-        font-size: clamp(1.15rem, 5vw, 1.45rem) !important;
-        padding: 12px 14px 12px 34px !important;
+        font-size: clamp(1.2rem, 5.5vw, 1.45rem) !important;
+        padding: 12px 14px 12px 38px !important;
         height: 52px !important;
+        border-radius: 12px !important;
     }
 
     /* Payout Receive Box */
@@ -5051,9 +5225,9 @@ div:has(> table) {
 
     /* Buttons */
     .btn-dark-navy, .btn-forest-green, .btn-primary, .btn-accent {
-        padding: 13px 18px !important;
-        font-size: 0.92rem !important;
-        border-radius: 12px !important;
+        padding: 14px 20px !important;
+        font-size: 0.96rem !important;
+        border-radius: 14px !important;
     }
 
     /* Modals on Mobile Viewports */
@@ -5090,43 +5264,56 @@ div:has(> table) {
 
     /* Mobile Bottom Navigation Bar */
     .mobile-bottom-nav {
-        height: 64px !important;
-        padding: 0 4px env(safe-area-inset-bottom, 4px) !important;
+        height: 68px !important;
+        padding: 0 8px env(safe-area-inset-bottom, 8px) !important;
         width: 100% !important;
         max-width: 100vw !important;
+        border-top: 1px solid rgba(255, 255, 255, 0.08) !important;
+        background: rgba(12, 17, 36, 0.96) !important;
+        backdrop-filter: blur(20px) !important;
+        -webkit-backdrop-filter: blur(20px) !important;
     }
 
     .mobile-nav-item {
-        font-size: 0.65rem !important;
+        font-size: 0.68rem !important;
         gap: 2px !important;
     }
 
     .mobile-nav-item i {
-        font-size: 1.15rem !important;
+        font-size: 1.2rem !important;
     }
 
     .mobile-nav-item.mobile-nav-sell {
-        top: -8px !important;
+        position: relative !important;
+        top: -14px !important;
     }
 
     .mobile-nav-item.mobile-nav-sell .sell-circle-btn {
-        width: 42px !important;
-        height: 42px !important;
+        width: 50px !important;
+        height: 50px !important;
+        border-radius: 50% !important;
+        background: #0f766e !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        box-shadow: 0 6px 20px rgba(15, 118, 110, 0.45) !important;
+        margin: 0 auto !important;
     }
 
     .mobile-nav-item.mobile-nav-sell .sell-circle-btn i {
-        font-size: 1.15rem !important;
+        font-size: 1.35rem !important;
+        color: #ffffff !important;
     }
 }
 
 /* Extra Compact Devices (<= 360px, e.g. iPhone SE, Galaxy Fold front screen) */
 @media (max-width: 360px) {
     .main-content {
-        padding: 10px 8px 88px 8px !important;
+        padding: 12px 16px 110px 16px !important;
     }
 
     .card {
-        padding: 12px 10px !important;
+        padding: 14px 12px !important;
     }
 
     .brand-select-grid {
@@ -5152,7 +5339,7 @@ div:has(> table) {
     }
 
     .available-balance-card .balance-number {
-        font-size: 1.35rem !important;
+        font-size: 34px !important;
     }
 
     .pin-box {

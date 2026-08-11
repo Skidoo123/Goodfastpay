@@ -753,6 +753,7 @@ function handleWithdrawAll() {
 
 // Update Withdrawal Breakdown Calculation (Screen 3 Fidelity)
 function updateWithdrawalBreakdown() {
+    const user = currentUser;
     const amountInput = document.getElementById("withdraw-amount");
     let amount = amountInput ? parseFloat(amountInput.value) : 0;
     if (isNaN(amount) || amount < 0) amount = 0;
@@ -765,6 +766,24 @@ function updateWithdrawalBreakdown() {
 
     const calcNetEl = document.getElementById("calc-net-payout");
     if (calcNetEl) calcNetEl.textContent = "₦" + net.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+
+    // Dynamic Button State Validation
+    const submitBtn = document.getElementById("btn-submit-withdraw");
+    if (submitBtn) {
+        const hasBank = user && user.bankDetails && user.bankDetails.bankName;
+        const hasBalance = user && user.wallet && (amount <= user.wallet.balance);
+        const isValidAmount = amount >= 500;
+
+        if (hasBank && hasBalance && isValidAmount) {
+            submitBtn.disabled = false;
+            submitBtn.style.opacity = "1";
+            submitBtn.style.cursor = "pointer";
+        } else {
+            submitBtn.disabled = true;
+            submitBtn.style.opacity = "0.55";
+            submitBtn.style.cursor = "not-allowed";
+        }
+    }
 }
 
 // State for custom PIN verification modal
@@ -1186,34 +1205,67 @@ function renderSellHistory() {
     });
 }
 
-// Render withdrawal history table
+// Render withdrawal history ledger (Responsive Cards)
 function renderWithdrawHistory() {
     const db = getDB();
-    const tbody = document.getElementById("withdraw-history-tbody");
-    tbody.innerHTML = "";
+    const container = document.getElementById("withdraw-ledger-container");
+    if (!container) return;
+    container.innerHTML = "";
     
-    const list = db.withdrawals.filter(w => w.userId === currentUser.email);
+    const list = db.withdrawals ? db.withdrawals.filter(w => w.userId === currentUser.email) : [];
+    
+    // Sort descending by creation date
+    list.sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt));
     
     if (list.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; padding: 24px; color: var(--text-muted);">No withdrawal logs found.</td></tr>`;
+        container.innerHTML = `
+            <div class="card" style="text-align:center; padding: 36px 16px; color: var(--text-muted); border-radius: 14px;">
+                <i class="fas fa-money-bill-transfer" style="font-size: 2.2rem; opacity: 0.4; margin-bottom: 12px; display:block;"></i>
+                <p style="font-size: 0.95rem; font-weight: 700; color: var(--text-primary);">No Withdrawal History Yet</p>
+                <p style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 4px;">Initiate a cash withdrawal above to track settlements in this ledger.</p>
+            </div>
+        `;
         return;
     }
     
     list.forEach(w => {
-        const tr = document.createElement("tr");
-        
         let statusBadge = "";
-        if (w.status === "PENDING") statusBadge = `<span class="badge badge-warning">Pending</span>`;
-        else if (w.status === "COMPLETED") statusBadge = `<span class="badge badge-success">Sent</span>`;
-        else statusBadge = `<span class="badge badge-danger" title="${w.declineReason || ''}">Failed</span>`;
+        if (w.status === "PENDING") statusBadge = `<span class="badge badge-warning" style="padding:4px 10px; font-weight:700; font-size:0.75rem;">Pending</span>`;
+        else if (w.status === "COMPLETED") statusBadge = `<span class="badge badge-success" style="padding:4px 10px; font-weight:700; font-size:0.75rem;">Sent</span>`;
+        else statusBadge = `<span class="badge badge-danger" style="padding:4px 10px; font-weight:700; font-size:0.75rem;" title="${w.declineReason || ''}">Failed</span>`;
         
-        tr.innerHTML = `
-            <td>${new Date(w.createdAt).toLocaleDateString()}</td>
-            <td style="font-weight:800;" class="text-right">₦${w.amount.toLocaleString()}</td>
-            <td>${w.bankName}</td>
-            <td class="text-center">${statusBadge}</td>
+        const dateStr = new Date(w.createdAt).toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' });
+        const timeStr = new Date(w.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        
+        const card = document.createElement("div");
+        card.className = "withdraw-ledger-card";
+        card.innerHTML = `
+            <div class="withdraw-ledger-card-top">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <div class="bank-card-icon-pill" style="width: 38px; height: 38px; font-size: 1rem; flex-shrink: 0;">
+                        <i class="fas fa-building-columns"></i>
+                    </div>
+                    <div>
+                        <div style="font-weight: 800; font-size: 0.92rem; color: var(--text-primary);">${w.bankName || 'Bank Transfer'}</div>
+                        <div style="font-size: 0.72rem; color: var(--text-muted);">${dateStr} • ${timeStr}</div>
+                    </div>
+                </div>
+                <div>
+                    ${statusBadge}
+                </div>
+            </div>
+            <div class="withdraw-ledger-card-bottom">
+                <div>
+                    <span style="font-size: 0.72rem; color: var(--text-muted);">Payout Amount:</span>
+                    <div style="font-weight: 800; font-size: 1.15rem; color: #10b981;">₦${w.amount.toLocaleString(undefined, {minimumFractionDigits: 2})}</div>
+                </div>
+                <div style="text-align: right;">
+                    <span style="font-size: 0.72rem; color: var(--text-muted);">Fee Deducted:</span>
+                    <div style="font-size: 0.85rem; font-weight: 600; color: var(--text-secondary);">₦50.00</div>
+                </div>
+            </div>
         `;
-        tbody.appendChild(tr);
+        container.appendChild(card);
     });
 }
 
