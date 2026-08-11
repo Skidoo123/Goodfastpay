@@ -4847,14 +4847,64 @@ body {
 
 .settings-profile-avatar-wrapper {
     position: relative;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: transform 0.2s ease;
+}
+
+.settings-profile-avatar-wrapper:hover {
+    transform: scale(1.05);
 }
 
 .settings-profile-avatar-img {
-    width: 52px;
-    height: 52px;
+    width: 54px;
+    height: 54px;
     border-radius: 50%;
     object-fit: cover;
-    background: #e2e8f0;
+    background: #1e293b;
+    border: 2px solid var(--border-color);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.avatar-camera-badge {
+    position: absolute;
+    bottom: -2px;
+    right: -2px;
+    background: #10b981;
+    color: #ffffff;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.65rem;
+    border: 2px solid var(--bg-secondary);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
+    pointer-events: none;
+}
+
+.avatar-pencil-edit-btn {
+    background: rgba(16, 185, 129, 0.1);
+    border: 1px solid rgba(16, 185, 129, 0.3);
+    color: #10b981;
+    padding: 7px 14px;
+    border-radius: 100px;
+    font-weight: 700;
+    font-size: 0.8rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.avatar-pencil-edit-btn:hover {
+    background: #10b981;
+    color: #ffffff;
 }
 
 .verified-pill-badge {
@@ -4868,6 +4918,199 @@ body {
     padding: 2px 8px;
     border-radius: 100px;
     margin-top: 2px;
+}
+
+/* ================= AVATAR ACTION SHEET & CROPPER SYSTEM ================= */
+
+.avatar-actionsheet-overlay {
+    align-items: flex-end;
+}
+
+@media (min-width: 600px) {
+    .avatar-actionsheet-overlay {
+        align-items: center;
+    }
+}
+
+.actionsheet-card {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 24px 24px 0 0;
+    padding: 16px 20px 32px;
+    width: 100%;
+    max-width: 480px;
+    margin: 0 auto;
+    box-sizing: border-box;
+    animation: slideUpActionSheet 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.4);
+}
+
+@media (min-width: 600px) {
+    .actionsheet-card {
+        border-radius: 20px;
+        padding: 24px;
+        animation: fadeInModal 0.2s ease;
+    }
+}
+
+@keyframes slideUpActionSheet {
+    from { transform: translateY(100%); }
+    to { transform: translateY(0); }
+}
+
+.actionsheet-handle {
+    width: 36px;
+    height: 4px;
+    background: var(--border-color);
+    border-radius: 2px;
+    margin: 0 auto 14px;
+}
+
+.actionsheet-header {
+    text-align: center;
+    margin-bottom: 16px;
+}
+
+.actionsheet-header h4 {
+    font-size: 1.1rem;
+    font-weight: 800;
+    color: var(--text-primary);
+    margin: 0 0 4px 0;
+}
+
+.actionsheet-header p {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    margin: 0;
+}
+
+.actionsheet-options {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+.actionsheet-btn {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 14px 16px;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    border-radius: 14px;
+    font-size: 0.92rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    cursor: pointer;
+    transition: all 0.15s ease;
+    box-sizing: border-box;
+    text-align: left;
+}
+
+.actionsheet-btn i {
+    font-size: 1.15rem;
+    width: 22px;
+    text-align: center;
+}
+
+.actionsheet-btn:hover {
+    background: var(--bg-secondary);
+    border-color: var(--primary);
+    transform: translateY(-1px);
+}
+
+.actionsheet-btn.danger-btn:hover {
+    border-color: #ef4444;
+    background: rgba(239, 68, 68, 0.08);
+}
+
+.actionsheet-cancel-btn {
+    width: 100%;
+    padding: 14px;
+    background: transparent;
+    border: 1px solid var(--border-color);
+    border-radius: 14px;
+    font-size: 0.92rem;
+    font-weight: 700;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.actionsheet-cancel-btn:hover {
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+}
+
+/* Cropper Modal Specifics */
+.cropper-modal-box {
+    max-width: 380px !important;
+    width: 92% !important;
+    padding: 22px 20px !important;
+    border-radius: 20px !important;
+    box-sizing: border-box !important;
+}
+
+.avatar-cropper-stage {
+    width: 280px;
+    height: 280px;
+    margin: 0 auto 16px;
+    position: relative;
+    border-radius: 14px;
+    overflow: hidden;
+    background: #0b1120;
+    border: 1px solid var(--border-color);
+    touch-action: none;
+    box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.6);
+}
+
+#avatar-cropper-canvas {
+    cursor: grab;
+    display: block;
+    width: 280px;
+    height: 280px;
+}
+
+#avatar-cropper-canvas:active {
+    cursor: grabbing;
+}
+
+.cropper-slider-wrapper {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+    margin-bottom: 18px;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.cropper-slider-icon {
+    color: var(--text-muted);
+    font-size: 1.15rem;
+    cursor: pointer;
+    transition: color 0.2s ease;
+    padding: 4px;
+}
+
+.cropper-slider-icon:hover {
+    color: #10b981;
+}
+
+#cropper-zoom-slider {
+    flex: 1;
+    accent-color: #10b981;
+    cursor: pointer;
+}
+
+.cropper-actions-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    width: 100%;
+    box-sizing: border-box;
 }
 
 .settings-group-card {

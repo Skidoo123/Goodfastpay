@@ -1745,11 +1745,369 @@ function renderLinkedBanks() {
     container.appendChild(card);
 }
 
+// Default professional avatar SVG data URI
+const DEFAULT_AVATAR_SVG = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' fill='none'%3E%3Crect width='100' height='100' fill='%231e293b'/%3E%3Ccircle cx='50' cy='38' r='18' fill='%2394a3b8'/%3E%3Cpath d='M22 84c0-15.464 12.536-28 28-28s28 12.536 28 28' fill='%2394a3b8'/%3E%3C/svg%3E";
+
+// Update All Avatar Instances Across the UI
+function updateGlobalAvatars(avatarUrl) {
+    if (!currentUser) return;
+    const effectiveAvatar = avatarUrl || currentUser.avatar || null;
+    
+    // 1. Settings card avatar
+    const settingsAvatar = document.getElementById("settings-avatar-img");
+    if (settingsAvatar) {
+        settingsAvatar.src = effectiveAvatar || DEFAULT_AVATAR_SVG;
+    }
+    
+    // 2. Sidebar avatar
+    const sidebarAvatar = document.getElementById("sidebar-user-avatar");
+    if (sidebarAvatar) {
+        if (effectiveAvatar) {
+            sidebarAvatar.textContent = "";
+            sidebarAvatar.style.backgroundImage = `url("${effectiveAvatar}")`;
+            sidebarAvatar.style.backgroundSize = "cover";
+            sidebarAvatar.style.backgroundPosition = "center";
+            sidebarAvatar.style.backgroundColor = "transparent";
+        } else {
+            sidebarAvatar.style.backgroundImage = "none";
+            sidebarAvatar.style.backgroundColor = "var(--primary)";
+            sidebarAvatar.textContent = currentUser.name ? currentUser.name.charAt(0).toUpperCase() : "U";
+        }
+    }
+
+    // 3. Sidebar user name
+    const sidebarName = document.getElementById("sidebar-user-name");
+    if (sidebarName) {
+        sidebarName.textContent = currentUser.name || "User";
+    }
+}
+
 // Render Settings Profile Details (Screen 2 Fidelity)
 function renderSettingsProfile() {
     if (!currentUser) return;
     const nameEl = document.getElementById("settings-user-fullname");
     if (nameEl) nameEl.textContent = currentUser.name;
+    updateGlobalAvatars(currentUser.avatar);
+}
+
+// ================= PROFILE PICTURE INTERACTIVE CROP & MANAGEMENT =================
+
+// Action Sheet Controls
+function openAvatarActionSheet() {
+    const modal = document.getElementById("avatar-actionsheet-modal");
+    if (modal) modal.classList.add("active");
+}
+
+function closeAvatarActionSheet() {
+    const modal = document.getElementById("avatar-actionsheet-modal");
+    if (modal) modal.classList.remove("active");
+}
+
+function triggerAvatarInput(source) {
+    closeAvatarActionSheet();
+    if (source === 'camera') {
+        const camIn = document.getElementById("avatar-camera-input");
+        if (camIn) camIn.click();
+    } else {
+        const photoIn = document.getElementById("avatar-photo-input");
+        if (photoIn) photoIn.click();
+    }
+}
+
+// Cropper In-Memory State
+let cropperState = {
+    img: null,
+    scale: 1,
+    baseScale: 1,
+    offsetX: 0,
+    offsetY: 0,
+    isDragging: false,
+    startX: 0,
+    startY: 0
+};
+
+// Handle Image Selected from File Input / Camera
+function handleAvatarFileSelected(inputEl) {
+    if (!inputEl || !inputEl.files || !inputEl.files[0]) return;
+    const file = inputEl.files[0];
+    
+    // Validate File Type
+    const validTypes = ["image/jpeg", "image/png", "image/webp", "image/jpg", "image/heic", "image/heif"];
+    if (!validTypes.includes(file.type.toLowerCase()) && !file.type.startsWith("image/")) {
+        showToast("Unsupported file format. Please choose a JPG, PNG, or WebP image.", "danger");
+        inputEl.value = "";
+        return;
+    }
+
+    // Validate File Size (10MB max source limit)
+    if (file.size > 10 * 1024 * 1024) {
+        showToast("Image is too large. Please select a photo under 10MB.", "danger");
+        inputEl.value = "";
+        return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        const img = new Image();
+        img.onload = function() {
+            initCropperWithImage(img);
+        };
+        img.onerror = function() {
+            showToast("Failed to load image. Please try another image.", "danger");
+        };
+        img.src = e.target.result;
+    };
+    reader.onerror = function() {
+        showToast("Error reading selected file.", "danger");
+    };
+    reader.readAsDataURL(file);
+    inputEl.value = "";
+}
+
+// Initialize Cropper Canvas & State
+function initCropperWithImage(img) {
+    const canvas = document.getElementById("avatar-cropper-canvas");
+    if (!canvas) return;
+    
+    const canvasSize = 280;
+    canvas.width = canvasSize;
+    canvas.height = canvasSize;
+
+    // Determine scale to cover the canvas circle
+    const minDim = Math.min(img.width, img.height);
+    const baseScale = canvasSize / minDim;
+
+    cropperState = {
+        img: img,
+        baseScale: baseScale,
+        scale: 1,
+        offsetX: (canvasSize - img.width * baseScale) / 2,
+        offsetY: (canvasSize - img.height * baseScale) / 2,
+        isDragging: false,
+        startX: 0,
+        startY: 0
+    };
+
+    // Reset zoom slider
+    const slider = document.getElementById("cropper-zoom-slider");
+    if (slider) slider.value = 1;
+
+    // Attach canvas drag listeners (Touch & Mouse)
+    attachCropperEventListeners(canvas);
+
+    // Open Modal and draw initial frame
+    const modal = document.getElementById("avatar-cropper-modal");
+    if (modal) modal.classList.add("active");
+    drawCropperFrame();
+}
+
+function attachCropperEventListeners(canvas) {
+    if (canvas._hasCropperListeners) return;
+    canvas._hasCropperListeners = true;
+
+    // Mouse Drag Events
+    canvas.addEventListener("mousedown", (e) => {
+        cropperState.isDragging = true;
+        cropperState.startX = e.clientX - cropperState.offsetX;
+        cropperState.startY = e.clientY - cropperState.offsetY;
+    });
+
+    window.addEventListener("mousemove", (e) => {
+        if (!cropperState.isDragging || !cropperState.img) return;
+        cropperState.offsetX = e.clientX - cropperState.startX;
+        cropperState.offsetY = e.clientY - cropperState.startY;
+        drawCropperFrame();
+    });
+
+    window.addEventListener("mouseup", () => {
+        cropperState.isDragging = false;
+    });
+
+    // Mobile Touch Drag Events
+    canvas.addEventListener("touchstart", (e) => {
+        if (e.touches.length === 1) {
+            cropperState.isDragging = true;
+            cropperState.startX = e.touches[0].clientX - cropperState.offsetX;
+            cropperState.startY = e.touches[0].clientY - cropperState.offsetY;
+        }
+    }, { passive: true });
+
+    canvas.addEventListener("touchmove", (e) => {
+        if (!cropperState.isDragging || !cropperState.img || e.touches.length !== 1) return;
+        cropperState.offsetX = e.touches[0].clientX - cropperState.startX;
+        cropperState.offsetY = e.touches[0].clientY - cropperState.startY;
+        drawCropperFrame();
+    }, { passive: true });
+
+    canvas.addEventListener("touchend", () => {
+        cropperState.isDragging = false;
+    });
+}
+
+function drawCropperFrame() {
+    const canvas = document.getElementById("avatar-cropper-canvas");
+    if (!canvas || !cropperState.img) return;
+    const ctx = canvas.getContext("2d");
+    const canvasSize = canvas.width;
+
+    ctx.clearRect(0, 0, canvasSize, canvasSize);
+
+    // Draw background
+    ctx.fillStyle = "#0f172a";
+    ctx.fillRect(0, 0, canvasSize, canvasSize);
+
+    // Calculate scaled dimensions
+    const currentScale = cropperState.baseScale * cropperState.scale;
+    const drawWidth = cropperState.img.width * currentScale;
+    const drawHeight = cropperState.img.height * currentScale;
+
+    // Draw Image
+    ctx.drawImage(cropperState.img, cropperState.offsetX, cropperState.offsetY, drawWidth, drawHeight);
+
+    // Draw Dark Dim Overlay Outside the Circle
+    ctx.save();
+    ctx.fillStyle = "rgba(15, 23, 42, 0.75)";
+    ctx.beginPath();
+    ctx.rect(0, 0, canvasSize, canvasSize);
+    ctx.arc(canvasSize / 2, canvasSize / 2, (canvasSize / 2) - 4, 0, Math.PI * 2, true);
+    ctx.fill();
+
+    // Draw Crisp Green Circular Guide Border
+    ctx.beginPath();
+    ctx.arc(canvasSize / 2, canvasSize / 2, (canvasSize / 2) - 4, 0, Math.PI * 2);
+    ctx.strokeStyle = "#10b981";
+    ctx.lineWidth = 2.5;
+    ctx.stroke();
+    ctx.restore();
+}
+
+function onCropperZoomInput(val) {
+    const newZoom = parseFloat(val);
+    const canvasSize = 280;
+    
+    // Zoom around center point
+    const oldTotalScale = cropperState.baseScale * cropperState.scale;
+    const newTotalScale = cropperState.baseScale * newZoom;
+    
+    const centerX = canvasSize / 2;
+    const centerY = canvasSize / 2;
+    
+    const relX = (centerX - cropperState.offsetX) / oldTotalScale;
+    const relY = (centerY - cropperState.offsetY) / oldTotalScale;
+    
+    cropperState.scale = newZoom;
+    cropperState.offsetX = centerX - (relX * newTotalScale);
+    cropperState.offsetY = centerY - (relY * newTotalScale);
+    
+    drawCropperFrame();
+}
+
+function adjustCropperZoom(delta) {
+    const slider = document.getElementById("cropper-zoom-slider");
+    if (!slider) return;
+    let nextVal = parseFloat(slider.value) + delta;
+    nextVal = Math.max(1, Math.min(3, nextVal));
+    slider.value = nextVal;
+    onCropperZoomInput(nextVal);
+}
+
+function closeAvatarCropperModal() {
+    const modal = document.getElementById("avatar-cropper-modal");
+    if (modal) modal.classList.remove("active");
+    cropperState.img = null;
+}
+
+// Save Cropped Circular Avatar to DB and LocalStorage
+function saveCroppedAvatar() {
+    if (!cropperState.img || !currentUser) return;
+    const saveBtn = document.getElementById("btn-save-avatar");
+    if (saveBtn) {
+        saveBtn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Saving...`;
+        saveBtn.disabled = true;
+    }
+
+    try {
+        // Create high-res offscreen canvas
+        const exportSize = 300;
+        const offCanvas = document.createElement("canvas");
+        offCanvas.width = exportSize;
+        offCanvas.height = exportSize;
+        const offCtx = offCanvas.getContext("2d");
+
+        const ratio = exportSize / 280;
+        const currentScale = cropperState.baseScale * cropperState.scale * ratio;
+        const drawX = cropperState.offsetX * ratio;
+        const drawY = cropperState.offsetY * ratio;
+        const drawWidth = cropperState.img.width * currentScale;
+        const drawHeight = cropperState.img.height * currentScale;
+
+        // Draw image onto circular mask
+        offCtx.save();
+        offCtx.beginPath();
+        offCtx.arc(exportSize / 2, exportSize / 2, exportSize / 2, 0, Math.PI * 2);
+        offCtx.closePath();
+        offCtx.clip();
+
+        offCtx.drawImage(cropperState.img, drawX, drawY, drawWidth, drawHeight);
+        offCtx.restore();
+
+        // Export as compressed WebP or JPEG data URI (~40-60KB)
+        const croppedDataUrl = offCanvas.toDataURL("image/jpeg", 0.88);
+
+        // Update database and current session
+        const db = getDB();
+        if (db.users[currentUser.email]) {
+            db.users[currentUser.email].avatar = croppedDataUrl;
+            db.users[currentUser.email].logs.unshift({
+                event: "Profile Picture Updated",
+                timestamp: new Date().toISOString(),
+                ip: "197.34.120.44"
+            });
+            saveDB(db);
+        }
+
+        currentUser.avatar = croppedDataUrl;
+        setSessionUser(currentUser);
+
+        // Global UI Update
+        updateGlobalAvatars(croppedDataUrl);
+
+        closeAvatarCropperModal();
+        showToast("Profile picture updated successfully!", "success");
+    } catch (err) {
+        console.error("Error cropping avatar:", err);
+        showToast("Failed to save profile picture. Please try again.", "danger");
+    } finally {
+        if (saveBtn) {
+            saveBtn.innerHTML = `<i class="fa-solid fa-check"></i> Save Photo`;
+            saveBtn.disabled = false;
+        }
+    }
+}
+
+// Remove Profile Picture
+function removeProfilePicture() {
+    closeAvatarActionSheet();
+    if (!currentUser) return;
+    
+    if (confirm("Are you sure you want to remove your profile picture?")) {
+        const db = getDB();
+        if (db.users[currentUser.email]) {
+            db.users[currentUser.email].avatar = null;
+            db.users[currentUser.email].logs.unshift({
+                event: "Profile Picture Removed",
+                timestamp: new Date().toISOString(),
+                ip: "197.34.120.44"
+            });
+            saveDB(db);
+        }
+        
+        currentUser.avatar = null;
+        setSessionUser(currentUser);
+        
+        updateGlobalAvatars(null);
+        showToast("Profile picture removed.", "info");
+    }
 }
 
 // Open / Close Add Bank Modal

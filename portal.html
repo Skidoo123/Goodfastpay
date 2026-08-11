@@ -633,18 +633,22 @@
                     <!-- Top Profile Card -->
                     <div class="settings-profile-card">
                         <div class="settings-profile-info">
-                            <div class="settings-profile-avatar-wrapper">
-                                <img src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150&auto=format&fit=crop&q=80" alt="User Profile" class="settings-profile-avatar-img" id="settings-avatar-img" onerror="this.src='images/logo.png'">
+                            <div class="settings-profile-avatar-wrapper" onclick="openAvatarActionSheet()" title="Tap to change profile picture">
+                                <img src="images/logo.png" alt="User Profile" class="settings-profile-avatar-img" id="settings-avatar-img">
+                                <div class="avatar-camera-badge">
+                                    <i class="fa-solid fa-camera"></i>
+                                </div>
                             </div>
                             <div>
-                                <h3 style="font-size: 1.15rem; font-weight: 800; color: var(--text-primary);" id="settings-user-fullname">John Doe</h3>
+                                <h3 style="font-size: 1.15rem; font-weight: 800; color: var(--text-primary); margin: 0 0 4px 0;" id="settings-user-fullname">John Doe</h3>
                                 <div class="verified-pill-badge">
                                     <i class="fa-solid fa-circle-check"></i> Verified
                                 </div>
                             </div>
                         </div>
-                        <button type="button" class="bank-card-action-icon" onclick="openEditProfileModal()" title="Edit Profile">
-                            <i class="fa-solid fa-pen"></i>
+                        <button type="button" class="avatar-pencil-edit-btn" onclick="openAvatarActionSheet()" title="Change Profile Picture">
+                            <i class="fa-solid fa-camera"></i>
+                            <span class="avatar-edit-text">Edit</span>
                         </button>
                     </div>
 
@@ -1131,6 +1135,68 @@
                 </div>
                 <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 8px;">Save Profile</button>
             </form>
+        </div>
+    </div>
+
+    <!-- Hidden file inputs for avatar selection & camera capture -->
+    <input type="file" id="avatar-photo-input" accept="image/png, image/jpeg, image/webp" style="display: none;" onchange="handleAvatarFileSelected(this)">
+    <input type="file" id="avatar-camera-input" accept="image/*" capture="user" style="display: none;" onchange="handleAvatarFileSelected(this)">
+
+    <!-- PROFILE PICTURE ACTION SHEET MODAL -->
+    <div class="modal-overlay avatar-actionsheet-overlay" id="avatar-actionsheet-modal" onclick="if(event.target === this) closeAvatarActionSheet()">
+        <div class="actionsheet-card">
+            <div class="actionsheet-handle"></div>
+            <div class="actionsheet-header">
+                <h4>Profile Photo</h4>
+                <p>Choose an option to update your profile photo</p>
+            </div>
+            <div class="actionsheet-options">
+                <button type="button" class="actionsheet-btn" onclick="triggerAvatarInput('photo')">
+                    <i class="fa-regular fa-image" style="color: #10b981;"></i>
+                    <span>Choose from Photos</span>
+                </button>
+                <button type="button" class="actionsheet-btn" onclick="triggerAvatarInput('camera')">
+                    <i class="fa-solid fa-camera" style="color: var(--secondary);"></i>
+                    <span>Take Photo</span>
+                </button>
+                <button type="button" class="actionsheet-btn danger-btn" onclick="removeProfilePicture()">
+                    <i class="fa-regular fa-trash-can" style="color: #ef4444;"></i>
+                    <span>Remove Profile Picture</span>
+                </button>
+            </div>
+            <button type="button" class="actionsheet-cancel-btn" onclick="closeAvatarActionSheet()">Cancel</button>
+        </div>
+    </div>
+
+    <!-- AVATAR CROP & POSITION INTERACTIVE MODAL -->
+    <div class="modal-overlay" id="avatar-cropper-modal">
+        <div class="modal-content cropper-modal-box">
+            <div class="modal-header">
+                <h3 style="font-weight: 800; font-size: 1.18rem;"><i class="fa-solid fa-crop-simple" style="color: #10b981; margin-right: 8px;"></i> Position & Crop Photo</h3>
+                <button type="button" class="modal-close" onclick="closeAvatarCropperModal()">&times;</button>
+            </div>
+            <p style="font-size: 0.78rem; color: var(--text-secondary); margin-bottom: 14px; text-align: center;">Drag image or use zoom slider to fit within the circular frame.</p>
+            
+            <!-- Interactive Crop Viewport -->
+            <div class="avatar-cropper-stage" id="avatar-cropper-stage">
+                <canvas id="avatar-cropper-canvas" width="280" height="280"></canvas>
+                <div class="avatar-circular-guide"></div>
+            </div>
+
+            <!-- Zoom Slider Bar -->
+            <div class="cropper-slider-wrapper">
+                <i class="fa-solid fa-magnifying-glass-minus cropper-slider-icon" onclick="adjustCropperZoom(-0.15)"></i>
+                <input type="range" id="cropper-zoom-slider" min="1" max="3" step="0.02" value="1" oninput="onCropperZoomInput(this.value)">
+                <i class="fa-solid fa-magnifying-glass-plus cropper-slider-icon" onclick="adjustCropperZoom(0.15)"></i>
+            </div>
+
+            <!-- Buttons -->
+            <div class="cropper-actions-grid">
+                <button type="button" class="btn btn-secondary" onclick="closeAvatarCropperModal()" style="border-radius: 12px; height: 46px;">Cancel</button>
+                <button type="button" class="btn btn-primary" id="btn-save-avatar" onclick="saveCroppedAvatar()" style="border-radius: 12px; height: 46px; font-weight: 800;">
+                    <i class="fa-solid fa-check"></i> Save Photo
+                </button>
+            </div>
         </div>
     </div>
 
