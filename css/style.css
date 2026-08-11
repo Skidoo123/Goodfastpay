@@ -530,11 +530,11 @@ p {
 /* Portal & Dashboard Layouts */
 .dashboard-layout {
     display: flex;
-    height: 100vh;
-    height: 100dvh;
-    overflow: hidden;
+    min-height: 100vh;
+    min-height: 100dvh;
     width: 100%;
     position: relative;
+    background: var(--bg-primary);
 }
 
 /* Mobile Sidebar Backdrop Overlay */
@@ -638,16 +638,19 @@ p {
 .main-content {
     flex: 1;
     margin-left: 290px;
-    height: 100vh;
-    height: 100dvh;
-    overflow-y: auto;
+    min-height: 100vh;
+    min-height: 100dvh;
+    height: auto;
     padding: clamp(18px, 3.5vw, 36px);
     background: var(--bg-primary);
     display: flex;
     flex-direction: column;
+    justify-content: flex-start;
+    align-items: stretch;
     position: relative;
     box-sizing: border-box;
     overflow-x: hidden;
+    overflow-y: auto;
     -webkit-overflow-scrolling: touch;
 }
 
@@ -3903,11 +3906,21 @@ body {
 
 /* Show Mobile Bottom Nav on Mobile Devices */
 @media (max-width: 900px) {
+    .dashboard-layout {
+        height: auto;
+        min-height: 100vh;
+        min-height: 100dvh;
+        overflow-x: hidden;
+    }
     .mobile-bottom-nav {
         display: flex;
     }
     .main-content {
-        padding-bottom: 90px !important;
+        margin-left: 0 !important;
+        padding: 16px 16px 96px 16px !important;
+        min-height: 100vh;
+        min-height: 100dvh;
+        height: auto !important;
     }
     .sidebar {
         display: none;
