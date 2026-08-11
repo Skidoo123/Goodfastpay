@@ -1818,7 +1818,7 @@ function renderSettingsProfile() {
 // ================= ACCOUNT SETTINGS VERIFICATION REQUIREMENTS =================
 
 function checkUserVerification(user) {
-    if (!user) return { isVerified: false, completed: 0, total: 4, items: [] };
+    if (!user) return { isVerified: false, completed: 0, total: 3, items: [] };
     
     const items = [
         {
@@ -1841,13 +1841,6 @@ function checkUserVerification(user) {
             desc: "10-digit NUBAN bank account linked",
             isComplete: Boolean(user.bankDetails && user.bankDetails.bankName && user.bankDetails.accountNumber && user.bankDetails.accountNumber.length === 10),
             actionText: "Link Bank"
-        },
-        {
-            id: "2fa",
-            title: "Two-Factor Authentication",
-            desc: "2FA protection enabled in Settings",
-            isComplete: Boolean(user.twoFactorEnabled === true || user.transactionPin),
-            actionText: "Enable 2FA"
         }
     ];
 
@@ -1939,8 +1932,6 @@ function handleVerificationAction(itemId) {
         openEditProfileModal();
     } else if (itemId === "bank") {
         openAddBankModal();
-    } else if (itemId === "2fa") {
-        switchSection("settings");
     }
 }
 
