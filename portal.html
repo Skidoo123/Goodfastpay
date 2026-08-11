@@ -311,37 +311,51 @@
                     <!-- Submission Form Card -->
                     <div class="card" style="margin-bottom: 0; padding: 24px; border-radius: 16px;">
                         <form id="card-submission-form">
-                            <!-- 1. Select Card Brand -->
+                            <!-- 1. Select Card Brand (Scalable Catalog with Search & Categories) -->
                             <div style="margin-bottom: 20px;">
-                                <label class="input-label" style="font-size: 0.85rem; font-weight: 700; color: var(--text-secondary); margin-bottom: 12px; display: block;">1. Select Card Brand</label>
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                                    <label class="input-label" style="font-size: 0.85rem; font-weight: 700; color: var(--text-secondary); margin-bottom: 0;">1. Select Card Brand</label>
+                                    <span id="selected-brand-indicator" style="font-size: 0.8rem; font-weight: 700; color: #10b981;">Selected: Steam</span>
+                                </div>
                                 
-                                <!-- Visual Brand Cards Grid -->
-                                <div class="brand-select-grid" id="brand-select-chips">
-                                    <div class="brand-card-item active" onclick="selectBrandCard('STEAM', this)">
-                                        <i class="fa-brands fa-steam" style="font-size: 1.8rem; color: #171a21;"></i>
-                                        <span class="brand-name-label">Steam</span>
-                                    </div>
-                                    <div class="brand-card-item" onclick="selectBrandCard('AMAZON', this)">
-                                        <i class="fa-brands fa-amazon" style="font-size: 1.8rem; color: #ff9900;"></i>
-                                        <span class="brand-name-label">Amazon</span>
-                                    </div>
-                                    <div class="brand-card-item" onclick="selectBrandCard('GOOGLE_PLAY', this)">
-                                        <i class="fa-brands fa-google-play" style="font-size: 1.8rem; color: #34a853;"></i>
-                                        <span class="brand-name-label">Google Play</span>
-                                    </div>
-                                    <div class="brand-card-item" onclick="selectBrandCard('APPLE', this)">
-                                        <i class="fa-brands fa-apple" style="font-size: 1.8rem; color: #555555;"></i>
-                                        <span class="brand-name-label">Apple</span>
-                                    </div>
-                                    <div class="brand-card-item" onclick="selectBrandCard('RAZER_GOLD', this)">
-                                        <i class="fa-solid fa-gamepad" style="font-size: 1.8rem; color: #00ff00;"></i>
-                                        <span class="brand-name-label">Razer Gold</span>
-                                    </div>
-                                    <div class="brand-card-item" onclick="selectBrandCard('SEPHORA', this)">
-                                        <i class="fa-solid fa-gem" style="font-size: 1.8rem; color: #e11d48;"></i>
-                                        <span class="brand-name-label">Sephora</span>
+                                <!-- Brand Search Box -->
+                                <div class="brand-search-wrapper">
+                                    <i class="fas fa-search brand-search-icon"></i>
+                                    <input type="text" id="sell-brand-search" class="input-field brand-search-input" placeholder="Search brands (e.g. Xbox, Nike, Steam, Apple)..." oninput="filterBrandCatalog(this.value)">
+                                </div>
+
+                                <!-- Popular Brands Section -->
+                                <div class="brand-section-header" id="popular-brands-header">
+                                    <span>Popular Brands</span>
+                                </div>
+                                
+                                <div class="brand-select-grid" id="brand-select-popular">
+                                    <!-- Populated dynamically via portal.js -->
+                                </div>
+
+                                <!-- All Brands Header & Toggle -->
+                                <div class="brand-section-header" id="all-brands-header" style="margin-top: 14px;">
+                                    <span>All Supported Brands (<span id="all-brands-count">40+</span>)</span>
+                                    <button type="button" id="btn-toggle-all-brands" class="btn-toggle-brands" onclick="toggleAllBrandsCatalog()">
+                                        <span id="toggle-brands-text">Show More</span> <i class="fas fa-chevron-down" id="toggle-brands-icon"></i>
+                                    </button>
+                                </div>
+
+                                <!-- All Brands Scrollable Container (Vertical Scroll, zero horizontal overflow) -->
+                                <div class="all-brands-scroll-container" id="all-brands-container" style="display: none;">
+                                    <div class="brand-select-grid" id="brand-select-all">
+                                        <!-- Populated dynamically via portal.js -->
                                     </div>
                                 </div>
+
+                                <!-- Search Empty State -->
+                                <div id="brand-search-empty" style="display: none; text-align: center; padding: 24px 12px; color: var(--text-muted);">
+                                    <i class="fas fa-gift" style="font-size: 2rem; opacity: 0.4; margin-bottom: 8px; display: block;"></i>
+                                    <p style="font-size: 0.88rem; font-weight: 600;">No matching brands found</p>
+                                    <p style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 2px;">Try searching for another keyword or browse all supported brands.</p>
+                                </div>
+
+                                <!-- Hidden Select for backward compatibility and form submission -->
                                 <select id="sell-brand" class="input-field" onchange="updateSellRate()" style="display: none;"></select>
                             </div>
 

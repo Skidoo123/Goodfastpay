@@ -317,30 +317,75 @@ function updateDashboardStats() {
     }
 }
 
-// Populate Selling dropdown elements
+// Supported Popular & Extended Brand Catalog definitions
+const POPULAR_BRANDS = ["Steam", "Amazon", "Google Play", "Apple/iTunes", "Razer Gold", "Sephora"];
+let isAllBrandsExpanded = false;
+
+// Helper to get FontAwesome Icon & brand color
+function getBrandIconMarkup(brand) {
+    const b = (brand || "").toLowerCase();
+    if (b.includes("steam")) return `<i class="fa-brands fa-steam" style="color: #171a21;"></i>`;
+    if (b.includes("amazon")) return `<i class="fa-brands fa-amazon" style="color: #ff9900;"></i>`;
+    if (b.includes("google play")) return `<i class="fa-brands fa-google-play" style="color: #34a853;"></i>`;
+    if (b.includes("apple") || b.includes("itunes")) return `<i class="fa-brands fa-apple" style="color: #a3a3a3;"></i>`;
+    if (b.includes("razer")) return `<i class="fa-solid fa-gamepad" style="color: #00ff00;"></i>`;
+    if (b.includes("sephora")) return `<i class="fa-solid fa-gem" style="color: #e11d48;"></i>`;
+    if (b.includes("xbox")) return `<i class="fa-brands fa-xbox" style="color: #107c10;"></i>`;
+    if (b.includes("playstation") || b.includes("psn")) return `<i class="fa-brands fa-playstation" style="color: #003791;"></i>`;
+    if (b.includes("nintendo")) return `<i class="fa-solid fa-gamepad" style="color: #e60012;"></i>`;
+    if (b.includes("netflix")) return `<i class="fa-solid fa-film" style="color: #e50914;"></i>`;
+    if (b.includes("spotify")) return `<i class="fa-brands fa-spotify" style="color: #1db954;"></i>`;
+    if (b.includes("walmart")) return `<i class="fa-solid fa-asterisk" style="color: #0071dc;"></i>`;
+    if (b.includes("target")) return `<i class="fa-solid fa-bullseye" style="color: #cc0000;"></i>`;
+    if (b.includes("ebay")) return `<i class="fa-brands fa-ebay" style="color: #e53238;"></i>`;
+    if (b.includes("nike")) return `<i class="fa-solid fa-bolt" style="color: #f97316;"></i>`;
+    if (b.includes("best buy")) return `<i class="fa-solid fa-tag" style="color: #ffe000;"></i>`;
+    if (b.includes("starbucks")) return `<i class="fa-solid fa-mug-hot" style="color: #00704a;"></i>`;
+    if (b.includes("roblox")) return `<i class="fa-solid fa-cube" style="color: #e11d48;"></i>`;
+    if (b.includes("uber")) return `<i class="fa-brands fa-uber" style="color: #ffffff;"></i>`;
+    if (b.includes("airbnb")) return `<i class="fa-brands fa-airbnb" style="color: #ff5a5f;"></i>`;
+    if (b.includes("visa")) return `<i class="fa-brands fa-cc-visa" style="color: #1a1f71;"></i>`;
+    if (b.includes("mastercard")) return `<i class="fa-brands fa-cc-mastercard" style="color: #eb001b;"></i>`;
+    if (b.includes("amex") || b.includes("american express")) return `<i class="fa-brands fa-cc-amex" style="color: #006fcf;"></i>`;
+    if (b.includes("paypal")) return `<i class="fa-brands fa-paypal" style="color: #003087;"></i>`;
+    if (b.includes("discord")) return `<i class="fa-brands fa-discord" style="color: #5865f2;"></i>`;
+    if (b.includes("twitch")) return `<i class="fa-brands fa-twitch" style="color: #9146ff;"></i>`;
+    if (b.includes("h&m") || b.includes("zara") || b.includes("asos")) return `<i class="fa-solid fa-shirt" style="color: #f43f5e;"></i>`;
+    return `<i class="fa-solid fa-gift" style="color: #10b981;"></i>`;
+}
+
+// Populate Selling dropdown elements & dynamic visual brand chips
 function populateSellOptions() {
     const db = getDB();
-    const rates = db.settings.rates;
+    const rates = db.settings.rates || {};
     
     const brandSelect = document.getElementById("sell-brand");
     if (!brandSelect) return;
     
-    // Save selected brand to restore later
-    const selectedBrand = brandSelect.value;
-    
+    // Save selected brand to restore later (defaults to Steam)
+    let currentVal = brandSelect.value || "Steam";
     brandSelect.innerHTML = "";
     
+    // Collect all brands across categories
+    const allBrandsSet = new Set();
+    Object.keys(GIFT_CARD_CATEGORIES).forEach(cat => {
+        GIFT_CARD_CATEGORIES[cat].forEach(brand => allBrandsSet.add(brand));
+    });
+    // Add any existing rate brands
+    Object.keys(rates).forEach(brand => allBrandsSet.add(brand));
+    
+    const allBrandsList = Array.from(allBrandsSet);
+    
+    // Populate hidden select options grouped by category
     Object.keys(GIFT_CARD_CATEGORIES).forEach(category => {
         const optgroup = document.createElement("optgroup");
         optgroup.label = category;
         
         GIFT_CARD_CATEGORIES[category].forEach(brand => {
-            if (rates[brand]) {
-                const opt = document.createElement("option");
-                opt.value = brand;
-                opt.textContent = brand;
-                optgroup.appendChild(opt);
-            }
+            const opt = document.createElement("option");
+            opt.value = brand;
+            opt.textContent = brand;
+            optgroup.appendChild(opt);
         });
         
         if (optgroup.children.length > 0) {
@@ -348,19 +393,176 @@ function populateSellOptions() {
         }
     });
     
-    // Restore selection if still exists
-    if (selectedBrand) {
-        brandSelect.value = selectedBrand;
+    if (Array.from(brandSelect.options).some(o => o.value === currentVal)) {
+        brandSelect.value = currentVal;
+    } else if (brandSelect.options.length > 0) {
+        brandSelect.value = brandSelect.options[0].value;
+        currentVal = brandSelect.value;
     }
+    
+    // Render Popular and All Brand visual chips
+    renderBrandChipsCatalog(currentVal, allBrandsList);
     
     updateSellCurrencyOptions();
 }
 
+// Render dynamic visual brand chips grid
+function renderBrandChipsCatalog(selectedBrand, allBrandsList) {
+    const popularContainer = document.getElementById("brand-select-popular");
+    const allContainer = document.getElementById("brand-select-all");
+    const countEl = document.getElementById("all-brands-count");
+    
+    if (popularContainer) popularContainer.innerHTML = "";
+    if (allContainer) allContainer.innerHTML = "";
+    
+    // 1. Render Popular Brands
+    POPULAR_BRANDS.forEach(brand => {
+        if (popularContainer) {
+            const isActive = brand.toLowerCase() === selectedBrand.toLowerCase() || 
+                           (brand === "Apple/iTunes" && selectedBrand.toLowerCase().includes("apple"));
+            const card = document.createElement("div");
+            card.className = `brand-card-item ${isActive ? 'active' : ''}`;
+            card.setAttribute("data-brand", brand.toLowerCase());
+            card.onclick = () => selectBrandCard(brand, card);
+            card.innerHTML = `
+                ${getBrandIconMarkup(brand)}
+                <span class="brand-name-label">${brand}</span>
+            `;
+            popularContainer.appendChild(card);
+        }
+    });
+    
+    // 2. Render All Other Brands
+    const remainingBrands = allBrandsList.filter(b => !POPULAR_BRANDS.includes(b));
+    if (countEl) countEl.textContent = `${allBrandsList.length}+`;
+    
+    if (allContainer) {
+        remainingBrands.forEach(brand => {
+            const isActive = brand.toLowerCase() === selectedBrand.toLowerCase();
+            const card = document.createElement("div");
+            card.className = `brand-card-item ${isActive ? 'active' : ''}`;
+            card.setAttribute("data-brand", brand.toLowerCase());
+            card.onclick = () => selectBrandCard(brand, card);
+            card.innerHTML = `
+                ${getBrandIconMarkup(brand)}
+                <span class="brand-name-label">${brand}</span>
+            `;
+            allContainer.appendChild(card);
+        });
+    }
+    
+    // Update indicator
+    const indicator = document.getElementById("selected-brand-indicator");
+    if (indicator) indicator.textContent = `Selected: ${selectedBrand}`;
+}
+
+// Select Brand Card via Visual Chips (Screen 1 Fidelity)
+function selectBrandCard(brandName, element) {
+    // Remove active from all chips across all sections
+    const allChips = document.querySelectorAll(".brand-card-item");
+    allChips.forEach(chip => chip.classList.remove("active"));
+    
+    // Set active on matching cards
+    const matchingChips = document.querySelectorAll(`.brand-card-item[data-brand="${brandName.toLowerCase()}"]`);
+    matchingChips.forEach(chip => chip.classList.add("active"));
+    if (element) element.classList.add("active");
+
+    const indicator = document.getElementById("selected-brand-indicator");
+    if (indicator) indicator.textContent = `Selected: ${brandName}`;
+
+    const brandSelect = document.getElementById("sell-brand");
+    if (brandSelect) {
+        let match = Array.from(brandSelect.options).find(o => o.value.toLowerCase() === brandName.toLowerCase());
+        if (!match) {
+            match = Array.from(brandSelect.options).find(o => o.value.toLowerCase().includes(brandName.toLowerCase()) || brandName.toLowerCase().includes(o.value.toLowerCase()));
+        }
+        if (match) {
+            brandSelect.value = match.value;
+        } else {
+            // Add custom option if not present
+            const opt = document.createElement("option");
+            opt.value = brandName;
+            opt.textContent = brandName;
+            brandSelect.appendChild(opt);
+            brandSelect.value = brandName;
+        }
+        updateSellCurrencyOptions();
+    }
+}
+
+// Toggle Show More / Show Less for All Brands Catalog
+function toggleAllBrandsCatalog() {
+    const container = document.getElementById("all-brands-container");
+    const textEl = document.getElementById("toggle-brands-text");
+    const iconEl = document.getElementById("toggle-brands-icon");
+    if (!container) return;
+    
+    isAllBrandsExpanded = !isAllBrandsExpanded;
+    
+    if (isAllBrandsExpanded) {
+        container.style.display = "block";
+        if (textEl) textEl.textContent = "Show Less";
+        if (iconEl) iconEl.className = "fas fa-chevron-up";
+    } else {
+        container.style.display = "none";
+        if (textEl) textEl.textContent = "Show More";
+        if (iconEl) iconEl.className = "fas fa-chevron-down";
+    }
+}
+
+// Search and filter brands in real time
+function filterBrandCatalog(query) {
+    const q = (query || "").trim().toLowerCase();
+    const allContainer = document.getElementById("all-brands-container");
+    const popularHeader = document.getElementById("popular-brands-header");
+    const allHeader = document.getElementById("all-brands-header");
+    const emptyState = document.getElementById("brand-search-empty");
+    const textEl = document.getElementById("toggle-brands-text");
+    const iconEl = document.getElementById("toggle-brands-icon");
+    
+    const allCards = document.querySelectorAll(".brand-card-item");
+    let matchCount = 0;
+    
+    if (q) {
+        // Automatically reveal all brands during search
+        if (allContainer) allContainer.style.display = "block";
+        if (popularHeader) popularHeader.style.display = "none";
+        if (allHeader) allHeader.style.display = "none";
+        
+        allCards.forEach(card => {
+            const brand = card.getAttribute("data-brand") || "";
+            if (brand.includes(q)) {
+                card.style.display = "flex";
+                matchCount++;
+            } else {
+                card.style.display = "none";
+            }
+        });
+        
+        if (emptyState) {
+            emptyState.style.display = matchCount === 0 ? "block" : "none";
+        }
+    } else {
+        // Reset to normal state
+        if (popularHeader) popularHeader.style.display = "flex";
+        if (allHeader) allHeader.style.display = "flex";
+        if (emptyState) emptyState.style.display = "none";
+        
+        allCards.forEach(card => card.style.display = "flex");
+        
+        if (allContainer) {
+            allContainer.style.display = isAllBrandsExpanded ? "block" : "none";
+        }
+        if (textEl) textEl.textContent = isAllBrandsExpanded ? "Show Less" : "Show More";
+        if (iconEl) iconEl.className = isAllBrandsExpanded ? "fas fa-chevron-up" : "fas fa-chevron-down";
+    }
+}
+
 function updateSellCurrencyOptions() {
     const db = getDB();
-    const rates = db.settings.rates;
+    const rates = db.settings.rates || {};
     const brandSelect = document.getElementById("sell-brand");
-    const selectedBrand = brandSelect ? brandSelect.value : "";
+    const selectedBrand = brandSelect ? brandSelect.value : "Steam";
     const currencySelect = document.getElementById("sell-currency");
     
     if (!currencySelect) return;
@@ -369,8 +571,15 @@ function updateSellCurrencyOptions() {
     
     const activeCurrencies = db.currencies || {};
     
-    if (selectedBrand && rates[selectedBrand]) {
-        Object.keys(rates[selectedBrand]).forEach(curr => {
+    // Look up exact or category-derived supported rates for selected brand
+    let brandRates = rates[selectedBrand];
+    if (!brandRates) {
+        // Fallback default rates for newly selected catalog brand
+        brandRates = DEFAULT_CARD_RATES[selectedBrand] || { USD: 1250, EUR: 1150, NGN: 1900 };
+    }
+    
+    if (brandRates) {
+        Object.keys(brandRates).forEach(curr => {
             let isAllowed = true;
             if (curr === "USD" || curr === "USA" || ["Canada", "Australia", "Switzerland (CHF)", "Japan (JPY)", "China (CNY)", "Hong Kong (HKD)", "Singapore (SGD)", "New Zealand (NZD)", "UAE (AED)", "Saudi Arabia (SAR)", "South Africa (ZAR)", "India (INR)"].includes(curr)) {
                 isAllowed = activeCurrencies["USD"] ? activeCurrencies["USD"].status === "ACTIVE" : true;
@@ -438,34 +647,6 @@ function populateBuyCountryFilters() {
     
     if (selectedFilter && Array.from(filter.options).some(o => o.value === selectedFilter)) {
         filter.value = selectedFilter;
-    }
-}
-
-// Select Brand Card via Visual Chips (Screen 1 Fidelity)
-function selectBrandCard(brandName, element) {
-    const brandChips = document.querySelectorAll("#brand-select-chips .brand-card-item");
-    brandChips.forEach(chip => chip.classList.remove("active"));
-    if (element) element.classList.add("active");
-
-    const brandSelect = document.getElementById("sell-brand");
-    if (brandSelect) {
-        // Map alias if needed
-        let targetValue = brandName;
-        if (brandName === "STEAM") targetValue = "Steam";
-        else if (brandName === "AMAZON") targetValue = "Amazon";
-        else if (brandName === "GOOGLE_PLAY") targetValue = "Google Play";
-        else if (brandName === "APPLE") targetValue = "Apple / iTunes";
-        else if (brandName === "RAZER_GOLD") targetValue = "Razer Gold";
-        else if (brandName === "SEPHORA") targetValue = "Sephora";
-        
-        // Find closest match in select options
-        const match = Array.from(brandSelect.options).find(o => o.value.toLowerCase().includes(targetValue.toLowerCase()) || targetValue.toLowerCase().includes(o.value.toLowerCase()));
-        if (match) {
-            brandSelect.value = match.value;
-        } else if (brandSelect.options.length > 0) {
-            brandSelect.value = brandSelect.options[0].value;
-        }
-        updateSellCurrencyOptions();
     }
 }
 
