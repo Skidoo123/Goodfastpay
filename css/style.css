@@ -1456,28 +1456,26 @@ div::-webkit-scrollbar-thumb:hover {
     pointer-events: none;
 }
 .wallet-hero-balance {
-    font-size: clamp(1.8rem, 5vw, 2.6rem);
+    font-size: clamp(1.65rem, 6.5vw, 2.35rem);
     font-weight: 800;
-    letter-spacing: -1px;
-    margin-top: 6px;
-    margin-bottom: 22px;
-    text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    letter-spacing: -0.5px;
+    margin-top: 4px;
+    margin-bottom: 18px;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     word-break: break-word;
+    line-height: 1.15;
 }
 .wallet-actions-grid {
     display: grid;
-    grid-template-columns: repeat(5, 1fr);
-    gap: 10px;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    width: 100%;
+    box-sizing: border-box;
 }
-@media (max-width: 900px) {
-    .wallet-actions-grid {
-        grid-template-columns: repeat(3, 1fr);
-    }
-}
-@media (max-width: 540px) {
+@media (max-width: 768px) {
     .wallet-actions-grid {
         grid-template-columns: repeat(2, 1fr);
-        gap: 8px;
+        gap: 10px;
     }
 }
 .wallet-action-btn {
@@ -1487,15 +1485,17 @@ div::-webkit-scrollbar-thumb:hover {
     padding: 12px 8px;
     border-radius: var(--radius-md);
     font-weight: 700;
-    font-size: 0.8rem;
+    font-size: 0.82rem;
     text-align: center;
     cursor: pointer;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 8px;
-    min-height: 52px;
+    gap: 6px;
+    min-height: 60px;
+    width: 100%;
+    box-sizing: border-box;
     transition: all var(--transition-fast) ease;
     user-select: none;
     -webkit-tap-highlight-color: transparent;
@@ -1504,7 +1504,7 @@ div::-webkit-scrollbar-thumb:hover {
     background: #ffffff;
     color: var(--primary);
     transform: translateY(-2px);
-    box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
 }
 .wallet-action-btn i {
     font-size: 1.15rem;
@@ -4327,10 +4327,14 @@ body {
     }
     .main-content {
         margin-left: 0 !important;
-        padding: 16px 16px 96px 16px !important;
+        padding: 16px 24px calc(140px + env(safe-area-inset-bottom, 20px)) 24px !important;
         min-height: 100vh;
         min-height: 100dvh;
         height: auto !important;
+        box-sizing: border-box !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        overflow-x: hidden !important;
     }
     .sidebar {
         display: none;
@@ -5576,11 +5580,13 @@ div:has(> table) {
         grid-template-columns: repeat(3, 1fr) !important;
         gap: 8px !important;
         width: 100% !important;
+    }
+
     .main-content {
         margin-left: 0 !important;
-        padding: 16px 24px 115px 24px !important;
+        padding: 16px 24px calc(140px + env(safe-area-inset-bottom, 20px)) 24px !important;
         width: 100% !important;
-        max-width: 100vw !important;
+        max-width: 100% !important;
         min-height: 100vh !important;
         min-height: 100dvh !important;
         height: auto !important;
@@ -5621,15 +5627,20 @@ div:has(> table) {
     /* Stats Summary Grid on Mobile */
     .stats-summary-grid {
         display: grid !important;
-        grid-template-columns: 1fr 1fr !important;
+        grid-template-columns: repeat(2, 1fr) !important;
         gap: 10px !important;
         margin-bottom: 22px !important;
+        width: 100% !important;
+        box-sizing: border-box !important;
     }
 
     .stats-card {
         padding: 14px 12px !important;
         border-radius: 14px !important;
         min-height: 64px !important;
+        width: 100% !important;
+        min-width: 0 !important;
+        box-sizing: border-box !important;
     }
 
     .stats-card h4 {

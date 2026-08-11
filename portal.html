@@ -220,14 +220,14 @@
                     </div>
                     <div class="wallet-hero-balance" id="stat-wallet-balance-hero">₦0.00</div>
                     
-                    <!-- Wallet actions grid -->
+                    <!-- Wallet actions grid (Clean 2x2 on mobile / 4-col on desktop) -->
                     <div class="wallet-actions-grid">
                         <div class="wallet-action-btn" onclick="switchSection('buy', document.querySelector('[onclick*=\'buy\']'))">
                             <i class="fas fa-cart-shopping"></i>
                             <span>Buy Cards</span>
                         </div>
                         <div class="wallet-action-btn" onclick="switchSection('sell', document.querySelector('[onclick*=\'sell\']'))">
-                            <i class="fas fa-wallet"></i>
+                            <i class="fas fa-tag"></i>
                             <span>Sell Cards</span>
                         </div>
                         <div class="wallet-action-btn" onclick="switchSection('withdraw', document.querySelector('[onclick*=\'withdraw\']'))">
@@ -237,10 +237,6 @@
                         <div class="wallet-action-btn" onclick="switchSection('bank', document.querySelector('[onclick*=\'bank\']'))">
                             <i class="fas fa-building-columns"></i>
                             <span>Link Bank</span>
-                        </div>
-                        <div class="wallet-action-btn" onclick="showToast('To fund your wallet, please transfer to your linked bank account or contact support.', 'info');">
-                            <i class="fas fa-circle-plus"></i>
-                            <span>Fund Wallet</span>
                         </div>
                     </div>
                 </div>
