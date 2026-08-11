@@ -1253,15 +1253,16 @@ function handleBankUpdate(e) {
     loadSession();
 }
 
-// Render Combined transactions ledger table
+// Render Combined transactions ledger cards (Responsive Mobile & Desktop)
 function renderTransactionTable() {
     const db = getDB();
-    const tbody = document.getElementById("dashboard-tx-tbody");
-    tbody.innerHTML = "";
+    const container = document.getElementById("dashboard-tx-container");
+    if (!container) return;
+    container.innerHTML = "";
     
-    const userSubs = db.submissions.filter(s => s.userId === currentUser.email);
-    const userWds = db.withdrawals.filter(w => w.userId === currentUser.email);
-    const userPurchases = db.inventory.filter(item => item.status === "SOLD" && item.purchasedBy === currentUser.email);
+    const userSubs = db.submissions ? db.submissions.filter(s => s.userId === currentUser.email) : [];
+    const userWds = db.withdrawals ? db.withdrawals.filter(w => w.userId === currentUser.email) : [];
+    const userPurchases = db.inventory ? db.inventory.filter(item => item.status === "SOLD" && item.purchasedBy === currentUser.email) : [];
     
     // Merge list items
     const list = [];
@@ -1273,19 +1274,26 @@ function renderTransactionTable() {
             details: `${s.brand} (${s.currency} ${s.cardValue})`,
             amount: s.payoutAmount !== null ? s.payoutAmount : 0,
             status: s.status,
-            rejection: s.rejectionReason
+            rejection: s.rejectionReason,
+            iconClass: "icon-cards",
+            icon: "fas fa-ticket"
         });
     });
     
     userWds.forEach(w => {
+        const maskedAcct = (w.accountNumber || '').length >= 4 
+            ? `${(w.accountNumber || '').substring(0, 3)}***` 
+            : (w.accountNumber || '');
         list.push({
             id: w.id,
             date: new Date(w.createdAt),
             type: "Cash Withdrawal",
-            details: `${w.bankName} (${w.accountNumber.substring(0,3)}***)`,
+            details: `${w.bankName || 'Bank'} (${maskedAcct})`,
             amount: w.amount,
             status: w.status,
-            rejection: w.declineReason
+            rejection: w.declineReason,
+            iconClass: "icon-withdraw",
+            icon: "fas fa-money-bill-transfer"
         });
     });
     
@@ -1297,7 +1305,9 @@ function renderTransactionTable() {
             details: `${p.brand} (${p.currency} ${p.cardValue})`,
             amount: p.price,
             status: "COMPLETED",
-            rejection: null
+            rejection: null,
+            iconClass: "icon-wallet",
+            icon: "fas fa-cart-shopping"
         });
     });
     
@@ -1305,44 +1315,69 @@ function renderTransactionTable() {
     list.sort((a,b) => b.date - a.date);
     
     if (list.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding: 40px; color: var(--text-muted);">No transaction activities found.</td></tr>`;
+        container.innerHTML = `
+            <div class="card" style="text-align:center; padding: 36px 16px; color: var(--text-muted); border-radius: 16px;">
+                <i class="fas fa-receipt" style="font-size: 2.2rem; opacity: 0.35; margin-bottom: 12px; display:block;"></i>
+                <p style="font-size: 1rem; font-weight: 700; color: var(--text-primary);">No Transaction Activities Yet</p>
+                <p style="font-size: 0.82rem; color: var(--text-secondary); margin-top: 4px;">Sell or buy gift cards or withdraw cash to track all movements here.</p>
+            </div>
+        `;
         return;
     }
     
     list.forEach(tx => {
-        const tr = document.createElement("tr");
-        
         let statusBadge = "";
-        if (tx.status === "PENDING") statusBadge = `<span class="badge badge-warning"><span class="pulse-indicator warning"></span> Reviewing</span>`;
-        else if (tx.status === "COMPLETED") statusBadge = `<span class="badge badge-success">Completed</span>`;
-        else if (tx.status === "REJECTED" || tx.status === "DECLINED") {
-            const reason = tx.rejection ? `title="${tx.rejection}"` : '';
-            statusBadge = `<span class="badge badge-danger" ${reason} style="cursor:help;">Declined <i class="fas fa-circle-question" style="font-size:0.75rem; margin-left:4px;"></i></span>`;
-        }
-        
-        const dateStr = tx.date.toLocaleString();
-        
-        let amountText = "";
-        if (tx.type === "Card Trade") {
-            // Card Trade adds balance (if completed)
-            amountText = tx.status === "COMPLETED" ? `+₦${tx.amount.toLocaleString(undefined, {minimumFractionDigits:2})}` : `₦${tx.amount.toLocaleString(undefined, {minimumFractionDigits:2})} (Est.)`;
-            tr.style.color = tx.status === "COMPLETED" ? "var(--accent)" : "inherit";
+        if (tx.status === "PENDING") {
+            statusBadge = `<span class="tx-badge-review"><span class="tx-dot-warning"></span> Review</span>`;
+        } else if (tx.status === "COMPLETED") {
+            statusBadge = `<span class="tx-badge-success"><span class="tx-dot-success"></span> Completed</span>`;
         } else {
-            // Withdrawal or purchase deducts balance
-            amountText = `-₦${tx.amount.toLocaleString(undefined, {minimumFractionDigits:2})}`;
-            tr.style.color = tx.status === "DECLINED" ? "var(--text-muted)" : "var(--danger)";
+            const reason = tx.rejection ? `title="${tx.rejection}"` : '';
+            statusBadge = `<span class="tx-badge-danger" ${reason}><span class="tx-dot-danger"></span> Declined</span>`;
         }
         
-        tr.innerHTML = `
-            <td><code>${tx.id}</code></td>
-            <td>${dateStr}</td>
-            <td><strong>${tx.type}</strong></td>
-            <td>${tx.details}</td>
-            <td style="font-weight: 800;" class="text-right">${amountText}</td>
-            <td class="text-center">${statusBadge}</td>
-        `;
+        const dateFormatted = tx.date.toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' });
+        const timeFormatted = tx.date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
         
-        tbody.appendChild(tr);
+        let amountFormatted = "";
+        let amountClass = "";
+        if (tx.type === "Card Trade") {
+            if (tx.status === "COMPLETED") {
+                amountFormatted = `+₦${tx.amount.toLocaleString(undefined, {minimumFractionDigits: 2})}`;
+                amountClass = "amount-credit";
+            } else {
+                amountFormatted = `₦${tx.amount.toLocaleString(undefined, {minimumFractionDigits: 2})} (Est.)`;
+                amountClass = "amount-neutral";
+            }
+        } else {
+            amountFormatted = `-₦${tx.amount.toLocaleString(undefined, {minimumFractionDigits: 2})}`;
+            amountClass = "amount-debit";
+        }
+        
+        const card = document.createElement("div");
+        card.className = "recent-tx-card";
+        card.innerHTML = `
+            <div class="tx-card-main-row">
+                <div class="tx-card-left">
+                    <div class="tx-icon-pill ${tx.iconClass}">
+                        <i class="${tx.icon}"></i>
+                    </div>
+                    <div class="tx-info-block">
+                        <div class="tx-type-title">${tx.type}</div>
+                        <div class="tx-details-subtitle">${tx.details}</div>
+                    </div>
+                </div>
+                <div class="tx-card-right">
+                    <div class="tx-amount-display ${amountClass}">${amountFormatted}</div>
+                    <div class="tx-status-container">${statusBadge}</div>
+                </div>
+            </div>
+            <div class="tx-card-meta-row">
+                <span class="tx-timestamp">${dateFormatted} • ${timeFormatted}</span>
+                <span class="tx-ref-id">ID: ${tx.id}</span>
+            </div>
+        `;
+        container.appendChild(card);
     });
 }
 

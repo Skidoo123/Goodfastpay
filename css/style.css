@@ -1510,6 +1510,229 @@ div::-webkit-scrollbar-thumb:hover {
     font-size: 1.15rem;
 }
 
+/* ================= DASHBOARD STATS & RECENT TRANSACTIONS SYSTEM ================= */
+
+.stats-summary-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    margin-bottom: 24px;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+@media (max-width: 900px) {
+    .stats-summary-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 10px;
+    }
+}
+
+@media (max-width: 360px) {
+    .stats-summary-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.dashboard-section-heading {
+    font-size: clamp(1.2rem, 4.5vw, 1.45rem);
+    font-weight: 800;
+    color: var(--text-primary);
+    margin-bottom: 14px;
+    display: flex;
+    align-items: center;
+}
+
+/* Recent Transaction Cards */
+.recent-tx-card {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 14px;
+    padding: 14px 16px;
+    margin-bottom: 10px;
+    box-shadow: var(--card-shadow);
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    box-sizing: border-box;
+    transition: border-color 0.2s ease, transform 0.15s ease;
+}
+
+.recent-tx-card:hover {
+    border-color: rgba(16, 185, 129, 0.4);
+    transform: translateY(-1px);
+}
+
+.tx-card-main-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    gap: 10px;
+}
+
+.tx-card-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-width: 0;
+    flex: 1;
+}
+
+.tx-icon-pill {
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.05rem;
+    flex-shrink: 0;
+}
+
+.tx-icon-pill.icon-wallet {
+    background: rgba(16, 185, 129, 0.12);
+    color: #10b981;
+}
+
+.tx-icon-pill.icon-cards {
+    background: rgba(6, 182, 212, 0.12);
+    color: #06b6d4;
+}
+
+.tx-icon-pill.icon-withdraw {
+    background: rgba(245, 158, 11, 0.12);
+    color: #f59e0b;
+}
+
+.tx-icon-pill.icon-pending {
+    background: rgba(139, 92, 246, 0.12);
+    color: #8b5cf6;
+}
+
+.tx-info-block {
+    min-width: 0;
+    flex: 1;
+}
+
+.tx-type-title {
+    font-size: 0.94rem;
+    font-weight: 800;
+    color: var(--text-primary);
+    line-height: 1.2;
+}
+
+.tx-details-subtitle {
+    font-size: 0.78rem;
+    color: var(--text-secondary);
+    margin-top: 2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.tx-card-right {
+    text-align: right;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 4px;
+}
+
+.tx-amount-display {
+    font-size: 0.98rem;
+    font-weight: 800;
+    white-space: nowrap;
+}
+
+.tx-amount-display.amount-credit {
+    color: #10b981;
+}
+
+.tx-amount-display.amount-debit {
+    color: #ef4444;
+}
+
+.tx-amount-display.amount-neutral {
+    color: var(--text-primary);
+}
+
+.tx-status-container {
+    display: flex;
+    align-items: center;
+}
+
+/* Compact Status Badges */
+.tx-badge-review {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    background: rgba(245, 158, 11, 0.12);
+    color: #f59e0b;
+    font-size: 0.72rem;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 100px;
+}
+
+.tx-badge-success {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    background: rgba(16, 185, 129, 0.12);
+    color: #10b981;
+    font-size: 0.72rem;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 100px;
+}
+
+.tx-badge-danger {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    background: rgba(239, 68, 68, 0.12);
+    color: #ef4444;
+    font-size: 0.72rem;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 100px;
+}
+
+.tx-dot-warning {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #f59e0b;
+}
+
+.tx-dot-success {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #10b981;
+}
+
+.tx-dot-danger {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #ef4444;
+}
+
+.tx-card-meta-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    border-top: 1px dashed var(--border-color);
+    margin-top: 8px;
+    padding-top: 6px;
+    width: 100%;
+}
+
 /* ================= BUY GIFT CARD RESPONSIVE SYSTEM ================= */
 
 /* Search, Filter, and Sort Toolbar */
@@ -5150,6 +5373,43 @@ div:has(> table) {
 
     .mobile-header-logo {
         display: flex !important;
+    }
+
+    /* Stats Summary Grid on Mobile */
+    .stats-summary-grid {
+        display: grid !important;
+        grid-template-columns: 1fr 1fr !important;
+        gap: 10px !important;
+        margin-bottom: 22px !important;
+    }
+
+    .stats-card {
+        padding: 14px 12px !important;
+        border-radius: 14px !important;
+        min-height: 64px !important;
+    }
+
+    .stats-card h4 {
+        font-size: 1.12rem !important;
+    }
+
+    .dashboard-section-heading {
+        font-size: 1.25rem !important;
+        margin-bottom: 12px !important;
+    }
+
+    .recent-tx-card {
+        padding: 12px 14px !important;
+        margin-bottom: 10px !important;
+    }
+
+    .tx-details-subtitle {
+        max-width: 140px !important;
+        font-size: 0.74rem !important;
+    }
+
+    .tx-amount-display {
+        font-size: 0.92rem !important;
     }
 
     /* Wallet Hero & Balance Cards */

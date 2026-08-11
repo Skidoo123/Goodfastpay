@@ -246,57 +246,47 @@
                 </div>
 
                 <!-- Summary Cards grid -->
-                <div class="dash-grid" style="margin-bottom: 30px;">
-                    <div class="card stats-card" style="margin-bottom: 0; padding: 20px;">
+                <div class="dash-grid stats-summary-grid" style="margin-bottom: 24px;">
+                    <div class="card stats-card" style="margin-bottom: 0; padding: 18px 16px;">
                         <div class="stats-icon icon-wallet" style="width: 38px; height: 38px; font-size: 1.1rem;"><i class="fas fa-wallet"></i></div>
                         <div>
-                            <span style="font-size: 0.75rem; color: var(--text-secondary); font-weight: 700;">WALLET BALANCE</span>
-                            <h4 style="font-size: 1.25rem; font-weight: 800; margin-top: 4px;" id="stat-wallet-balance">₦0.00</h4>
+                            <span style="font-size: 0.72rem; color: var(--text-secondary); font-weight: 700; letter-spacing: 0.5px;">WALLET BALANCE</span>
+                            <h4 style="font-size: 1.25rem; font-weight: 800; margin-top: 2px;" id="stat-wallet-balance">₦0.00</h4>
                         </div>
                     </div>
-                    <div class="card stats-card" style="margin-bottom: 0; padding: 20px;">
+                    <div class="card stats-card" style="margin-bottom: 0; padding: 18px 16px;">
                         <div class="stats-icon icon-pending" style="width: 38px; height: 38px; font-size: 1.1rem;"><i class="fas fa-hourglass-half"></i></div>
                         <div>
-                            <span style="font-size: 0.75rem; color: var(--text-secondary); font-weight: 700;">PENDING ORDERS</span>
-                            <h4 style="font-size: 1.25rem; font-weight: 800; margin-top: 4px;" id="stat-pending-balance">₦0.00</h4>
+                            <span style="font-size: 0.72rem; color: var(--text-secondary); font-weight: 700; letter-spacing: 0.5px;">PENDING ORDERS</span>
+                            <h4 style="font-size: 1.25rem; font-weight: 800; margin-top: 2px;" id="stat-pending-balance">₦0.00</h4>
                         </div>
                     </div>
-                    <div class="card stats-card" style="margin-bottom: 0; padding: 20px;">
+                    <div class="card stats-card" style="margin-bottom: 0; padding: 18px 16px;">
                         <div class="stats-icon icon-cards" style="width: 38px; height: 38px; font-size: 1.1rem;"><i class="fas fa-ticket"></i></div>
                         <div>
-                            <span style="font-size: 0.75rem; color: var(--text-secondary); font-weight: 700;">TOTAL CARD SALES</span>
-                            <h4 style="font-size: 1.25rem; font-weight: 800; margin-top: 4px;" id="stat-card-trades">0</h4>
+                            <span style="font-size: 0.72rem; color: var(--text-secondary); font-weight: 700; letter-spacing: 0.5px;">TOTAL CARD SALES</span>
+                            <h4 style="font-size: 1.25rem; font-weight: 800; margin-top: 2px;" id="stat-card-trades">0</h4>
                         </div>
                     </div>
-                    <div class="card stats-card" style="margin-bottom: 0; padding: 20px;">
+                    <div class="card stats-card" style="margin-bottom: 0; padding: 18px 16px;">
                         <div class="stats-icon icon-withdraw" style="width: 38px; height: 38px; font-size: 1.1rem;"><i class="fas fa-circle-down"></i></div>
                         <div>
-                            <span style="font-size: 0.75rem; color: var(--text-secondary); font-weight: 700;">TOTAL PURCHASES</span>
-                            <h4 style="font-size: 1.25rem; font-weight: 800; margin-top: 4px;" id="stat-purchases">0</h4>
+                            <span style="font-size: 0.72rem; color: var(--text-secondary); font-weight: 700; letter-spacing: 0.5px;">TOTAL PURCHASES</span>
+                            <h4 style="font-size: 1.25rem; font-weight: 800; margin-top: 2px;" id="stat-purchases">0</h4>
                         </div>
                     </div>
                 </div>
 
                 <!-- Recent transactions -->
-                <h3 style="font-size: 1.25rem; font-weight: 800; margin-bottom: 20px;"><i class="fas fa-receipt" style="color: var(--primary); margin-right: 8px;"></i> Recent Transaction History</h3>
-                <div class="card" style="padding: 0; overflow: hidden;">
-                    <div class="table-container">
-                        <table class="data-table compact-table">
-                            <thead>
-                                <tr>
-                                    <th style="width: 15%;">Tx ID</th>
-                                    <th style="width: 20%;">Date</th>
-                                    <th style="width: 18%;">Type</th>
-                                    <th style="width: 25%;">Details</th>
-                                    <th style="width: 12%; text-align: right;" class="text-right">Amount</th>
-                                    <th style="width: 10%; text-align: center;" class="text-center">Status</th>
-                                </tr>
-                            </thead>
-                            <tbody id="dashboard-tx-tbody">
-                                <!-- Populated dynamically -->
-                            </tbody>
-                        </table>
-                    </div>
+                <div style="margin-bottom: 16px;">
+                    <h3 class="dashboard-section-heading">
+                        <i class="fas fa-receipt" style="color: var(--primary); margin-right: 8px;"></i> Recent Transaction History
+                    </h3>
+                </div>
+                
+                <!-- Dynamic Transaction Cards Container (Responsive on 320px-430px) -->
+                <div id="dashboard-tx-container">
+                    <!-- Populated dynamically via portal.js -->
                 </div>
             </section>
 
