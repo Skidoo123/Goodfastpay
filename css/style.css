@@ -4652,15 +4652,18 @@ body {
     border: 1px solid var(--border-color);
     border-radius: 16px;
     padding: 8px 16px;
-    margin-bottom: 24px;
+    margin-bottom: 20px;
     box-shadow: var(--card-shadow);
+    width: 100%;
+    box-sizing: border-box;
 }
 
 .settings-group-title {
-    font-size: 0.95rem;
+    font-size: 0.92rem;
     font-weight: 800;
     color: var(--text-primary);
-    padding: 12px 4px 8px;
+    padding: 12px 4px 6px;
+    letter-spacing: 0.2px;
 }
 
 .settings-item-row {
@@ -4668,13 +4671,21 @@ body {
     align-items: center;
     justify-content: space-between;
     padding: 14px 4px;
+    min-height: 56px;
     border-bottom: 1px solid var(--border-color);
     cursor: pointer;
-    transition: background-color 0.2s;
+    transition: background-color 0.15s ease;
+    position: relative;
+    width: 100%;
+    box-sizing: border-box;
 }
 
 .settings-item-row:last-child {
     border-bottom: none;
+}
+
+.settings-item-row:hover {
+    background: rgba(255, 255, 255, 0.015);
 }
 
 .settings-item-left {
@@ -4694,7 +4705,7 @@ body {
 }
 
 .settings-item-sub {
-    font-size: 0.75rem;
+    font-size: 0.74rem;
     color: var(--text-muted);
     font-weight: 400;
     margin-top: 2px;
@@ -4706,6 +4717,62 @@ body {
     gap: 8px;
     color: var(--text-muted);
     font-size: 0.85rem;
+}
+
+.settings-select-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    position: relative;
+}
+
+.settings-val-text {
+    font-size: 0.88rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    white-space: nowrap;
+}
+
+.settings-chevron {
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    margin-left: 2px;
+}
+
+.settings-invisible-select {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    cursor: pointer;
+    z-index: 2;
+    -webkit-appearance: none;
+    appearance: none;
+}
+
+.btn-signout-outline {
+    width: 100%;
+    border: 1.5px solid #ef4444;
+    color: #ef4444;
+    background: rgba(239, 68, 68, 0.05);
+    padding: 15px 20px;
+    border-radius: 14px;
+    font-weight: 700;
+    font-size: 0.96rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-sizing: border-box;
+}
+
+.btn-signout-outline:hover {
+    background: #ef4444;
+    color: #ffffff;
 }
 
 /* iOS Style Switch */
@@ -5204,7 +5271,7 @@ div:has(> table) {
 
     /* Settings Profile & Grouped Cards (Screen 2) */
     .settings-profile-card {
-        padding: 14px 12px !important;
+        padding: 16px 14px !important;
         margin-bottom: 16px !important;
         gap: 8px !important;
     }
@@ -5214,13 +5281,15 @@ div:has(> table) {
     }
 
     .settings-profile-avatar-img {
-        width: 44px !important;
-        height: 44px !important;
+        width: 46px !important;
+        height: 46px !important;
     }
 
     .settings-group-card {
-        padding: 4px 10px !important;
+        padding: 4px 12px !important;
         margin-bottom: 16px !important;
+        width: 100% !important;
+        box-sizing: border-box !important;
     }
 
     .settings-group-title {
@@ -5229,21 +5298,32 @@ div:has(> table) {
     }
 
     .settings-item-row {
-        padding: 12px 2px !important;
+        padding: 14px 4px !important;
+        min-height: 56px !important;
+        width: 100% !important;
+        box-sizing: border-box !important;
     }
 
     .settings-item-left {
         gap: 10px !important;
-        font-size: 0.84rem !important;
+        font-size: 0.88rem !important;
     }
 
     .settings-item-left i {
-        font-size: 1rem !important;
+        font-size: 1.05rem !important;
         width: 18px !important;
     }
 
     .settings-item-sub {
-        font-size: 0.7rem !important;
+        font-size: 0.72rem !important;
+    }
+
+    .settings-val-text {
+        font-size: 0.85rem !important;
+    }
+
+    .settings-chevron {
+        font-size: 0.76rem !important;
     }
 
     /* Linked Bank Cards (Screen 4) */

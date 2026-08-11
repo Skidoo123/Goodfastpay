@@ -666,16 +666,16 @@
                                 <i class="fa-regular fa-user"></i>
                                 <span>Edit Profile</span>
                             </div>
-                            <div class="settings-item-right"><i class="fa-solid fa-chevron-right"></i></div>
+                            <div class="settings-item-right"><i class="fa-solid fa-chevron-right settings-chevron"></i></div>
                         </div>
                         <div class="settings-item-row" onclick="openChangePasswordModal()">
                             <div class="settings-item-left">
                                 <i class="fa-solid fa-lock"></i>
                                 <span>Change Password</span>
                             </div>
-                            <div class="settings-item-right"><i class="fa-solid fa-chevron-right"></i></div>
+                            <div class="settings-item-right"><i class="fa-solid fa-chevron-right settings-chevron"></i></div>
                         </div>
-                        <div class="settings-item-row" style="cursor: default;">
+                        <div class="settings-item-row" onclick="toggleSettingCheckbox('toggle-2fa')">
                             <div class="settings-item-left">
                                 <i class="fa-solid fa-shield-halved"></i>
                                 <div>
@@ -683,7 +683,7 @@
                                     <div class="settings-item-sub">Adds extra security to your account</div>
                                 </div>
                             </div>
-                            <div class="settings-item-right">
+                            <div class="settings-item-right" onclick="event.stopPropagation()">
                                 <label class="ios-switch">
                                     <input type="checkbox" id="toggle-2fa" checked onchange="handle2faToggle(this)">
                                     <span class="ios-slider"></span>
@@ -695,24 +695,24 @@
                     <!-- Notifications Group -->
                     <div class="settings-group-card">
                         <div class="settings-group-title">Notifications</div>
-                        <div class="settings-item-row" style="cursor: default;">
+                        <div class="settings-item-row" onclick="toggleSettingCheckbox('toggle-push-notif')">
                             <div class="settings-item-left">
                                 <i class="fa-regular fa-bell"></i>
                                 <span>Push Notifications</span>
                             </div>
-                            <div class="settings-item-right">
+                            <div class="settings-item-right" onclick="event.stopPropagation()">
                                 <label class="ios-switch">
                                     <input type="checkbox" id="toggle-push-notif" checked onchange="showToast('Notification preference updated.', 'info')">
                                     <span class="ios-slider"></span>
                                 </label>
                             </div>
                         </div>
-                        <div class="settings-item-row" style="cursor: default;">
+                        <div class="settings-item-row" onclick="toggleSettingCheckbox('toggle-email-notif')">
                             <div class="settings-item-left">
                                 <i class="fa-regular fa-envelope"></i>
                                 <span>Email Notifications</span>
                             </div>
-                            <div class="settings-item-right">
+                            <div class="settings-item-right" onclick="event.stopPropagation()">
                                 <label class="ios-switch">
                                     <input type="checkbox" id="toggle-email-notif" onchange="showToast('Notification preference updated.', 'info')">
                                     <span class="ios-slider"></span>
@@ -721,51 +721,71 @@
                         </div>
                     </div>
 
-                    <!-- General Settings Group -->
+                    <!-- General Settings Group (Two-Column Layout with Native Select Integration) -->
                     <div class="settings-group-card">
                         <div class="settings-group-title">General</div>
-                        <div class="settings-item-row">
+                        
+                        <!-- Language Row -->
+                        <div class="settings-item-row settings-select-row">
                             <div class="settings-item-left">
                                 <i class="fa-solid fa-globe"></i>
                                 <span>Language</span>
                             </div>
-                            <div class="settings-item-right">
-                                <select class="input-field" style="height: 32px; font-size: 0.85rem; padding: 2px 8px; margin: 0; background: transparent; border: none; font-weight: 600; text-align: right;">
-                                    <option value="en">English (US)</option>
-                                    <option value="uk">English (UK)</option>
+                            <div class="settings-item-right settings-select-wrapper">
+                                <span class="settings-val-text" id="setting-language-text">English (US)</span>
+                                <i class="fa-solid fa-chevron-right settings-chevron"></i>
+                                <select id="setting-language-select" class="settings-invisible-select" onchange="updateSettingDisplay('language', this)">
+                                    <option value="English (US)" selected>English (US)</option>
+                                    <option value="English (UK)">English (UK)</option>
+                                    <option value="Français">Français</option>
+                                    <option value="Español">Español</option>
+                                    <option value="Deutsch">Deutsch</option>
                                 </select>
                             </div>
                         </div>
-                        <div class="settings-item-row">
+
+                        <!-- Currency Row -->
+                        <div class="settings-item-row settings-select-row">
                             <div class="settings-item-left">
-                                <i class="fa-solid fa-money-bill"></i>
+                                <i class="fa-solid fa-money-bill-wave"></i>
                                 <span>Currency</span>
                             </div>
-                            <div class="settings-item-right">
-                                <select class="input-field" style="height: 32px; font-size: 0.85rem; padding: 2px 8px; margin: 0; background: transparent; border: none; font-weight: 600; text-align: right;">
-                                    <option value="NGN">NGN (₦)</option>
-                                    <option value="USD">USD ($)</option>
+                            <div class="settings-item-right settings-select-wrapper">
+                                <span class="settings-val-text" id="setting-currency-text">NGN (₦)</span>
+                                <i class="fa-solid fa-chevron-right settings-chevron"></i>
+                                <select id="setting-currency-select" class="settings-invisible-select" onchange="updateSettingDisplay('currency', this)">
+                                    <option value="NGN (₦)" selected>NGN (₦)</option>
+                                    <option value="USD ($)">USD ($)</option>
+                                    <option value="GBP (£)">GBP (£)</option>
+                                    <option value="EUR (€)">EUR (€)</option>
+                                    <option value="CAD ($)">CAD ($)</option>
                                 </select>
                             </div>
                         </div>
-                        <div class="settings-item-row">
+
+                        <!-- Theme Row -->
+                        <div class="settings-item-row settings-select-row">
                             <div class="settings-item-left">
                                 <i class="fa-solid fa-palette"></i>
                                 <span>Theme</span>
                             </div>
-                            <div class="settings-item-right">
-                                <select class="input-field" onchange="applyUserThemeSelection(this.value)" style="height: 32px; font-size: 0.85rem; padding: 2px 8px; margin: 0; background: transparent; border: none; font-weight: 600; text-align: right;">
-                                    <option value="dark">Dark Theme</option>
-                                    <option value="light">Light Theme</option>
+                            <div class="settings-item-right settings-select-wrapper">
+                                <span class="settings-val-text" id="setting-theme-text">Dark</span>
+                                <i class="fa-solid fa-chevron-right settings-chevron"></i>
+                                <select id="setting-theme-select" class="settings-invisible-select" onchange="updateSettingDisplay('theme', this)">
+                                    <option value="Dark" selected>Dark</option>
+                                    <option value="Light">Light</option>
                                 </select>
                             </div>
                         </div>
                     </div>
 
                     <!-- Sign Out Button -->
-                    <button type="button" onclick="handleLogout()" class="btn" style="width: 100%; border: 1.5px solid #ef4444; color: #ef4444; background: transparent; padding: 14px; border-radius: 12px; font-weight: 700; font-size: 0.95rem; margin-top: 8px; display: flex; align-items: center; justify-content: center; gap: 8px;">
-                        <i class="fa-solid fa-arrow-right-from-bracket"></i> Sign Out
-                    </button>
+                    <div style="margin-top: 24px; margin-bottom: 24px;">
+                        <button type="button" onclick="handleLogout()" class="btn-signout-outline">
+                            <i class="fa-solid fa-arrow-right-from-bracket"></i> Sign Out
+                        </button>
+                    </div>
                 </div>
             </section>
 

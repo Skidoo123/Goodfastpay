@@ -1873,14 +1873,43 @@ function handle2faToggle(checkbox) {
 }
 
 function applyUserThemeSelection(val) {
-    if (val === "dark") {
+    const themeMode = (val || "dark").toLowerCase();
+    if (themeMode === "dark") {
         document.documentElement.setAttribute("data-theme", "dark");
         localStorage.setItem("goodfastpay_theme", "dark");
     } else {
         document.documentElement.setAttribute("data-theme", "light");
         localStorage.setItem("goodfastpay_theme", "light");
     }
-    showToast(`Theme updated to ${val} mode.`, "info");
+    showToast(`Theme updated to ${themeMode} mode.`, "info");
+}
+
+// Update General Settings Visual Value on selection
+function updateSettingDisplay(type, selectEl) {
+    if (!selectEl) return;
+    const val = selectEl.value;
+    if (type === 'language') {
+        const textEl = document.getElementById('setting-language-text');
+        if (textEl) textEl.textContent = val;
+        showToast(`Language set to ${val}`, "success");
+    } else if (type === 'currency') {
+        const textEl = document.getElementById('setting-currency-text');
+        if (textEl) textEl.textContent = val;
+        showToast(`Display currency set to ${val}`, "success");
+    } else if (type === 'theme') {
+        const textEl = document.getElementById('setting-theme-text');
+        if (textEl) textEl.textContent = val;
+        applyUserThemeSelection(val.toLowerCase());
+    }
+}
+
+// Full row interactive toggle for switches
+function toggleSettingCheckbox(checkboxId) {
+    const chk = document.getElementById(checkboxId);
+    if (chk) {
+        chk.checked = !chk.checked;
+        chk.dispatchEvent(new Event('change'));
+    }
 }
 
 // Handle User logout
