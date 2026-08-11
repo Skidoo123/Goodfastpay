@@ -546,44 +546,49 @@
 
             <!-- SECTION 7: BUY GIFT CARD -->
             <section id="section-buy" class="portal-section">
+                <!-- Page Title Header -->
+                <div style="margin-bottom: 20px;">
+                    <h2 style="font-size: 1.6rem; font-weight: 800; color: var(--text-primary);"><i class="fas fa-cart-shopping" style="color: var(--secondary); margin-right: 8px;"></i> Buy Gift Cards</h2>
+                    <p style="color: var(--text-secondary); font-size: 0.9rem; margin-top: 4px;">Browse and buy verified gift cards instantly using your available wallet balance.</p>
+                </div>
+
                 <div class="grid-2">
                     <!-- Stock browser -->
-                    <div class="card" style="padding: 24px;">
-                        <h3 style="font-size: 1.3rem; font-weight: 800; margin-bottom: 12px;"><i class="fas fa-cart-shopping" style="color: var(--secondary); margin-right: 8px;"></i> Available Gift Card Stock</h3>
-                        <p style="color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 24px;">Browse and buy gift cards instantly using your wallet available balance.</p>
+                    <div class="card" style="padding: 20px;">
+                        <h3 style="font-size: 1.15rem; font-weight: 800; margin-bottom: 12px;"><i class="fas fa-ticket" style="color: var(--secondary); margin-right: 6px;"></i> Available Gift Card Stock</h3>
                         
-                        <!-- Search, Filter, and Sort Toolbar -->
-                        <div style="display: flex; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; background: var(--bg-tertiary); padding: 14px; border-radius: var(--radius-md); border: 1px solid var(--border-color);">
-                            <!-- Search -->
-                            <div style="flex: 1; min-width: 180px; position: relative;">
-                                <i class="fas fa-search" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-size: 0.85rem;"></i>
-                                <input type="text" id="buy-search-input" class="input-field" placeholder="Search brands..." oninput="filterAndRenderBuyStock()" style="padding-left: 36px; height: 38px; font-size: 0.85rem; margin-bottom: 0; background: var(--bg-secondary);">
+                        <!-- Responsive Search, Filter, and Sort Toolbar -->
+                        <div class="buy-toolbar">
+                            <!-- Search Field -->
+                            <div class="buy-search-wrapper">
+                                <i class="fas fa-search buy-search-icon"></i>
+                                <input type="text" id="buy-search-input" class="input-field buy-search-input" placeholder="Search brands (Steam, Amazon...)" oninput="filterAndRenderBuyStock()">
                             </div>
                             
-                            <!-- Country/Region Filter -->
-                            <div style="width: 140px;">
-                                <select id="buy-country-filter" class="input-field" onchange="filterAndRenderBuyStock()" style="height: 38px; font-size: 0.85rem; margin-bottom: 0; padding: 4px 10px; background: var(--bg-secondary);">
-                                    <option value="ALL">All Regions</option>
-                                    <option value="USA">USA</option>
-                                    <option value="UK">UK</option>
-                                    <option value="Canada">Canada</option>
-                                    <option value="Europe (EUR)">Europe</option>
-                                    <option value="Australia">Australia</option>
-                                </select>
-                            </div>
-                            
-                            <!-- Price Sorting -->
-                            <div style="width: 140px;">
-                                <select id="buy-sort-filter" class="input-field" onchange="filterAndRenderBuyStock()" style="height: 38px; font-size: 0.85rem; margin-bottom: 0; padding: 4px 10px; background: var(--bg-secondary);">
-                                    <option value="DEFAULT">Sort By</option>
-                                    <option value="PRICE_LOW_HIGH">Price: Low to High</option>
-                                    <option value="PRICE_HIGH_LOW">Price: High to Low</option>
-                                    <option value="STOCK_HIGH_LOW">Available Stock</option>
-                                </select>
+                            <!-- Filter & Sort Group -->
+                            <div class="buy-filters-row">
+                                <div class="buy-filter-col">
+                                    <select id="buy-country-filter" class="input-field buy-select-field" onchange="filterAndRenderBuyStock()">
+                                        <option value="ALL">All Regions</option>
+                                        <option value="USA">USA</option>
+                                        <option value="UK">UK</option>
+                                        <option value="Canada">Canada</option>
+                                        <option value="Europe (EUR)">Europe</option>
+                                        <option value="Australia">Australia</option>
+                                    </select>
+                                </div>
+                                <div class="buy-filter-col">
+                                    <select id="buy-sort-filter" class="input-field buy-select-field" onchange="filterAndRenderBuyStock()">
+                                        <option value="DEFAULT">Sort By: Featured</option>
+                                        <option value="PRICE_LOW_HIGH">Price: Low to High</option>
+                                        <option value="PRICE_HIGH_LOW">Price: High to Low</option>
+                                        <option value="STOCK_HIGH_LOW">Card Value: High to Low</option>
+                                    </select>
+                                </div>
                             </div>
                         </div>
                         
-                        <!-- Product cards list grid -->
+                        <!-- Product cards list grid (1 card per row on mobile) -->
                         <div class="product-grid" id="buy-stock-grid">
                             <!-- Populated dynamically from portal.js -->
                         </div>
@@ -591,21 +596,11 @@
 
                     <!-- Purchased cards logs with revealed codes -->
                     <div>
-                        <h3 style="font-size: 1.25rem; font-weight: 800; margin-bottom: 20px;"><i class="fas fa-key" style="color: var(--accent); margin-right: 8px;"></i> Purchased Codes History</h3>
-                        <div class="card" style="padding:0; overflow:hidden;">
-                            <table class="data-table compact-table">
-                                <thead>
-                                    <tr>
-                                        <th style="width: 20%;">Date</th>
-                                        <th style="width: 32%;">Card Info</th>
-                                        <th style="width: 22%; text-align: right;" class="text-right">Price Paid</th>
-                                        <th style="width: 26%; text-align: center;" class="text-center">Revealed PIN</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="buy-history-tbody">
-                                    <!-- Populated dynamically -->
-                                </tbody>
-                            </table>
+                        <h3 style="font-size: 1.15rem; font-weight: 800; margin-bottom: 16px;"><i class="fas fa-key" style="color: var(--accent); margin-right: 6px;"></i> Purchased Codes History</h3>
+                        
+                        <!-- Responsive Purchased Cards / Ledger List -->
+                        <div id="purchased-history-container">
+                            <!-- Populated dynamically: high fidelity transaction cards on mobile & desktop -->
                         </div>
                     </div>
                 </div>

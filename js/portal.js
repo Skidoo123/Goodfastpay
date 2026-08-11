@@ -1977,43 +1977,69 @@ function executeCardPurchase(cardId) {
     loadSession();
 }
 
-// Render purchased codes list with copy PIN helper
+// Render purchased codes list with copy PIN helper (Responsive Cards)
 function renderPurchasedHistoryTable() {
     const db = getDB();
-    const tbody = document.getElementById("buy-history-tbody");
-    if (!tbody) return;
+    const container = document.getElementById("purchased-history-container");
+    if (!container) return;
     
-    tbody.innerHTML = "";
+    container.innerHTML = "";
     
     // Filter cards purchased by current user
-    const list = db.inventory.filter(item => item.status === "SOLD" && item.purchasedBy === currentUser.email);
+    const list = db.inventory ? db.inventory.filter(item => item.status === "SOLD" && item.purchasedBy === currentUser.email) : [];
     
     // Sort descending by purchase date
     list.sort((a,b) => new Date(b.purchasedAt) - new Date(a.purchasedAt));
     
     if (list.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; padding: 24px; color: var(--text-muted);">No purchased gift cards found.</td></tr>`;
+        container.innerHTML = `
+            <div class="card" style="text-align:center; padding: 36px 16px; color: var(--text-muted); border-radius: 14px;">
+                <i class="fas fa-receipt" style="font-size: 2.2rem; opacity: 0.4; margin-bottom: 12px; display:block;"></i>
+                <p style="font-size: 0.95rem; font-weight: 700; color: var(--text-primary);">No Purchased Gift Cards Yet</p>
+                <p style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 4px;">Buy gift cards from available stock above to view and copy your redeemed PINs here.</p>
+            </div>
+        `;
         return;
     }
     
     list.forEach(item => {
-        const tr = document.createElement("tr");
-        
         const symbol = getCurrencySymbol(item.currency);
-        const dateStr = new Date(item.purchasedAt).toLocaleDateString();
+        const dateStr = new Date(item.purchasedAt).toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' });
+        const logoHTML = getBrandLogoHTML(item.brand);
+        const flagEmoji = getCountryFlagEmoji(item.currency);
         
-        tr.innerHTML = `
-            <td>${dateStr}</td>
-            <td><strong>${item.brand}</strong><br><span style="font-size:0.68rem; color:var(--text-secondary); font-weight:700;">${symbol}${item.cardValue} (${item.currency})</span></td>
-            <td style="font-weight:800; color:var(--danger);" class="text-right">-₦${item.price.toLocaleString()}</td>
-            <td class="text-center">
-                <div style="display:flex; align-items:center; justify-content:center; gap:8px;">
-                    <code style="background:var(--bg-tertiary); padding: 3px 6px; border-radius:4px; font-weight:800; font-size:0.76rem;">${item.code}</code>
-                    <button class="btn btn-secondary btn-sm" onclick="copyCardPinCode('${item.code}')" title="Copy Pin"><i class="fas fa-copy"></i></button>
+        const card = document.createElement("div");
+        card.className = "purchased-history-card";
+        card.innerHTML = `
+            <div class="purchased-card-top">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <div style="width: 36px; height: 36px; border-radius: 8px; background: var(--bg-tertiary); display: flex; align-items: center; justify-content: center; font-size: 1rem; flex-shrink: 0;">
+                        ${logoHTML}
+                    </div>
+                    <div>
+                        <div style="font-weight: 800; font-size: 0.92rem; color: var(--text-primary); display: flex; align-items: center; gap: 6px;">
+                            <span>${item.brand}</span>
+                            <span style="font-size: 0.85rem;" title="${item.currency}">${flagEmoji}</span>
+                        </div>
+                        <div style="font-size: 0.72rem; color: var(--text-muted);">${dateStr}</div>
+                    </div>
                 </div>
-            </td>
+                <div style="text-align: right;">
+                    <div style="font-weight: 800; font-size: 0.92rem; color: var(--danger);">-₦${item.price.toLocaleString(undefined, {minimumFractionDigits: 2})}</div>
+                    <div style="font-size: 0.72rem; font-weight: 700; color: var(--text-secondary);">Value: ${symbol}${item.cardValue}</div>
+                </div>
+            </div>
+            <div class="purchased-card-pin-box">
+                <div style="font-size: 0.7rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px;">Redeemed PIN / Code:</div>
+                <div class="pin-display-row">
+                    <code class="purchased-pin-code">${item.code}</code>
+                    <button class="btn-copy-pin-pill" onclick="copyCardPinCode('${item.code}')">
+                        <i class="fas fa-copy"></i> Copy
+                    </button>
+                </div>
+            </div>
         `;
-        tbody.appendChild(tr);
+        container.appendChild(card);
     });
 }
 
