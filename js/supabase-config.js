@@ -731,6 +731,144 @@ async function supabaseUpdateProfile(updates) {
     }
 }
 
+// -------------------------------------------------------------
+// SUPABASE ADMIN CLOUD OPERATIONS
+// -------------------------------------------------------------
+
+/**
+ * Admin: Update Submission Status & Payout in Supabase
+ */
+async function supabaseAdminUpdateSubmission(id, updates) {
+    if (!supabaseClient || !isSupabaseConfigured) return;
+    try {
+        const payload = {};
+        if (updates.status) payload.status = updates.status;
+        if (updates.payoutAmount !== undefined) payload.payout_amount = updates.payoutAmount;
+        if (updates.rejectionReason !== undefined) payload.rejection_reason = updates.rejectionReason;
+
+        await supabaseClient
+            .from('submissions')
+            .update(payload)
+            .eq('id', id);
+        console.log("⚡ Supabase Submission updated:", id, payload);
+    } catch (e) {
+        console.warn("Admin update submission cloud error:", e.message);
+    }
+}
+
+/**
+ * Admin: Update Withdrawal Request Status in Supabase
+ */
+async function supabaseAdminUpdateWithdrawal(id, updates) {
+    if (!supabaseClient || !isSupabaseConfigured) return;
+    try {
+        const payload = {};
+        if (updates.status) payload.status = updates.status;
+        if (updates.declineReason !== undefined) payload.decline_reason = updates.declineReason;
+
+        await supabaseClient
+            .from('withdrawals')
+            .update(payload)
+            .eq('id', id);
+        console.log("⚡ Supabase Withdrawal updated:", id, payload);
+    } catch (e) {
+        console.warn("Admin update withdrawal cloud error:", e.message);
+    }
+}
+
+/**
+ * Admin: Update User Wallet Balance in Supabase
+ */
+async function supabaseAdminUpdateUserBalance(userEmail, newBalance) {
+    if (!supabaseClient || !isSupabaseConfigured) return;
+    try {
+        await supabaseClient
+            .from('profiles')
+            .update({ wallet_balance: newBalance })
+            .eq('email', userEmail);
+        console.log("⚡ Supabase User balance updated:", userEmail, newBalance);
+    } catch (e) {
+        console.warn("Admin update balance cloud error:", e.message);
+    }
+}
+
+/**
+ * Admin: Update User Status (ACTIVE / SUSPENDED / BANNED) in Supabase
+ */
+async function supabaseAdminUpdateUserStatus(userEmail, status) {
+    if (!supabaseClient || !isSupabaseConfigured) return;
+    try {
+        await supabaseClient
+            .from('profiles')
+            .update({ status: status })
+            .eq('email', userEmail);
+        console.log("⚡ Supabase User status updated:", userEmail, status);
+    } catch (e) {
+        console.warn("Admin update user status cloud error:", e.message);
+    }
+}
+
+/**
+ * Admin: Insert New Gift Card into Stock Inventory in Supabase
+ */
+async function supabaseAdminInsertInventory(item) {
+    if (!supabaseClient || !isSupabaseConfigured) return;
+    try {
+        await supabaseClient
+            .from('inventory')
+            .insert([{
+                id: item.id,
+                brand: item.brand,
+                card_value: item.cardValue,
+                currency: item.currency,
+                country: item.country || 'USA',
+                code: item.code,
+                price: item.price,
+                status: item.status || 'AVAILABLE'
+            }]);
+        console.log("⚡ Supabase Stock item uploaded:", item.id);
+    } catch (e) {
+        console.warn("Admin insert inventory cloud error:", e.message);
+    }
+}
+
+/**
+ * Admin: Sync Currencies & Rates to Supabase Cloud
+ */
+async function supabaseAdminSyncCurrenciesAndRates(currencies, rates) {
+    if (!supabaseClient || !isSupabaseConfigured) return;
+    try {
+        // Upsert currencies
+        const currPayload = Object.keys(currencies).map(code => ({
+            code: code,
+            name: currencies[code].name,
+            rate: currencies[code].rate,
+            status: currencies[code].status || 'ACTIVE'
+        }));
+        await supabaseClient.from('currencies').upsert(currPayload);
+
+        // Upsert brand rates
+        if (rates) {
+            const ratesPayload = [];
+            Object.keys(rates).forEach(brand => {
+                Object.keys(rates[brand]).forEach(currCode => {
+                    ratesPayload.push({
+                        brand: brand,
+                        currency_code: currCode,
+                        rate: rates[brand][currCode]
+                    });
+                });
+            });
+            if (ratesPayload.length > 0) {
+                await supabaseClient.from('brand_rates').upsert(ratesPayload, { onConflict: 'brand,currency_code' });
+            }
+        }
+        console.log("⚡ Supabase Currencies & Rates synchronized.");
+    } catch (e) {
+        console.warn("Admin sync currencies cloud error:", e.message);
+    }
+}
+
 // Auto-trigger cloud sync on portal/admin load
 if (typeof window !== "undefined") {
     window.addEventListener("load", () => {

@@ -433,6 +433,11 @@ function toggleUserStatus(email, newStatus) {
             
             saveDB(db);
             
+            // Push update to Supabase Cloud
+            if (typeof supabaseAdminUpdateUserStatus === "function") {
+                supabaseAdminUpdateUserStatus(email, newStatus);
+            }
+            
             // Write Audit Log
             writeAuditLog(
                 currentAdmin.email,
@@ -917,6 +922,14 @@ function approveCardTrade(id) {
     db.users[sub.userId] = user;
     saveDB(db);
     
+    // Push updates to Supabase Cloud
+    if (typeof supabaseAdminUpdateSubmission === "function") {
+        supabaseAdminUpdateSubmission(id, { status: "COMPLETED", payoutAmount: payoutAmount });
+    }
+    if (typeof supabaseAdminUpdateUserBalance === "function") {
+        supabaseAdminUpdateUserBalance(sub.userId, user.wallet.balance);
+    }
+    
     // Log Admin Audits
     writeAuditLog(
         currentAdmin.email,
@@ -963,6 +976,11 @@ function rejectCardTrade(id) {
     
     db.users[sub.userId] = user;
     saveDB(db);
+    
+    // Push updates to Supabase Cloud
+    if (typeof supabaseAdminUpdateSubmission === "function") {
+        supabaseAdminUpdateSubmission(id, { status: "REJECTED", rejectionReason: reason });
+    }
     
     // Log Admin Audits
     writeAuditLog(
@@ -1138,6 +1156,11 @@ function approveWithdrawalPayout(id) {
     
     saveDB(db);
     
+    // Push updates to Supabase Cloud
+    if (typeof supabaseAdminUpdateWithdrawal === "function") {
+        supabaseAdminUpdateWithdrawal(id, { status: "COMPLETED" });
+    }
+    
     // Log Admin Audit Trail
     writeAuditLog(
         currentAdmin.email,
@@ -1185,6 +1208,14 @@ function declineWithdrawalPayout(id) {
     
     db.users[wd.userId] = user;
     saveDB(db);
+    
+    // Push updates to Supabase Cloud
+    if (typeof supabaseAdminUpdateWithdrawal === "function") {
+        supabaseAdminUpdateWithdrawal(id, { status: "DECLINED", declineReason: wd.declineReason });
+    }
+    if (typeof supabaseAdminUpdateUserBalance === "function") {
+        supabaseAdminUpdateUserBalance(wd.userId, user.wallet.balance);
+    }
     
     // Log Admin Audit Trail
     writeAuditLog(
@@ -1302,6 +1333,12 @@ function saveAdminRates() {
     
     if (isDirty) {
         saveDB(db);
+        
+        // Push rates to Supabase Cloud
+        if (typeof supabaseAdminSyncCurrenciesAndRates === "function") {
+            supabaseAdminSyncCurrenciesAndRates(db.currencies, db.settings.rates);
+        }
+        
         writeAuditLog(
             currentAdmin.email,
             "Exchange Rates Modified",
@@ -2063,6 +2100,11 @@ function handleAddInventory(event) {
     });
     
     saveDB(db);
+    
+    // Push stock item to Supabase Cloud
+    if (typeof supabaseAdminInsertInventory === "function") {
+        supabaseAdminInsertInventory(newItem);
+    }
     
     showToast(`Stock item ${stockId} uploaded successfully.`, "success");
     
