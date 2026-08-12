@@ -813,37 +813,60 @@ async function syncFromSupabaseCloud() {
 }
 
 // -------------------------------------------------------------
-// CUSTOMER CLOUD WRITE OPERATIONS
+// CUSTOMER CLOUD WRITE OPERATIONS (Serverless API + Direct SDK)
 // -------------------------------------------------------------
+
+/**
+ * Helper to dispatch customer actions via /api/client/action serverless function
+ */
+async function callClientApi(action, payload, userEmail) {
+    const email = userEmail || (typeof currentUser !== "undefined" && currentUser ? currentUser.email : null) || "user@goodfastpay.com";
+    try {
+        const response = await fetch('/api/client/action', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action, payload, userEmail: email })
+        });
+        if (response.ok) {
+            return await response.json();
+        }
+    } catch (err) {
+        console.warn("Client API endpoint fallback to client SDK:", err.message);
+    }
+    return null;
+}
 
 /**
  * Push a new trade submission to Supabase Cloud Database
  */
 async function supabasePushSubmission(sub) {
-    if (!supabaseClient || !isSupabaseConfigured) return;
-    try {
-        const { data: sessionData } = await supabaseClient.auth.getSession();
-        const userId = sessionData?.session?.user?.id;
+    const userEmail = sub.userId || (typeof currentUser !== "undefined" && currentUser ? currentUser.email : "user@goodfastpay.com");
+    
+    // 1. Primary: Serverless API execution
+    await callClientApi('submit_card', { sub }, userEmail);
 
-        const payload = {
-            id: sub.id,
-            brand: sub.brand,
-            card_value: sub.cardValue,
-            currency: sub.currency,
-            card_code: sub.cardCode || sub.code || 'CODE',
-            front_image_url: sub.frontImageUrl || sub.frontImage || null,
-            back_image_url: sub.backImageUrl || sub.backImage || null,
-            status: sub.status || 'PENDING',
-            payout_amount: sub.payoutAmount || null
-        };
+    // 2. Direct Supabase Client fallback / realtime trigger
+    if (supabaseClient && isSupabaseConfigured) {
+        try {
+            const payload = {
+                id: sub.id,
+                user_email: userEmail,
+                brand: sub.brand,
+                card_value: sub.cardValue,
+                currency: sub.currency || 'USD',
+                card_code: sub.cardCode || sub.code || 'CODE',
+                front_image_url: sub.frontImageUrl || sub.frontImage || null,
+                back_image_url: sub.backImageUrl || sub.backImage || null,
+                status: sub.status || 'PENDING',
+                payout_amount: sub.payoutAmount || null
+            };
 
-        if (userId) payload.user_id = userId;
-
-        const { error } = await supabaseClient.from('submissions').insert([payload]);
-        if (error) console.warn("Supabase submission insert notice:", error.message);
-        else console.log("⚡ Supabase Submission pushed:", sub.id);
-    } catch (e) {
-        console.warn("Could not push submission to Supabase:", e.message);
+            const { error } = await supabaseClient.from('submissions').upsert([payload], { onConflict: 'id' });
+            if (error) console.warn("Supabase direct submission notice:", error.message);
+            else console.log("⚡ Supabase Submission pushed directly:", sub.id);
+        } catch (e) {
+            console.warn("Could not push submission directly to Supabase:", e.message);
+        }
     }
 }
 
@@ -851,29 +874,32 @@ async function supabasePushSubmission(sub) {
  * Push a new cash withdrawal request to Supabase Cloud Database
  */
 async function supabasePushWithdrawal(wd) {
-    if (!supabaseClient || !isSupabaseConfigured) return;
-    try {
-        const { data: sessionData } = await supabaseClient.auth.getSession();
-        const userId = sessionData?.session?.user?.id;
+    const userEmail = wd.userId || (typeof currentUser !== "undefined" && currentUser ? currentUser.email : "user@goodfastpay.com");
 
-        const payload = {
-            id: wd.id,
-            amount: wd.amount,
-            fee: wd.fee || 50,
-            net_payout: wd.netPayout || (wd.amount - 50),
-            bank_name: wd.bankName,
-            account_number: wd.accountNumber,
-            account_holder_name: wd.accountHolderName || wd.accountHolder || 'Account Holder',
-            status: wd.status || 'PENDING'
-        };
+    // 1. Primary: Serverless API execution
+    await callClientApi('request_withdrawal', { wd }, userEmail);
 
-        if (userId) payload.user_id = userId;
+    // 2. Direct Supabase Client fallback / realtime trigger
+    if (supabaseClient && isSupabaseConfigured) {
+        try {
+            const payload = {
+                id: wd.id,
+                user_email: userEmail,
+                amount: wd.amount,
+                fee: wd.fee || 50,
+                net_payout: wd.netPayout || (wd.amount - 50),
+                bank_name: wd.bankName,
+                account_number: wd.accountNumber,
+                account_holder_name: wd.accountHolderName || wd.accountHolder || 'Account Holder',
+                status: wd.status || 'PENDING'
+            };
 
-        const { error } = await supabaseClient.from('withdrawals').insert([payload]);
-        if (error) console.warn("Supabase withdrawal insert notice:", error.message);
-        else console.log("⚡ Supabase Withdrawal pushed:", wd.id);
-    } catch (e) {
-        console.warn("Could not push withdrawal to Supabase:", e.message);
+            const { error } = await supabaseClient.from('withdrawals').upsert([payload], { onConflict: 'id' });
+            if (error) console.warn("Supabase direct withdrawal notice:", error.message);
+            else console.log("⚡ Supabase Withdrawal pushed directly:", wd.id);
+        } catch (e) {
+            console.warn("Could not push withdrawal directly to Supabase:", e.message);
+        }
     }
 }
 
@@ -881,22 +907,25 @@ async function supabasePushWithdrawal(wd) {
  * Push linked bank account to Supabase Cloud Database
  */
 async function supabasePushBankAccount(bankData) {
-    if (!supabaseClient || !isSupabaseConfigured) return;
-    try {
-        const { data: sessionData } = await supabaseClient.auth.getSession();
-        const userId = sessionData?.session?.user?.id;
-        if (!userId) return;
+    const userEmail = typeof currentUser !== "undefined" && currentUser ? currentUser.email : "user@goodfastpay.com";
 
-        await supabaseClient.from('bank_accounts').insert([{
-            user_id: userId,
-            bank_name: bankData.bankName,
-            account_number: bankData.accountNumber,
-            account_holder_name: bankData.accountHolderName,
-            is_primary: true
-        }]);
-        console.log("⚡ Supabase Bank Account pushed.");
-    } catch (e) {
-        console.warn("Could not push bank to Supabase:", e.message);
+    // 1. Primary: Serverless API execution
+    await callClientApi('save_bank', { bankData }, userEmail);
+
+    // 2. Direct Supabase Client fallback
+    if (supabaseClient && isSupabaseConfigured) {
+        try {
+            await supabaseClient.from('bank_accounts').insert([{
+                user_email: userEmail,
+                bank_name: bankData.bankName,
+                account_number: bankData.accountNumber,
+                account_holder_name: bankData.accountHolderName,
+                is_primary: true
+            }]);
+            console.log("⚡ Supabase Bank Account pushed directly.");
+        } catch (e) {
+            console.warn("Could not push bank directly to Supabase:", e.message);
+        }
     }
 }
 
@@ -904,27 +933,30 @@ async function supabasePushBankAccount(bankData) {
  * Update user profile (Name, Phone, Transaction PIN) in Supabase Cloud
  */
 async function supabaseUpdateProfile(updates) {
-    if (!supabaseClient || !isSupabaseConfigured) return;
-    try {
-        const { data: sessionData } = await supabaseClient.auth.getSession();
-        const userId = sessionData?.session?.user?.id;
-        if (!userId) return;
+    const userEmail = typeof currentUser !== "undefined" && currentUser ? currentUser.email : "user@goodfastpay.com";
 
-        const payload = {};
-        if (updates.name !== undefined) payload.name = updates.name;
-        if (updates.phone !== undefined) payload.phone = updates.phone;
-        if (updates.transactionPin !== undefined) payload.transaction_pin = updates.transactionPin;
-        if (updates.wallet !== undefined && updates.wallet.balance !== undefined) {
-            payload.wallet_balance = updates.wallet.balance;
+    // 1. Primary: Serverless API execution
+    await callClientApi('update_profile', { updates }, userEmail);
+
+    // 2. Direct Supabase Client fallback
+    if (supabaseClient && isSupabaseConfigured) {
+        try {
+            const payload = {};
+            if (updates.name !== undefined) payload.name = updates.name;
+            if (updates.phone !== undefined) payload.phone = updates.phone;
+            if (updates.transactionPin !== undefined) payload.transaction_pin = updates.transactionPin;
+            if (updates.wallet !== undefined && updates.wallet.balance !== undefined) {
+                payload.wallet_balance = updates.wallet.balance;
+            }
+
+            await supabaseClient
+                .from('profiles')
+                .update(payload)
+                .eq('email', userEmail);
+            console.log("⚡ Supabase Profile updated directly.");
+        } catch (e) {
+            console.warn("Could not update profile directly in Supabase:", e.message);
         }
-
-        await supabaseClient
-            .from('profiles')
-            .update(payload)
-            .eq('id', userId);
-        console.log("⚡ Supabase Profile updated.");
-    } catch (e) {
-        console.warn("Could not update profile in Supabase:", e.message);
     }
 }
 
@@ -932,25 +964,32 @@ async function supabaseUpdateProfile(updates) {
  * Push user Gift Card Purchase to Supabase Cloud
  */
 async function supabasePushPurchase(cardId, userEmail, newBalance) {
-    if (!supabaseClient || !isSupabaseConfigured) return;
-    try {
-        await supabaseClient
-            .from('inventory')
-            .update({
-                status: 'SOLD',
-                purchased_by: null,
-                purchased_at: new Date().toISOString()
-            })
-            .eq('id', cardId);
+    const email = userEmail || (typeof currentUser !== "undefined" && currentUser ? currentUser.email : "user@goodfastpay.com");
 
-        await supabaseClient
-            .from('profiles')
-            .update({ wallet_balance: newBalance })
-            .eq('email', userEmail);
+    // 1. Primary: Serverless API execution
+    await callClientApi('purchase_card', { cardId, newBalance }, email);
 
-        console.log("⚡ Supabase Gift Card purchase synchronized:", cardId);
-    } catch (e) {
-        console.warn("Could not sync purchase to Supabase:", e.message);
+    // 2. Direct Supabase Client fallback
+    if (supabaseClient && isSupabaseConfigured) {
+        try {
+            await supabaseClient
+                .from('inventory')
+                .update({
+                    status: 'SOLD',
+                    purchased_by: email,
+                    purchased_at: new Date().toISOString()
+                })
+                .eq('id', cardId);
+
+            await supabaseClient
+                .from('profiles')
+                .update({ wallet_balance: newBalance })
+                .eq('email', email);
+
+            console.log("⚡ Supabase Gift Card purchase synchronized directly:", cardId);
+        } catch (e) {
+            console.warn("Could not sync purchase directly to Supabase:", e.message);
+        }
     }
 }
 
