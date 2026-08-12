@@ -1,10 +1,8 @@
 // Goodfastpay Platform - Supabase Authentication & Cloud Client Engine
 
 // Supabase Project Credentials
-// Replace with your actual Supabase project URL and anon public key from:
-// Supabase Dashboard -> Project Settings -> API
-const SUPABASE_URL = "https://your-project-id.supabase.co";
-const SUPABASE_ANON_KEY = "your-anon-public-key";
+const SUPABASE_URL = "https://btbolekfrcwzzjqhorgi.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ0Ym9sZWtmcmN3enpqcWhvcmdpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY0NjU4MDksImV4cCI6MjEwMjA0MTgwOX0.b77fO24vUgDpvRcyqGdX_kdYFAx4JKEUUFKi0Rv2fJc";
 
 // Initialize global client
 let supabaseClient = null;
@@ -16,7 +14,7 @@ let isSupabaseConfigured = false;
             const storedUrl = localStorage.getItem("goodfastpay_supabase_url") || SUPABASE_URL;
             const storedKey = localStorage.getItem("goodfastpay_supabase_key") || SUPABASE_ANON_KEY;
 
-            if (storedUrl && storedUrl !== "https://your-project-id.supabase.co" && storedKey && storedKey !== "your-anon-public-key") {
+            if (storedUrl && !storedUrl.includes("your-project-id") && storedKey && !storedKey.includes("your-anon-public-key")) {
                 supabaseClient = supabase.createClient(storedUrl, storedKey, {
                     auth: {
                         persistSession: true,
@@ -26,7 +24,7 @@ let isSupabaseConfigured = false;
                 });
                 isSupabaseConfigured = true;
                 window.supabaseClient = supabaseClient;
-                console.log("⚡ Supabase Client initialized & connected successfully.");
+                console.log("⚡ Supabase Client initialized & connected successfully to:", storedUrl);
             } else {
                 supabaseClient = supabase.createClient(storedUrl, storedKey, {
                     auth: {
@@ -36,7 +34,6 @@ let isSupabaseConfigured = false;
                     }
                 });
                 window.supabaseClient = supabaseClient;
-                console.log("ℹ️ Supabase SDK ready. Set your project URL & Anon Key in js/supabase-config.js to enable live cloud authentication.");
             }
         } else {
             console.warn("Supabase CDN script not loaded yet.");
@@ -45,6 +42,23 @@ let isSupabaseConfigured = false;
         console.error("Supabase initialization notice:", err);
     }
 })();
+
+// Dynamically fetch Vercel Environment variables from /api/config if deployed on Vercel
+if (typeof window !== "undefined") {
+    fetch('/api/config')
+        .then(res => res.ok ? res.json() : null)
+        .then(cfg => {
+            if (cfg && cfg.supabaseUrl && cfg.supabaseAnonKey && typeof configureSupabaseCredentials === "function") {
+                if (cfg.supabaseUrl !== SUPABASE_URL || cfg.supabaseAnonKey !== SUPABASE_ANON_KEY) {
+                    configureSupabaseCredentials(cfg.supabaseUrl, cfg.supabaseAnonKey);
+                    console.log("⚡ Supabase credentials updated dynamically from Vercel Environment.");
+                }
+            }
+        })
+        .catch(() => {
+            // Local file or static mode fallback
+        });
+}
 
 // Listen for incoming OAuth redirects and session state transitions
 if (typeof window !== "undefined") {
