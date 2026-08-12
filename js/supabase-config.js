@@ -637,51 +637,31 @@ async function syncFromSupabaseCloud() {
         const isAdmin = sessionUser && (sessionUser.role === 'ADMIN' || sessionUser.role === 'SUPER_ADMIN' || sessionUser.email === 'admin@goodfastpay.com');
 
         // 4. Fetch All Profiles if Admin, or current profile if Customer
+        const profileIdToEmail = {};
+
+        // 4. Fetch All Profiles if Admin, or current profile if Customer
         try {
-            if (isAdmin) {
-                const { data: profiles, error: profErr } = await supabaseClient
-                    .from('profiles')
-                    .select('*');
+            const { data: profiles, error: profErr } = await supabaseClient
+                .from('profiles')
+                .select('*');
 
-                if (!profErr && profiles && profiles.length > 0) {
-                    profiles.forEach(p => {
-                        if (!db.users[p.email]) {
-                            syncLocalUserAccount(p.email, p);
-                        }
-                        const u = db.users[p.email];
-                        u.name = p.name || u.name;
-                        u.phone = p.phone || u.phone;
-                        u.role = p.role || u.role;
-                        u.status = p.status || u.status;
-                        if (p.transaction_pin) u.transactionPin = p.transaction_pin;
-                        if (p.wallet_balance !== undefined) u.wallet.balance = Number(p.wallet_balance);
-                        if (p.wallet_pending_balance !== undefined) u.wallet.pendingBalance = Number(p.wallet_pending_balance);
-                        db.users[p.email] = u;
-                    });
-                    updated = true;
-                }
-            } else if (sessionUser && sessionUser.email) {
-                const { data: profile, error: profErr } = await supabaseClient
-                    .from('profiles')
-                    .select('*')
-                    .eq('email', sessionUser.email)
-                    .maybeSingle();
-
-                if (!profErr && profile) {
-                    if (!db.users[sessionUser.email]) {
-                        syncLocalUserAccount(sessionUser.email, profile);
+            if (!profErr && profiles && profiles.length > 0) {
+                profiles.forEach(p => {
+                    profileIdToEmail[p.id] = p.email;
+                    if (!db.users[p.email]) {
+                        syncLocalUserAccount(p.email, p);
                     }
-                    const u = db.users[sessionUser.email];
-                    u.name = profile.name || u.name;
-                    u.phone = profile.phone || u.phone;
-                    u.role = profile.role || u.role;
-                    u.status = profile.status || u.status;
-                    if (profile.transaction_pin) u.transactionPin = profile.transaction_pin;
-                    if (profile.wallet_balance !== undefined) u.wallet.balance = Number(profile.wallet_balance);
-                    if (profile.wallet_pending_balance !== undefined) u.wallet.pendingBalance = Number(profile.wallet_pending_balance);
-                    db.users[sessionUser.email] = u;
-                    updated = true;
-                }
+                    const u = db.users[p.email];
+                    u.name = p.name || u.name;
+                    u.phone = p.phone || u.phone;
+                    u.role = p.role || u.role;
+                    u.status = p.status || u.status;
+                    if (p.transaction_pin) u.transactionPin = p.transaction_pin;
+                    if (p.wallet_balance !== undefined) u.wallet.balance = Number(p.wallet_balance);
+                    if (p.wallet_pending_balance !== undefined) u.wallet.pendingBalance = Number(p.wallet_pending_balance);
+                    db.users[p.email] = u;
+                });
+                updated = true;
             }
         } catch (e) {
             console.warn("Profiles sync notice:", e.message);
@@ -695,17 +675,17 @@ async function syncFromSupabaseCloud() {
                 .order('created_at', { ascending: false });
 
             if (!bankErr && banks && banks.length > 0) {
-                if (sessionUser && sessionUser.email && db.users[sessionUser.email]) {
-                    const primaryBank = banks.find(b => b.is_primary) || banks[0];
-                    if (primaryBank) {
-                        db.users[sessionUser.email].bankDetails = {
-                            bankName: primaryBank.bank_name,
-                            accountNumber: primaryBank.account_number,
-                            accountHolderName: primaryBank.account_holder_name
+                banks.forEach(b => {
+                    const bankEmail = b.user_email || profileIdToEmail[b.user_id];
+                    if (bankEmail && db.users[bankEmail]) {
+                        db.users[bankEmail].bankDetails = {
+                            bankName: b.bank_name,
+                            accountNumber: b.account_number,
+                            accountHolderName: b.account_holder_name
                         };
                         updated = true;
                     }
-                }
+                });
             }
         } catch (e) {
             console.warn("Bank accounts sync notice:", e.message);
@@ -721,7 +701,7 @@ async function syncFromSupabaseCloud() {
             if (!subsErr && subs && subs.length > 0) {
                 const mappedSubs = subs.map(s => ({
                     id: s.id,
-                    userId: s.user_email || (sessionUser ? sessionUser.email : 'user@goodfastpay.com'),
+                    userId: s.user_email || profileIdToEmail[s.user_id] || (sessionUser ? sessionUser.email : 'user@goodfastpay.com'),
                     brand: s.brand,
                     cardValue: Number(s.card_value),
                     currency: s.currency,
@@ -755,7 +735,7 @@ async function syncFromSupabaseCloud() {
             if (!wdErr && wds && wds.length > 0) {
                 const mappedWds = wds.map(w => ({
                     id: w.id,
-                    userId: w.user_email || (sessionUser ? sessionUser.email : 'user@goodfastpay.com'),
+                    userId: w.user_email || profileIdToEmail[w.user_id] || (sessionUser ? sessionUser.email : 'user@goodfastpay.com'),
                     amount: Number(w.amount),
                     fee: Number(w.fee || 50),
                     netPayout: Number(w.net_payout),
