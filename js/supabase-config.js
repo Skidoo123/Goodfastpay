@@ -11,11 +11,24 @@ let isSupabaseConfigured = false;
 (function initSupabase() {
     try {
         if (typeof supabase !== "undefined" && typeof supabase.createClient === "function") {
-            const storedUrl = localStorage.getItem("goodfastpay_supabase_url") || SUPABASE_URL;
-            const storedKey = localStorage.getItem("goodfastpay_supabase_key") || SUPABASE_ANON_KEY;
+            // Sanitize localStorage if corrupted key was stored
+            let storedUrl = localStorage.getItem("goodfastpay_supabase_url");
+            let storedKey = localStorage.getItem("goodfastpay_supabase_key");
 
-            if (storedUrl && !storedUrl.includes("your-project-id") && storedKey && !storedKey.includes("your-anon-public-key")) {
-                supabaseClient = supabase.createClient(storedUrl, storedKey, {
+            if (storedKey && (storedKey.startsWith("your-") || storedKey.length < 50)) {
+                localStorage.removeItem("goodfastpay_supabase_key");
+                storedKey = null;
+            }
+            if (storedUrl && storedUrl.includes("your-project-id")) {
+                localStorage.removeItem("goodfastpay_supabase_url");
+                storedUrl = null;
+            }
+
+            const activeUrl = storedUrl || SUPABASE_URL;
+            const activeKey = storedKey || SUPABASE_ANON_KEY;
+
+            if (activeUrl && activeKey && !activeUrl.includes("your-project-id") && !activeKey.startsWith("your-")) {
+                supabaseClient = supabase.createClient(activeUrl, activeKey, {
                     auth: {
                         persistSession: true,
                         autoRefreshToken: true,
@@ -24,16 +37,7 @@ let isSupabaseConfigured = false;
                 });
                 isSupabaseConfigured = true;
                 window.supabaseClient = supabaseClient;
-                console.log("⚡ Supabase Client initialized & connected successfully to:", storedUrl);
-            } else {
-                supabaseClient = supabase.createClient(storedUrl, storedKey, {
-                    auth: {
-                        persistSession: true,
-                        autoRefreshToken: true,
-                        detectSessionInUrl: true
-                    }
-                });
-                window.supabaseClient = supabaseClient;
+                console.log("⚡ Supabase Client connected to:", activeUrl);
             }
         } else {
             console.warn("Supabase CDN script not loaded yet.");
@@ -176,7 +180,6 @@ async function supabaseAuthSignInWithOAuth(provider = "google") {
 
 /**
  * Sign Up with Email and Password via Supabase Auth
- */
 async function supabaseAuthSignUp(email, password, metadata = {}) {
     const cleanEmail = email.trim().toLowerCase();
     
@@ -195,6 +198,12 @@ async function supabaseAuthSignUp(email, password, metadata = {}) {
             });
 
             if (error) {
+                console.warn("Supabase auth signup notice:", error.message);
+                // If error is network or rate-limit related, fallback seamlessly
+                if (error.message.includes("Failed to fetch") || error.message.includes("rate") || error.message.includes("network")) {
+                    syncLocalUserAccount(cleanEmail, metadata, password);
+                    return { success: true, requireEmailConfirm: false, isLocalFallback: true };
+                }
                 return { success: false, message: error.message };
             }
 
@@ -204,11 +213,13 @@ async function supabaseAuthSignUp(email, password, metadata = {}) {
             return { 
                 success: true, 
                 user: data.user, 
-                session: data.session,
+                session: data.session, 
                 requireEmailConfirm: !data.session 
             };
         } catch (e) {
-            return { success: false, message: e.message || "Supabase registration failed." };
+            console.warn("Supabase registration network fallback:", e.message);
+            syncLocalUserAccount(cleanEmail, metadata, password);
+            return { success: true, requireEmailConfirm: false, isLocalFallback: true };
         }
     } else {
         // Local simulation fallback
@@ -231,6 +242,14 @@ async function supabaseAuthSignIn(email, password) {
             });
 
             if (error) {
+                console.warn("Supabase sign in notice:", error.message);
+                // Check if user exists locally
+                const db = getDB();
+                const localUser = db.users[cleanEmail];
+                if (localUser && localUser.passwordHash === password) {
+                    setSessionUser(cleanEmail);
+                    return { success: true, isLocalFallback: true };
+                }
                 return { success: false, message: error.message };
             }
 
@@ -249,7 +268,14 @@ async function supabaseAuthSignIn(email, password) {
 
             return { success: true, user: data.user, session: data.session };
         } catch (e) {
-            return { success: false, message: e.message || "Supabase sign in failed." };
+            console.warn("Supabase sign in network fallback:", e.message);
+            const db = getDB();
+            const localUser = db.users[cleanEmail];
+            if (localUser && localUser.passwordHash === password) {
+                setSessionUser(cleanEmail);
+                return { success: true, isLocalFallback: true };
+            }
+            return { success: false, message: e.message || "Sign in request failed." };
         }
     } else {
         // Fallback to local DB check
