@@ -405,8 +405,12 @@ ON CONFLICT (id) DO NOTHING;
 -- ==============================================================================
 -- 7. ENABLE REALTIME BROADCASTING ON RELEVANT TABLES
 -- ==============================================================================
+ALTER PUBLICATION supabase_realtime ADD TABLE public.profiles;
 ALTER PUBLICATION supabase_realtime ADD TABLE public.submissions;
 ALTER PUBLICATION supabase_realtime ADD TABLE public.withdrawals;
+ALTER PUBLICATION supabase_realtime ADD TABLE public.inventory;
+ALTER PUBLICATION supabase_realtime ADD TABLE public.currencies;
+ALTER PUBLICATION supabase_realtime ADD TABLE public.brand_rates;
 ALTER PUBLICATION supabase_realtime ADD TABLE public.tickets;
 ALTER PUBLICATION supabase_realtime ADD TABLE public.ticket_messages;
 ALTER PUBLICATION supabase_realtime ADD TABLE public.notifications;

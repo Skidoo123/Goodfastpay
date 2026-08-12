@@ -435,7 +435,7 @@ function toggleUserStatus(email, newStatus) {
             
             // Push update to Supabase Cloud
             if (typeof supabaseAdminUpdateUserStatus === "function") {
-                supabaseAdminUpdateUserStatus(email, newStatus);
+                supabaseAdminUpdateUserStatus(email, newStatus, reason);
             }
             
             // Write Audit Log
@@ -932,10 +932,10 @@ function approveCardTrade(id) {
     
     // Push updates to Supabase Cloud
     if (typeof supabaseAdminUpdateSubmission === "function") {
-        supabaseAdminUpdateSubmission(id, { status: "COMPLETED", payoutAmount: payoutAmount });
+        supabaseAdminUpdateSubmission(id, { status: "COMPLETED", payoutAmount: payoutAmount }, sub.userId);
     }
     if (typeof supabaseAdminUpdateUserBalance === "function") {
-        supabaseAdminUpdateUserBalance(sub.userId, user.wallet.balance);
+        supabaseAdminUpdateUserBalance(sub.userId, user.wallet.balance, payoutAmount, 'CREDIT');
     }
     
     // Log Admin Audits
@@ -987,7 +987,7 @@ function rejectCardTrade(id) {
     
     // Push updates to Supabase Cloud
     if (typeof supabaseAdminUpdateSubmission === "function") {
-        supabaseAdminUpdateSubmission(id, { status: "REJECTED", rejectionReason: reason });
+        supabaseAdminUpdateSubmission(id, { status: "REJECTED", rejectionReason: reason }, sub.userId);
     }
     
     // Log Admin Audits
@@ -1166,7 +1166,7 @@ function approveWithdrawalPayout(id) {
     
     // Push updates to Supabase Cloud
     if (typeof supabaseAdminUpdateWithdrawal === "function") {
-        supabaseAdminUpdateWithdrawal(id, { status: "COMPLETED" });
+        supabaseAdminUpdateWithdrawal(id, { status: "COMPLETED", amount: wd.amount }, wd.userId);
     }
     
     // Log Admin Audit Trail
@@ -1219,10 +1219,10 @@ function declineWithdrawalPayout(id) {
     
     // Push updates to Supabase Cloud
     if (typeof supabaseAdminUpdateWithdrawal === "function") {
-        supabaseAdminUpdateWithdrawal(id, { status: "DECLINED", declineReason: wd.declineReason });
+        supabaseAdminUpdateWithdrawal(id, { status: "DECLINED", declineReason: wd.declineReason }, wd.userId, wd.amount);
     }
     if (typeof supabaseAdminUpdateUserBalance === "function") {
-        supabaseAdminUpdateUserBalance(wd.userId, user.wallet.balance);
+        supabaseAdminUpdateUserBalance(wd.userId, user.wallet.balance, wd.amount, 'REFUND');
     }
     
     // Log Admin Audit Trail
@@ -1515,6 +1515,11 @@ function handleSendBroadcast(e) {
     });
     
     saveDB(db);
+    
+    // Push broadcast to Supabase Cloud
+    if (typeof supabaseAdminDispatchBroadcast === "function") {
+        supabaseAdminDispatchBroadcast(title, msg);
+    }
     
     // Track Announcement inside Admin Audits
     writeAuditLog(
@@ -1932,6 +1937,12 @@ function deleteInventoryItem(itemId) {
         });
         
         saveDB(db);
+        
+        // Push deletion to Supabase Cloud
+        if (typeof supabaseAdminDeleteInventory === "function") {
+            supabaseAdminDeleteInventory(itemId);
+        }
+        
         showToast(`Stock item ${itemId} deleted successfully.`, "warning");
         loadAdminSession();
     }
