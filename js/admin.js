@@ -285,6 +285,7 @@ function inspectUserProfile(email) {
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px; font-size: 0.85rem; background: var(--bg-tertiary); padding: 16px; border-radius: var(--radius-md); border: 1px solid var(--border-color);">
             <div style="line-height: 1.8;">
                 <strong>KYC Status:</strong> <span class="badge badge-success" style="padding: 2px 6px; font-size: 0.7rem; background:rgba(16, 185, 129, 0.1); color:#10b981; border:1px solid rgba(16,185,129,0.15); font-weight:700;">Verified (Level 2)</span><br>
+                <strong>Transaction PIN:</strong> ${user.transactionPin ? `<span style="color:#10b981; font-weight:700;"><i class="fas fa-shield-halved"></i> Configured (••••)</span>` : `<span style="color:#f59e0b; font-weight:600;"><i class="fas fa-triangle-exclamation"></i> Not Set</span>`}<br>
                 <strong>Email Verification:</strong> <span style="color: ${user.emailVerified ? 'var(--secondary)' : 'var(--warning)'}; font-weight:600;"><i class="fas ${user.emailVerified ? 'fa-check-circle' : 'fa-circle-xmark'}"></i> ${user.emailVerified ? 'Verified' : 'Pending'}</span><br>
                 <strong>Phone Verification:</strong> <span style="color: ${user.phoneVerified ? 'var(--secondary)' : 'var(--warning)'}; font-weight:600;"><i class="fas ${user.phoneVerified ? 'fa-check-circle' : 'fa-circle-xmark'}"></i> ${user.phoneVerified ? 'Verified' : 'Pending'}</span><br>
                 <strong>Last Login:</strong> <span style="color: var(--text-primary); font-weight: 500;">${user.logs[0] ? new Date(user.logs[0].timestamp).toLocaleString() : 'N/A'}</span><br>
@@ -313,7 +314,8 @@ function inspectUserProfile(email) {
                 }
                 <button class="btn btn-secondary btn-sm" onclick="modalEditUser('${email}')"><i class="fas fa-edit"></i> Edit User</button>
                 <button class="btn btn-secondary btn-sm" onclick="modalAdjustWallet('${email}')"><i class="fas fa-wallet"></i> Adjust Wallet</button>
-                <button class="btn btn-secondary btn-sm" onclick="modalResetPassword('${email}')"><i class="fas fa-key"></i> Reset Password</button>
+                <button class="btn btn-secondary btn-sm" onclick="modalResetPassword('${email}')"><i class="fas fa-lock"></i> Reset Password</button>
+                <button class="btn btn-secondary btn-sm" onclick="modalResetTransactionPin('${email}')"><i class="fas fa-key"></i> Reset PIN</button>
                 <button class="btn btn-secondary btn-sm" onclick="modalVerifyEmail('${email}')"><i class="fas fa-envelope"></i> Verify Email</button>
                 <button class="btn btn-secondary btn-sm" onclick="modalVerifyPhone('${email}')"><i class="fas fa-phone"></i> Verify Phone</button>
                 <button class="btn btn-danger btn-sm" style="background: rgba(239, 68, 68, 0.1); color: #ef4444; border: 1px solid rgba(239,68,68,0.15);" onclick="modalBanDevice('${email}')"><i class="fas fa-shield-halved"></i> Ban Device</button>
@@ -508,6 +510,45 @@ function modalResetPassword(email) {
     
     writeAuditLog(currentAdmin.email, "User Password Reset", `Reset password for user: ${email}`);
     showToast(`Password successfully reset for ${user.name}.`, "success");
+}
+
+function modalResetTransactionPin(email) {
+    const db = getDB();
+    const user = db.users[email];
+    if (!user) return;
+
+    const action = prompt(`Manage Transaction PIN for ${user.name}:\n\nEnter 'RESET' to clear PIN (prompts user to set new PIN),\nor enter a new 4-digit PIN (e.g. 1234):`, "1234");
+    if (action === null) return; // cancel
+
+    const trimmed = action.trim();
+    if (trimmed.toUpperCase() === "RESET" || trimmed.toUpperCase() === "CLEAR") {
+        db.users[email].transactionPin = null;
+        db.users[email].logs.unshift({
+            event: "Transaction PIN Cleared by Admin (User prompted on next transaction)",
+            timestamp: new Date().toISOString(),
+            ip: "system"
+        });
+        saveDB(db);
+
+        writeAuditLog(currentAdmin.email, "User PIN Cleared", `Cleared Transaction PIN for user: ${email}`);
+        showToast(`Transaction PIN cleared for ${user.name}. User will be prompted to set a new PIN.`, "success");
+    } else if (/^\d{4}$/.test(trimmed)) {
+        db.users[email].transactionPin = trimmed;
+        db.users[email].logs.unshift({
+            event: `Transaction PIN Manually Updated by Admin to ${trimmed}`,
+            timestamp: new Date().toISOString(),
+            ip: "system"
+        });
+        saveDB(db);
+
+        writeAuditLog(currentAdmin.email, "User PIN Reset", `Updated Transaction PIN for user: ${email}`);
+        showToast(`Transaction PIN updated to '${trimmed}' for ${user.name}.`, "success");
+    } else {
+        showToast("Invalid input. PIN must be exactly 4 numeric digits or 'RESET'.", "danger");
+        return;
+    }
+
+    inspectUserProfile(email);
 }
 
 function modalVerifyEmail(email) {

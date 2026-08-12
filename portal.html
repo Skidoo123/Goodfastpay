@@ -665,6 +665,16 @@
                             </div>
                             <div class="settings-item-right"><i class="fa-solid fa-chevron-right settings-chevron"></i></div>
                         </div>
+                        <div class="settings-item-row" onclick="openTransactionPinSettingsModal()">
+                            <div class="settings-item-left">
+                                <i class="fa-solid fa-key"></i>
+                                <div>
+                                    <div>Transaction PIN</div>
+                                    <div class="settings-item-sub" id="settings-pin-status-sub">4-digit security PIN for withdrawals</div>
+                                </div>
+                            </div>
+                            <div class="settings-item-right"><i class="fa-solid fa-chevron-right settings-chevron"></i></div>
+                        </div>
                     </div>
 
                     <!-- Notifications Group -->
@@ -1008,26 +1018,123 @@
 
     <!-- TRANSACTION PIN VERIFICATION MODAL -->
     <div class="modal-overlay" id="pin-verification-modal">
-        <div class="modal-content" style="max-width: 400px; padding: 24px; text-align: center;">
-            <div style="width: 56px; height: 56px; background: rgba(99, 102, 241, 0.1); color: var(--primary); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; margin: 0 auto 16px;">
-                <i class="fas fa-lock"></i>
+        <div class="modal-content" style="max-width: 420px; padding: 26px 24px; text-align: center; border-radius: 20px;">
+            <div style="width: 58px; height: 58px; background: rgba(99, 102, 241, 0.12); color: var(--primary); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.55rem; margin: 0 auto 16px; border: 1px solid rgba(99, 102, 241, 0.25);">
+                <i class="fas fa-shield-halved"></i>
             </div>
-            <h3 style="font-weight: 800; font-size: 1.25rem; margin-bottom: 8px;">Enter Transaction PIN</h3>
-            <p style="color: var(--text-secondary); font-size: 0.85rem; line-height: 1.4; margin-bottom: 20px;">
-                Please enter your secure 4-digit Transaction PIN to authorize this withdrawal request.
+            
+            <h3 id="pin-modal-title" style="font-weight: 800; font-size: 1.3rem; margin-bottom: 6px; color: var(--text-primary);">Enter Transaction PIN</h3>
+            <p id="pin-modal-desc" style="color: var(--text-secondary); font-size: 0.86rem; line-height: 1.45; margin-bottom: 16px;">
+                Please enter your secure 4-digit Transaction PIN to authorize this request.
             </p>
+
+            <!-- Dynamic Action Context Box -->
+            <div class="pin-context-box" id="pin-context-box" style="display: none;">
+                <div class="pin-context-title" id="pin-context-title">Action Authorization</div>
+                <div class="pin-context-value" id="pin-context-value">-</div>
+            </div>
+
+            <!-- Brute Force Lockout Banner -->
+            <div class="pin-lockout-banner" id="pin-lockout-banner" style="display: none;">
+                <i class="fas fa-triangle-exclamation"></i>
+                <span id="pin-lockout-text">Security Lockout: Try again in 60s</span>
+            </div>
+
             <form id="pin-auth-form" onsubmit="handlePinAuthSubmit(event)">
-                <div style="display: flex; gap: 12px; justify-content: center; margin-bottom: 24px;">
-                    <input type="password" maxlength="1" class="pin-box" inputmode="numeric" pattern="[0-9]*" required oninput="handlePinInput(this, 1)" onkeydown="handlePinKeydown(event, this, 1)">
-                    <input type="password" maxlength="1" class="pin-box" inputmode="numeric" pattern="[0-9]*" required oninput="handlePinInput(this, 2)" onkeydown="handlePinKeydown(event, this, 2)">
-                    <input type="password" maxlength="1" class="pin-box" inputmode="numeric" pattern="[0-9]*" required oninput="handlePinInput(this, 3)" onkeydown="handlePinKeydown(event, this, 3)">
-                    <input type="password" maxlength="1" class="pin-box" inputmode="numeric" pattern="[0-9]*" required oninput="handlePinInput(this, 4)" onkeydown="handlePinKeydown(event, this, 4)">
+                <div class="pin-inputs-row" id="pin-boxes-container">
+                    <input type="password" maxlength="1" class="pin-box" id="pin-digit-1" inputmode="numeric" pattern="[0-9]*" autocomplete="off" required oninput="handlePinInput(this, 1)" onkeydown="handlePinKeydown(event, this, 1)">
+                    <input type="password" maxlength="1" class="pin-box" id="pin-digit-2" inputmode="numeric" pattern="[0-9]*" autocomplete="off" required oninput="handlePinInput(this, 2)" onkeydown="handlePinKeydown(event, this, 2)">
+                    <input type="password" maxlength="1" class="pin-box" id="pin-digit-3" inputmode="numeric" pattern="[0-9]*" autocomplete="off" required oninput="handlePinInput(this, 3)" onkeydown="handlePinKeydown(event, this, 3)">
+                    <input type="password" maxlength="1" class="pin-box" id="pin-digit-4" inputmode="numeric" pattern="[0-9]*" autocomplete="off" required oninput="handlePinInput(this, 4)" onkeydown="handlePinKeydown(event, this, 4)">
                 </div>
-                <div style="display: flex; gap: 12px;">
-                    <button type="button" class="btn btn-secondary" style="flex: 1;" onclick="closePinVerificationModal()">Cancel</button>
-                    <button type="submit" class="btn btn-primary" style="flex: 1;">Verify PIN</button>
+
+                <div style="display: flex; gap: 12px; margin-bottom: 14px;">
+                    <button type="button" class="btn btn-secondary" style="flex: 1; border-radius: 12px; height: 46px; font-weight: 700;" onclick="closePinVerificationModal()">Cancel</button>
+                    <button type="submit" id="btn-verify-pin-submit" class="btn btn-primary" style="flex: 1; border-radius: 12px; height: 46px; font-weight: 800;">
+                        <i class="fa-solid fa-lock" style="margin-right: 6px;"></i> Authorize
+                    </button>
+                </div>
+
+                <div style="display: flex; justify-content: center; align-items: center; gap: 8px;">
+                    <span class="pin-helper-link" onclick="openForgotPinFromAuthModal()">Forgot PIN? Reset with password</span>
                 </div>
             </form>
+        </div>
+    </div>
+
+    <!-- TRANSACTION PIN MANAGEMENT & SETUP MODAL -->
+    <div class="modal-overlay" id="transaction-pin-modal">
+        <div class="modal-content" style="max-width: 450px; padding: 24px; border-radius: 20px;">
+            <div class="modal-header" style="margin-bottom: 16px;">
+                <h3 style="font-weight: 800; font-size: 1.25rem; display: flex; align-items: center; gap: 8px;">
+                    <i class="fas fa-key" style="color: var(--primary);"></i>
+                    <span id="transaction-pin-modal-title">Transaction PIN</span>
+                </h3>
+                <button class="modal-close" onclick="closeTransactionPinSettingsModal()"><i class="fas fa-xmark"></i></button>
+            </div>
+
+            <!-- PIN Tab Selector: Manage vs Reset -->
+            <div class="segment-tab-headers" id="pin-settings-tab-bar" style="margin-bottom: 18px;">
+                <button type="button" class="tab-btn active" id="btn-pin-tab-manage" onclick="switchPinSettingsTab('manage')">PIN Setup / Change</button>
+                <button type="button" class="tab-btn" id="btn-pin-tab-reset" onclick="switchPinSettingsTab('reset')">Forgot PIN? (Reset)</button>
+            </div>
+
+            <!-- Notice Prompt Banner for pending transaction setup -->
+            <div id="pin-setup-notice" style="display: none; background: rgba(99, 102, 241, 0.1); border: 1px solid rgba(99, 102, 241, 0.25); border-radius: 12px; padding: 12px 14px; margin-bottom: 16px; font-size: 0.82rem; color: var(--text-primary);">
+                <i class="fas fa-info-circle" style="color: var(--primary); margin-right: 6px;"></i>
+                <span id="pin-setup-notice-text">Set your 4-digit PIN to securely authorize this transaction.</span>
+            </div>
+
+            <!-- Form 1: Set / Change PIN -->
+            <div id="panel-pin-manage">
+                <form id="pin-settings-form" onsubmit="handlePinSetupOrChange(event)">
+                    <!-- Current PIN (shown only if user already has a PIN) -->
+                    <div class="input-group" id="settings-current-pin-group" style="display: none; margin-bottom: 14px;">
+                        <label class="input-label">Current 4-Digit PIN</label>
+                        <input type="password" id="settings-current-pin" class="input-field" placeholder="••••" maxlength="4" inputmode="numeric" pattern="[0-9]*">
+                    </div>
+
+                    <!-- New PIN -->
+                    <div class="input-group" style="margin-bottom: 14px;">
+                        <label class="input-label" id="settings-new-pin-label">New 4-Digit PIN</label>
+                        <input type="password" id="settings-new-pin" class="input-field" placeholder="Enter 4-digit PIN (e.g. 1234)" maxlength="4" inputmode="numeric" pattern="[0-9]*" required>
+                    </div>
+
+                    <!-- Confirm New PIN -->
+                    <div class="input-group" style="margin-bottom: 20px;">
+                        <label class="input-label">Confirm 4-Digit PIN</label>
+                        <input type="password" id="settings-confirm-pin" class="input-field" placeholder="Re-enter 4-digit PIN" maxlength="4" inputmode="numeric" pattern="[0-9]*" required>
+                    </div>
+
+                    <button type="submit" id="btn-save-pin-submit" class="btn btn-primary" style="width: 100%; border-radius: 12px; height: 48px; font-weight: 800; font-size: 0.95rem;">
+                        <i class="fa-solid fa-check" style="margin-right: 6px;"></i> Set Transaction PIN
+                    </button>
+                </form>
+            </div>
+
+            <!-- Form 2: Reset PIN via Account Password -->
+            <div id="panel-pin-reset" style="display: none;">
+                <p style="font-size: 0.82rem; color: var(--text-secondary); margin-bottom: 16px; line-height: 1.4;">
+                    Enter your account login password to verify your identity and set a new 4-digit Transaction PIN.
+                </p>
+                <form id="pin-reset-password-form" onsubmit="handlePinResetWithPassword(event)">
+                    <div class="input-group" style="margin-bottom: 14px;">
+                        <label class="input-label">Account Login Password</label>
+                        <input type="password" id="reset-pin-account-password" class="input-field" placeholder="Enter your login password" required>
+                    </div>
+                    <div class="input-group" style="margin-bottom: 14px;">
+                        <label class="input-label">New 4-Digit PIN</label>
+                        <input type="password" id="reset-pin-new" class="input-field" placeholder="••••" maxlength="4" inputmode="numeric" pattern="[0-9]*" required>
+                    </div>
+                    <div class="input-group" style="margin-bottom: 20px;">
+                        <label class="input-label">Confirm New 4-Digit PIN</label>
+                        <input type="password" id="reset-pin-confirm" class="input-field" placeholder="••••" maxlength="4" inputmode="numeric" pattern="[0-9]*" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary" style="width: 100%; border-radius: 12px; height: 48px; font-weight: 800; font-size: 0.95rem;">
+                        <i class="fa-solid fa-shield-halved" style="margin-right: 6px;"></i> Verify Password & Reset PIN
+                    </button>
+                </form>
+            </div>
         </div>
     </div>
 

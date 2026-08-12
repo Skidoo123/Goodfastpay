@@ -1005,35 +1005,107 @@ function updateWithdrawalBreakdown() {
     }
 }
 
-// State for custom PIN verification modal
-let pendingPinAction = null; // "withdraw" or "purchase"
-let pendingPinData = null;  // holds { amount } or { cardId }
+// =========================================================
+// SOLID TRANSACTION PIN SECURITY CONTROLLER
+// =========================================================
 
-function openPinVerificationModal(action, data) {
+// State for custom PIN verification modal & security guard
+let pendingPinAction = null;     // "withdraw", "purchase", "link_bank", "unlink_bank", "change_password", etc.
+let pendingPinData = null;       // context payload { amount, cardId, bankName, etc. }
+let pendingPinCallback = null;   // callback to execute on authorized PIN verification
+let pendingPinSetupAction = null;// stores action if user was prompted to set PIN first
+
+let pinFailedAttempts = 0;       // tracks consecutive failed PIN attempts
+let pinLockoutUntil = 0;         // timestamp when lockout cooldown expires
+let pinLockoutTimer = null;      // timer interval for countdown
+
+/**
+ * Universal Security Gatekeeper: Enforces Transaction PIN authorization on any sensitive action.
+ * If user has no PIN configured yet, seamlessly prompts them to set up their 4-digit PIN first.
+ */
+function requireTransactionPin(action, data = {}, onAuthorized = null) {
+    const db = getDB();
+    const user = db.users[currentUser.email];
+    
+    if (!user) {
+        showToast("User session expired. Please sign in again.", "danger");
+        return;
+    }
+
+    // Check if user has set a valid 4-digit PIN
+    if (!user.transactionPin || !/^\d{4}$/.test(user.transactionPin)) {
+        // Guide user to set up their PIN first
+        openTransactionPinSettingsModal({ action, data, callback: onAuthorized });
+        return;
+    }
+
+    // Open PIN verification modal
+    openPinVerificationModal(action, data, onAuthorized);
+}
+
+function openPinVerificationModal(action, data = {}, callback = null) {
     pendingPinAction = action;
     pendingPinData = data;
+    pendingPinCallback = callback;
+    
     const modal = document.getElementById("pin-verification-modal");
-    if (modal) {
-        modal.classList.add("active");
+    if (!modal) return;
+
+    modal.classList.add("active");
+    
+    // Check if currently locked out
+    checkPinLockoutState();
+
+    const titleEl = document.getElementById("pin-modal-title");
+    const descEl = document.getElementById("pin-modal-desc");
+    const contextBox = document.getElementById("pin-context-box");
+    const contextTitle = document.getElementById("pin-context-title");
+    const contextValue = document.getElementById("pin-context-value");
+
+    if (contextBox) contextBox.style.display = "block";
+
+    const db = getDB();
+    const user = db.users[currentUser.email];
+
+    // Configure contextual descriptions
+    if (action === "withdraw") {
+        if (titleEl) titleEl.textContent = "Authorize Cash Withdrawal";
+        if (descEl) descEl.textContent = "Please enter your 4-digit PIN to release funds to your bank.";
+        if (contextTitle) contextTitle.textContent = "Withdrawal Transfer";
+        const bankStr = (data.bankName || (user.bankDetails ? user.bankDetails.bankName : "Linked Bank"));
+        if (contextValue) contextValue.textContent = `₦${(data.amount || 0).toLocaleString(undefined, {minimumFractionDigits: 2})} → ${bankStr}`;
+    } else if (action === "purchase") {
+        const card = db.inventory.find(item => item.id === data.cardId);
+        const cardTitle = card ? `${card.brand} (${card.currency} ${card.cardValue})` : "Gift Card";
+        const cardPrice = card ? `₦${card.price.toLocaleString()}` : "Wallet Payout";
         
-        // Update modal descriptive text based on action to make it extremely premium!
-        const modalDesc = modal.querySelector("p");
-        if (modalDesc) {
-            if (action === "withdraw") {
-                modalDesc.textContent = `Please enter your secure 4-digit Transaction PIN to authorize this withdrawal of ₦${data.amount.toLocaleString()}.`;
-            } else if (action === "purchase") {
-                const db = getDB();
-                const card = db.inventory.find(item => item.id === data.cardId);
-                const descText = card ? `${card.brand} (${card.currency} ${card.cardValue}) for ₦${card.price.toLocaleString()}` : "this purchase";
-                modalDesc.textContent = `Please enter your secure 4-digit Transaction PIN to authorize purchase of ${descText}.`;
-            }
-        }
-        
-        // Clear all inputs
-        const inputs = modal.querySelectorAll(".pin-box");
-        inputs.forEach(input => input.value = "");
-        if (inputs[0]) inputs[0].focus();
+        if (titleEl) titleEl.textContent = "Authorize Card Purchase";
+        if (descEl) descEl.textContent = "Enter your 4-digit PIN to deduct wallet funds and reveal card code.";
+        if (contextTitle) contextTitle.textContent = "Card Purchase";
+        if (contextValue) contextValue.textContent = `${cardTitle} • ${cardPrice}`;
+    } else if (action === "link_bank") {
+        if (titleEl) titleEl.textContent = "Authorize Bank Update";
+        if (descEl) descEl.textContent = "Enter your 4-digit PIN to confirm new destination bank account.";
+        if (contextTitle) contextTitle.textContent = "Bank Destination Update";
+        if (contextValue) contextValue.textContent = `${data.bankName || 'Bank'} (${data.accountNumber || 'Account'})`;
+    } else if (action === "unlink_bank") {
+        if (titleEl) titleEl.textContent = "Authorize Account Removal";
+        if (descEl) descEl.textContent = "Enter your 4-digit PIN to unlink this bank account.";
+        if (contextTitle) contextTitle.textContent = "Unlink Bank Account";
+        if (contextValue) contextValue.textContent = user.bankDetails ? `${user.bankDetails.bankName} (${user.bankDetails.accountNumber})` : "Current Bank";
+    } else if (action === "change_password") {
+        if (titleEl) titleEl.textContent = "Security Verification";
+        if (descEl) descEl.textContent = "Enter your 4-digit Transaction PIN to confirm password update.";
+        if (contextTitle) contextTitle.textContent = "Security Profile Change";
+        if (contextValue) contextValue.textContent = "Login Password Modification";
+    } else {
+        if (titleEl) titleEl.textContent = "Enter Transaction PIN";
+        if (descEl) descEl.textContent = "Please enter your 4-digit PIN to authorize this request.";
+        if (contextBox) contextBox.style.display = "none";
     }
+
+    // Reset boxes & error styles
+    resetPinVerificationBoxes();
 }
 
 function closePinVerificationModal() {
@@ -1041,12 +1113,87 @@ function closePinVerificationModal() {
     if (modal) {
         modal.classList.remove("active");
     }
+    resetPinVerificationBoxes();
     pendingPinAction = null;
     pendingPinData = null;
+    pendingPinCallback = null;
 }
 
+function resetPinVerificationBoxes() {
+    const inputs = document.querySelectorAll("#pin-auth-form .pin-box");
+    inputs.forEach(input => {
+        input.value = "";
+        input.classList.remove("pin-error", "pin-success");
+    });
+    const boxesContainer = document.getElementById("pin-boxes-container");
+    if (boxesContainer) boxesContainer.classList.remove("pin-shake");
+
+    // Focus first input if not locked out
+    if (Date.now() >= pinLockoutUntil && inputs[0]) {
+        setTimeout(() => inputs[0].focus(), 80);
+    }
+}
+
+// Check & update brute-force lockout status
+function checkPinLockoutState() {
+    const banner = document.getElementById("pin-lockout-banner");
+    const textEl = document.getElementById("pin-lockout-text");
+    const submitBtn = document.getElementById("btn-verify-pin-submit");
+    const inputs = document.querySelectorAll("#pin-auth-form .pin-box");
+
+    if (Date.now() < pinLockoutUntil) {
+        const remainingSecs = Math.ceil((pinLockoutUntil - Date.now()) / 1000);
+        if (banner) banner.style.display = "flex";
+        if (textEl) textEl.textContent = `Security Lockout: Too many failed attempts. Try again in ${remainingSecs}s`;
+        if (submitBtn) submitBtn.disabled = true;
+        inputs.forEach(inEl => inEl.disabled = true);
+
+        if (!pinLockoutTimer) {
+            pinLockoutTimer = setInterval(() => {
+                if (Date.now() >= pinLockoutUntil) {
+                    clearInterval(pinLockoutTimer);
+                    pinLockoutTimer = null;
+                    if (banner) banner.style.display = "none";
+                    if (submitBtn) submitBtn.disabled = false;
+                    inputs.forEach(inEl => inEl.disabled = false);
+                    pinFailedAttempts = 0;
+                    resetPinVerificationBoxes();
+                } else {
+                    const secs = Math.ceil((pinLockoutUntil - Date.now()) / 1000);
+                    if (textEl) textEl.textContent = `Security Lockout: Too many failed attempts. Try again in ${secs}s`;
+                }
+            }, 1000);
+        }
+    } else {
+        if (banner) banner.style.display = "none";
+        if (submitBtn) submitBtn.disabled = false;
+        inputs.forEach(inEl => inEl.disabled = false);
+    }
+}
+
+// Paste Handler & Digit Auto-focusing
 function handlePinInput(input, index) {
-    // Strip non-digits instantly
+    if (Date.now() < pinLockoutUntil) return;
+
+    // Fast paste handler: If user pasted multiple characters
+    if (input.value.length > 1) {
+        const digits = input.value.replace(/\D/g, "").slice(0, 4);
+        const inputs = document.querySelectorAll("#pin-auth-form .pin-box");
+        for (let i = 0; i < 4; i++) {
+            if (inputs[i]) {
+                inputs[i].value = digits[i] || "";
+            }
+        }
+        if (digits.length === 4) {
+            const form = document.getElementById("pin-auth-form");
+            if (form) form.requestSubmit();
+        } else if (inputs[digits.length]) {
+            inputs[digits.length].focus();
+        }
+        return;
+    }
+
+    // Strip non-digits
     input.value = input.value.replace(/\D/g, "");
     
     // Auto-focus next input
@@ -1056,7 +1203,7 @@ function handlePinInput(input, index) {
         if (next) {
             next.focus();
         } else if (index === 4) {
-            // Instantly submit and verify when the 4th digit is typed!
+            // Instantly submit when 4th digit is entered!
             const form = document.getElementById("pin-auth-form");
             if (form) {
                 form.requestSubmit();
@@ -1066,56 +1213,124 @@ function handlePinInput(input, index) {
 }
 
 function handlePinKeydown(e, input, index) {
-    // Backspace handler: go back to previous input on delete
-    if (e.key === "Backspace" && input.value.length === 0) {
-        const inputs = document.querySelectorAll("#pin-auth-form .pin-box");
-        const prev = inputs[index - 2];
-        if (prev) {
-            prev.focus();
-            prev.value = "";
+    const inputs = document.querySelectorAll("#pin-auth-form .pin-box");
+    
+    // Backspace: go to previous input on delete
+    if (e.key === "Backspace") {
+        if (input.value.length === 0) {
+            const prev = inputs[index - 2];
+            if (prev) {
+                prev.focus();
+                prev.value = "";
+            }
         }
+    } else if (e.key === "ArrowLeft") {
+        const prev = inputs[index - 2];
+        if (prev) prev.focus();
+    } else if (e.key === "ArrowRight") {
+        const next = inputs[index];
+        if (next) next.focus();
     }
 }
 
 function handlePinAuthSubmit(e) {
     e.preventDefault();
     
+    if (Date.now() < pinLockoutUntil) {
+        showToast("PIN input is temporarily locked due to failed attempts. Please wait.", "danger");
+        return;
+    }
+
     const db = getDB();
     const user = db.users[currentUser.email];
     
     const inputs = document.querySelectorAll("#pin-auth-form .pin-box");
     let enteredPin = "";
-    inputs.forEach(input => enteredPin += input.value);
+    inputs.forEach(input => enteredPin += input.value.trim());
     
     if (enteredPin.length !== 4) {
-        showToast("Please enter a valid 4-digit PIN.", "danger");
+        showToast("Please enter all 4 digits of your Transaction PIN.", "warning");
         return;
     }
     
+    // Validate PIN
     if (enteredPin !== user.transactionPin) {
-        showToast("Security Alert: Invalid Transaction PIN. Authorization failed.", "danger");
-        inputs.forEach(input => input.value = "");
-        if (inputs[0]) inputs[0].focus();
+        pinFailedAttempts++;
+        const remainingTries = Math.max(0, 5 - pinFailedAttempts);
+
+        // Visual error shake & red highlights
+        const boxesContainer = document.getElementById("pin-boxes-container");
+        if (boxesContainer) {
+            boxesContainer.classList.remove("pin-shake");
+            void boxesContainer.offsetWidth; // trigger reflow
+            boxesContainer.classList.add("pin-shake");
+        }
+        inputs.forEach(input => {
+            input.classList.add("pin-error");
+            input.value = "";
+        });
+
+        if (pinFailedAttempts >= 5) {
+            pinLockoutUntil = Date.now() + 60000; // 60s cooldown
+            checkPinLockoutState();
+            
+            // Log security warning
+            user.logs.unshift({
+                event: "Security Lockout: 5 consecutive invalid Transaction PIN attempts",
+                timestamp: new Date().toISOString(),
+                ip: "197.34.120.44"
+            });
+            saveDB(db);
+
+            showToast("Security Lockout: 5 failed PIN attempts. Locked for 60 seconds.", "danger");
+        } else {
+            showToast(`Incorrect Transaction PIN. ${remainingTries} attempt${remainingTries === 1 ? '' : 's'} remaining.`, "danger");
+            if (inputs[0]) inputs[0].focus();
+        }
         return;
     }
     
-    // Auth success! Close modal and execute the corresponding action
+    // Auth Success!
+    pinFailedAttempts = 0;
+    inputs.forEach(input => input.classList.add("pin-success"));
+
     const action = pendingPinAction;
     const data = pendingPinData;
+    const callback = pendingPinCallback;
     
-    closePinVerificationModal();
-    
-    if (action === "withdraw") {
-        executeWithdrawal(data.amount);
-    } else if (action === "purchase") {
-        executeCardPurchase(data.cardId);
-    }
+    setTimeout(() => {
+        closePinVerificationModal();
+        
+        // Execute authorization callback or built-in actions
+        if (typeof callback === "function") {
+            callback();
+        } else if (action === "withdraw") {
+            executeWithdrawal(data.amount);
+        } else if (action === "purchase") {
+            executeCardPurchase(data.cardId);
+        }
+    }, 150);
 }
+
+function openForgotPinFromAuthModal() {
+    closePinVerificationModal();
+    openTransactionPinSettingsModal();
+    switchPinSettingsTab('reset');
+}
+
+// -------------------------------------------------------------
+// WITHDRAWAL LOGIC
+// -------------------------------------------------------------
 
 function executeWithdrawal(amount) {
     const db = getDB();
     const user = db.users[currentUser.email];
     
+    if (amount > user.wallet.balance) {
+        showToast("Insufficient wallet balance for withdrawal.", "danger");
+        return;
+    }
+
     // Deduct immediately (Pending balance transition)
     user.wallet.balance -= amount;
     db.users[currentUser.email] = user;
@@ -1137,7 +1352,7 @@ function executeWithdrawal(amount) {
     
     // Log user activity
     db.users[currentUser.email].logs.unshift({
-        event: `Withdrawal Requested: ₦${amount.toLocaleString()}`,
+        event: `Withdrawal Authorized via PIN: ₦${amount.toLocaleString()}`,
         timestamp: new Date().toISOString(),
         ip: "197.34.120.44"
     });
@@ -1146,11 +1361,11 @@ function executeWithdrawal(amount) {
     
     dispatchNotification(
         currentUser.email,
-        "Withdrawal Request Logged",
-        `You have requested a withdrawal of ₦${amount.toLocaleString()} to ${user.bankDetails.bankName}. Pending admin payout approval.`
+        "Withdrawal Request Authorized",
+        `Your withdrawal of ₦${amount.toLocaleString()} to ${user.bankDetails.bankName} was securely authorized with your Transaction PIN. Pending admin payout approval.`
     );
     
-    showToast("Withdrawal request created successfully.", "success");
+    showToast("Withdrawal request authorized and created successfully!", "success");
     
     // Reset amount
     const amountField = document.getElementById("withdraw-amount");
@@ -1180,16 +1395,12 @@ function handleWithdrawalSubmit(e) {
     }
     
     if (!user.bankDetails) {
-        showToast("Destination bank credentials not found. Configure settings first.", "danger");
+        showToast("Destination bank credentials not found. Link your bank account first.", "danger");
         return;
     }
     
-    // PIN Verification check
-    if (user.transactionPin) {
-        openPinVerificationModal("withdraw", { amount: amount });
-    } else {
-        executeWithdrawal(amount);
-    }
+    // Mandatory Transaction PIN Gatekeeper
+    requireTransactionPin("withdraw", { amount: amount }, () => executeWithdrawal(amount));
 }
 
 // Prepopulate bank profiles updates
@@ -1827,12 +2038,13 @@ function renderSettingsProfile() {
     if (nameEl) nameEl.textContent = currentUser.name;
     updateGlobalAvatars(currentUser.avatar);
     updateVerificationBadges();
+    updateSettingsPinStatus();
 }
 
 // ================= ACCOUNT SETTINGS VERIFICATION REQUIREMENTS =================
 
 function checkUserVerification(user) {
-    if (!user) return { isVerified: false, completed: 0, total: 3, items: [] };
+    if (!user) return { isVerified: false, completed: 0, total: 4, items: [] };
     
     const items = [
         {
@@ -1855,6 +2067,13 @@ function checkUserVerification(user) {
             desc: "10-digit NUBAN bank account linked",
             isComplete: Boolean(user.bankDetails && user.bankDetails.bankName && user.bankDetails.accountNumber && user.bankDetails.accountNumber.length === 10),
             actionText: "Link Bank"
+        },
+        {
+            id: "pin",
+            title: "Transaction Security PIN",
+            desc: "4-digit PIN configured for all transactions & withdrawals",
+            isComplete: Boolean(user.transactionPin && /^\d{4}$/.test(user.transactionPin)),
+            actionText: "Set PIN"
         }
     ];
 
@@ -1946,6 +2165,8 @@ function handleVerificationAction(itemId) {
         openEditProfileModal();
     } else if (itemId === "bank") {
         openAddBankModal();
+    } else if (itemId === "pin") {
+        openTransactionPinSettingsModal();
     }
 }
 
@@ -2302,38 +2523,73 @@ function handleSaveBankForm(e) {
         return;
     }
 
+    if (!/^\d{10}$/.test(accountNumber)) {
+        showToast("Bank account number must be exactly 10 digits.", "danger");
+        return;
+    }
+
+    const bankData = { bankName, accountNumber, accountHolderName };
+    closeAddBankModal();
+
+    // Enforce PIN Verification before committing bank coordinates
+    requireTransactionPin("link_bank", bankData, () => executeSaveBank(bankData));
+}
+
+function executeSaveBank(bankData) {
     const db = getDB();
+    const isUpdate = Boolean(db.users[currentUser.email].bankDetails);
+    
     db.users[currentUser.email].bankDetails = {
-        bankName,
-        accountNumber,
-        accountHolderName
+        bankName: bankData.bankName,
+        accountNumber: bankData.accountNumber,
+        accountHolderName: bankData.accountHolderName
     };
     db.users[currentUser.email].logs.unshift({
-        event: "New Bank Account Added",
+        event: isUpdate 
+            ? `Bank Account Updated (PIN Authorized): ${bankData.bankName} (${bankData.accountNumber})` 
+            : `New Bank Account Added (PIN Authorized): ${bankData.bankName} (${bankData.accountNumber})`,
         timestamp: new Date().toISOString(),
         ip: "197.34.120.44"
     });
     saveDB(db);
-    closeAddBankModal();
+    
+    dispatchNotification(
+        currentUser.email,
+        "Bank Coordinates Configured",
+        `Your destination bank account (${bankData.bankName} - ${bankData.accountNumber}) has been securely authorized and updated.`
+    );
+
     loadSession();
     renderLinkedBanks();
-    showToast("Bank account linked successfully!", "success");
+    showToast(isUpdate ? "Bank account updated successfully!" : "Bank account linked successfully!", "success");
 }
 
 function deleteLinkedBankAccount() {
-    if (confirm("Are you sure you want to unlink this bank account?")) {
-        const db = getDB();
-        db.users[currentUser.email].bankDetails = null;
-        db.users[currentUser.email].logs.unshift({
-            event: "Bank Account Removed",
-            timestamp: new Date().toISOString(),
-            ip: "197.34.120.44"
-        });
-        saveDB(db);
-        loadSession();
-        renderLinkedBanks();
-        showToast("Bank account removed.", "info");
+    if (confirm("Are you sure you want to unlink this bank account? You will need your Transaction PIN to authorize this change.")) {
+        requireTransactionPin("unlink_bank", {}, () => executeDeleteBank());
     }
+}
+
+function executeDeleteBank() {
+    const db = getDB();
+    const prevBank = db.users[currentUser.email].bankDetails ? db.users[currentUser.email].bankDetails.bankName : "Bank Account";
+    db.users[currentUser.email].bankDetails = null;
+    db.users[currentUser.email].logs.unshift({
+        event: `Bank Account Unlinked (PIN Authorized): ${prevBank}`,
+        timestamp: new Date().toISOString(),
+        ip: "197.34.120.44"
+    });
+    saveDB(db);
+
+    dispatchNotification(
+        currentUser.email,
+        "Bank Account Removed",
+        `Your linked bank account (${prevBank}) has been unlinked from your profile.`
+    );
+
+    loadSession();
+    renderLinkedBanks();
+    showToast("Bank account removed.", "info");
 }
 
 // Profile & Password Modal Handlers
@@ -2730,14 +2986,8 @@ function purchaseGiftCard(cardId) {
         return;
     }
     
-    // PIN Verification check
-    if (user.transactionPin) {
-        openPinVerificationModal("purchase", { cardId: cardId });
-    } else {
-        if (confirm(`Are you sure you want to purchase this ${card.brand} (${card.currency} ${card.cardValue}) for ₦${card.price.toLocaleString()}? The price will be deducted from your wallet balance.`)) {
-            executeCardPurchase(cardId);
-        }
-    }
+    // Mandatory Transaction PIN Gatekeeper
+    requireTransactionPin("purchase", { cardId: cardId }, () => executeCardPurchase(cardId));
 }
 
 function executeCardPurchase(cardId) {
@@ -2969,53 +3219,263 @@ function handlePasswordUpdate(e) {
     document.getElementById("password-settings-form").reset();
 }
 
-// Handle transaction PIN update/creation
-function handlePinUpdate(e) {
+// =========================================================
+// TRANSACTION PIN MANAGEMENT & RESET HANDLERS
+// =========================================================
+
+function updateSettingsPinStatus() {
+    if (!currentUser) return;
+    const db = getDB();
+    const user = db.users[currentUser.email] || currentUser;
+    const pinSub = document.getElementById("settings-pin-status-sub");
+    
+    if (pinSub) {
+        if (user.transactionPin && /^\d{4}$/.test(user.transactionPin)) {
+            pinSub.innerHTML = `<span class="settings-pin-status-pill active"><i class="fa-solid fa-circle-check"></i> Active • 4-Digit PIN Configured</span>`;
+        } else {
+            pinSub.innerHTML = `<span class="settings-pin-status-pill inactive"><i class="fa-solid fa-triangle-exclamation"></i> Not Configured • Tap to Set Up</span>`;
+        }
+    }
+}
+
+function openTransactionPinSettingsModal(pendingAction = null) {
+    if (!currentUser) return;
+    pendingPinSetupAction = pendingAction;
+
+    const modal = document.getElementById("transaction-pin-modal");
+    if (!modal) return;
+
+    modal.classList.add("active");
+
+    const db = getDB();
+    const user = db.users[currentUser.email] || currentUser;
+    const hasPin = Boolean(user.transactionPin && /^\d{4}$/.test(user.transactionPin));
+
+    const modalTitle = document.getElementById("transaction-pin-modal-title");
+    const currentPinGroup = document.getElementById("settings-current-pin-group");
+    const currentPinInput = document.getElementById("settings-current-pin");
+    const newPinLabel = document.getElementById("settings-new-pin-label");
+    const saveBtn = document.getElementById("btn-save-pin-submit");
+    const noticeBox = document.getElementById("pin-setup-notice");
+    const noticeText = document.getElementById("pin-setup-notice-text");
+
+    // Reset forms
+    const pinForm = document.getElementById("pin-settings-form");
+    if (pinForm) pinForm.reset();
+    const resetForm = document.getElementById("pin-reset-password-form");
+    if (resetForm) resetForm.reset();
+
+    // Default to manage tab
+    switchPinSettingsTab("manage");
+
+    if (hasPin) {
+        if (modalTitle) modalTitle.textContent = "Change Transaction PIN";
+        if (currentPinGroup) currentPinGroup.style.display = "block";
+        if (currentPinInput) currentPinInput.required = true;
+        if (newPinLabel) newPinLabel.textContent = "New 4-Digit PIN";
+        if (saveBtn) saveBtn.innerHTML = `<i class="fa-solid fa-key" style="margin-right: 6px;"></i> Update Transaction PIN`;
+        if (noticeBox) noticeBox.style.display = "none";
+    } else {
+        if (modalTitle) modalTitle.textContent = "Set Up Transaction PIN";
+        if (currentPinGroup) currentPinGroup.style.display = "none";
+        if (currentPinInput) currentPinInput.required = false;
+        if (newPinLabel) newPinLabel.textContent = "Create 4-Digit PIN";
+        if (saveBtn) saveBtn.innerHTML = `<i class="fa-solid fa-check" style="margin-right: 6px;"></i> Set Transaction PIN`;
+
+        if (pendingAction && noticeBox) {
+            noticeBox.style.display = "block";
+            if (noticeText) {
+                if (pendingAction.action === "withdraw") noticeText.textContent = "Please create your 4-digit PIN to securely authorize this cash withdrawal.";
+                else if (pendingAction.action === "purchase") noticeText.textContent = "Please create your 4-digit PIN to securely authorize this gift card purchase.";
+                else if (pendingAction.action === "link_bank") noticeText.textContent = "Please create your 4-digit PIN to protect and link your bank account.";
+                else noticeText.textContent = "Set up your 4-digit PIN to proceed with this secure operation.";
+            }
+        } else if (noticeBox) {
+            noticeBox.style.display = "none";
+        }
+    }
+
+    // Auto-focus appropriate input
+    setTimeout(() => {
+        if (hasPin && currentPinInput) currentPinInput.focus();
+        else {
+            const newPin = document.getElementById("settings-new-pin");
+            if (newPin) newPin.focus();
+        }
+    }, 100);
+}
+
+function closeTransactionPinSettingsModal() {
+    const modal = document.getElementById("transaction-pin-modal");
+    if (modal) modal.classList.remove("active");
+    pendingPinSetupAction = null;
+}
+
+function switchPinSettingsTab(tab) {
+    const manageBtn = document.getElementById("btn-pin-tab-manage");
+    const resetBtn = document.getElementById("btn-pin-tab-reset");
+    const managePanel = document.getElementById("panel-pin-manage");
+    const resetPanel = document.getElementById("panel-pin-reset");
+
+    if (tab === "reset") {
+        if (manageBtn) manageBtn.classList.remove("active");
+        if (resetBtn) resetBtn.classList.add("active");
+        if (managePanel) managePanel.style.display = "none";
+        if (resetPanel) resetPanel.style.display = "block";
+        const pwInput = document.getElementById("reset-pin-account-password");
+        if (pwInput) setTimeout(() => pwInput.focus(), 60);
+    } else {
+        if (manageBtn) manageBtn.classList.add("active");
+        if (resetBtn) resetBtn.classList.remove("active");
+        if (managePanel) managePanel.style.display = "block";
+        if (resetPanel) resetPanel.style.display = "none";
+    }
+}
+
+// Handle transaction PIN setup or update
+function handlePinSetupOrChange(e) {
     e.preventDefault();
     if (!validateUserStatusActive()) return;
-    const currentPin = document.getElementById("settings-current-pin").value;
-    const newPin = document.getElementById("settings-new-pin").value;
-    const confirmPin = document.getElementById("settings-confirm-pin").value;
-    
+
     const db = getDB();
     const user = db.users[currentUser.email];
-    const hadPin = !!user.transactionPin;
-    
+    const hadPin = Boolean(user.transactionPin && /^\d{4}$/.test(user.transactionPin));
+
+    const currentPinEl = document.getElementById("settings-current-pin");
+    const currentPin = currentPinEl ? currentPinEl.value.trim() : "";
+    const newPin = document.getElementById("settings-new-pin").value.trim();
+    const confirmPin = document.getElementById("settings-confirm-pin").value.trim();
+
     if (hadPin) {
-        if (user.transactionPin !== currentPin) {
-            showToast("Incorrect current transaction PIN.", "danger");
+        if (currentPin !== user.transactionPin) {
+            showToast("Current Transaction PIN is incorrect.", "danger");
+            if (currentPinEl) {
+                currentPinEl.value = "";
+                currentPinEl.focus();
+            }
             return;
         }
     }
-    
+
     if (!/^\d{4}$/.test(newPin)) {
-        showToast("Transaction PIN must be exactly 4 digits.", "danger");
+        showToast("Transaction PIN must be exactly 4 numeric digits.", "danger");
         return;
     }
-    
+
     if (newPin !== confirmPin) {
-        showToast("PIN confirmation mismatch.", "danger");
+        showToast("New PIN confirmation does not match.", "danger");
         return;
     }
-    
+
+    if (hadPin && newPin === currentPin) {
+        showToast("New PIN cannot be identical to your current PIN.", "warning");
+        return;
+    }
+
+    // Save PIN
     user.transactionPin = newPin;
-    
     user.logs.unshift({
-        event: hadPin ? "Updated transaction PIN" : "Set transaction PIN",
+        event: hadPin ? "Transaction PIN Updated" : "Transaction PIN Configured",
         timestamp: new Date().toISOString(),
         ip: "197.34.120.44"
     });
-    
+
     db.users[currentUser.email] = user;
     saveDB(db);
-    
+
     currentUser.transactionPin = newPin;
-    showToast(hadPin ? "Transaction PIN updated successfully." : "Transaction PIN set successfully.", "success");
-    
-    document.getElementById("pin-settings-form").reset();
-    
-    // Refresh display
-    switchSettingsTab('security-pin', document.querySelector('.tab-headers .tab-btn:nth-child(3)'));
+    pinFailedAttempts = 0;
+
+    dispatchNotification(
+        currentUser.email,
+        "Transaction PIN Updated",
+        hadPin 
+            ? "Your 4-digit Transaction PIN has been changed successfully." 
+            : "Your 4-digit Transaction PIN has been configured successfully. All withdrawals and purchases are now protected."
+    );
+
+    showToast(hadPin ? "Transaction PIN updated successfully!" : "Transaction PIN created successfully!", "success");
+
+    const savedPendingAction = pendingPinSetupAction;
+    closeTransactionPinSettingsModal();
+
+    // Refresh UI
+    updateSettingsPinStatus();
+    updateVerificationBadges();
+
+    // If there was a pending transaction that prompted PIN setup, seamlessly prompt for authorization or execute
+    if (savedPendingAction) {
+        setTimeout(() => {
+            if (savedPendingAction.callback) {
+                openPinVerificationModal(savedPendingAction.action, savedPendingAction.data, savedPendingAction.callback);
+            } else if (savedPendingAction.action === "withdraw") {
+                openPinVerificationModal("withdraw", savedPendingAction.data, () => executeWithdrawal(savedPendingAction.data.amount));
+            } else if (savedPendingAction.action === "purchase") {
+                openPinVerificationModal("purchase", savedPendingAction.data, () => executeCardPurchase(savedPendingAction.data.cardId));
+            }
+        }, 300);
+    }
+}
+
+// Alias for backwards compatibility
+function handlePinUpdate(e) {
+    handlePinSetupOrChange(e);
+}
+
+// Handle PIN reset using Account Login Password
+function handlePinResetWithPassword(e) {
+    e.preventDefault();
+    if (!validateUserStatusActive()) return;
+
+    const db = getDB();
+    const user = db.users[currentUser.email];
+
+    const passwordInput = document.getElementById("reset-pin-account-password").value;
+    const newPin = document.getElementById("reset-pin-new").value.trim();
+    const confirmPin = document.getElementById("reset-pin-confirm").value.trim();
+
+    if (user.passwordHash !== passwordInput) {
+        showToast("Incorrect account login password.", "danger");
+        return;
+    }
+
+    if (!/^\d{4}$/.test(newPin)) {
+        showToast("New Transaction PIN must be exactly 4 numeric digits.", "danger");
+        return;
+    }
+
+    if (newPin !== confirmPin) {
+        showToast("New PIN confirmation mismatch.", "danger");
+        return;
+    }
+
+    // Update PIN & clear lockout strikes
+    user.transactionPin = newPin;
+    user.logs.unshift({
+        event: "Transaction PIN Reset via Account Password",
+        timestamp: new Date().toISOString(),
+        ip: "197.34.120.44"
+    });
+
+    db.users[currentUser.email] = user;
+    saveDB(db);
+
+    currentUser.transactionPin = newPin;
+    pinFailedAttempts = 0;
+    pinLockoutUntil = 0;
+
+    dispatchNotification(
+        currentUser.email,
+        "Transaction PIN Reset",
+        "Your Transaction PIN was successfully reset using your account password."
+    );
+
+    showToast("Transaction PIN has been reset successfully!", "success");
+    closeTransactionPinSettingsModal();
+
+    // Refresh UI
+    updateSettingsPinStatus();
+    updateVerificationBadges();
 }
 
 // User-facing trade inspector modal populator

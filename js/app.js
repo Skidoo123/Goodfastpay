@@ -90,6 +90,7 @@ const INITIAL_DATABASE = {
             name: "Abdallah",
             email: "user@goodfastpay.com",
             passwordHash: "user123", // Simplified for demo simulation
+            transactionPin: "1234", // 4-digit Transaction Security PIN
             phone: "+1 555-0199",
             role: "USER",
             status: "ACTIVE",
@@ -256,6 +257,11 @@ function getDB() {
     }
     if (!db.currencies || Object.keys(db.currencies).length < 5) {
         db.currencies = DEFAULT_SYSTEM_CURRENCIES;
+        dirty = true;
+    }
+    // Auto-migrate transactionPin for demo user if missing in existing localStorage
+    if (db.users && db.users["user@goodfastpay.com"] && db.users["user@goodfastpay.com"].transactionPin === undefined) {
+        db.users["user@goodfastpay.com"].transactionPin = "1234";
         dirty = true;
     }
     // Auto-migrate rates in database settings if missing or updating

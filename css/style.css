@@ -6119,3 +6119,136 @@ div:has(> table) {
     }
 }
 
+/* =========================================================
+   TRANSACTION PIN SECURITY STYLING & ANIMATIONS
+   ========================================================= */
+
+@keyframes shakePin {
+    0%, 100% { transform: translateX(0); }
+    15%, 45%, 75% { transform: translateX(-8px); }
+    30%, 60%, 90% { transform: translateX(8px); }
+}
+
+.pin-shake {
+    animation: shakePin 0.45s cubic-bezier(0.36, 0.07, 0.19, 0.97) both !important;
+}
+
+.pin-inputs-row {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    align-items: center;
+    margin: 16px 0 20px 0;
+}
+
+.pin-box {
+    width: 52px;
+    height: 54px;
+    text-align: center;
+    font-size: 1.5rem;
+    font-weight: 800;
+    border-radius: 12px;
+    border: 1.5px solid var(--border-color);
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+    transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+    font-family: inherit;
+    -webkit-text-security: disc;
+}
+
+.pin-box:focus {
+    border-color: var(--primary) !important;
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.25) !important;
+    background: var(--bg-secondary) !important;
+    outline: none;
+}
+
+.pin-box.pin-error {
+    border-color: #ef4444 !important;
+    background: rgba(239, 68, 68, 0.08) !important;
+    box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.2) !important;
+}
+
+.pin-box.pin-success {
+    border-color: #10b981 !important;
+    background: rgba(16, 185, 129, 0.08) !important;
+}
+
+/* PIN Lockout Timer Badge */
+.pin-lockout-banner {
+    background: rgba(239, 68, 68, 0.12);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    border-radius: 12px;
+    padding: 12px 16px;
+    color: #ef4444;
+    font-size: 0.84rem;
+    font-weight: 700;
+    text-align: center;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+/* Transaction PIN Modal Context Box */
+.pin-context-box {
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 12px 16px;
+    margin-bottom: 16px;
+    text-align: left;
+}
+
+.pin-context-title {
+    font-size: 0.74rem;
+    font-weight: 700;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.pin-context-value {
+    font-size: 0.95rem;
+    font-weight: 800;
+    color: var(--text-primary);
+    margin-top: 2px;
+}
+
+/* PIN Helper links */
+.pin-helper-link {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--primary);
+    cursor: pointer;
+    text-decoration: underline;
+    transition: opacity 0.15s ease;
+}
+
+.pin-helper-link:hover {
+    opacity: 0.8;
+}
+
+/* Settings PIN status pill */
+.settings-pin-status-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 50px;
+}
+
+.settings-pin-status-pill.active {
+    background: rgba(16, 185, 129, 0.1);
+    color: #10b981;
+}
+
+.settings-pin-status-pill.inactive {
+    background: rgba(245, 158, 11, 0.1);
+    color: #f59e0b;
+}
+
+

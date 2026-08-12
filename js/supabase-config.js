@@ -300,6 +300,7 @@ function syncLocalUserAccount(email, metadata, passwordHash = "") {
             name: metadata.name || email.split("@")[0],
             email: email,
             passwordHash: passwordHash,
+            transactionPin: null, // Initialized as unconfigured until set by user
             phone: metadata.phone || "",
             role: email === "admin@goodfastpay.com" ? "ADMIN" : "USER",
             status: "ACTIVE",
