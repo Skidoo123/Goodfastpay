@@ -653,30 +653,44 @@ function populateBuyCountryFilters() {
 // Retrieve exact exchange rate synchronizing Currency Manager rates
 function getCardExchangeRate(brand, currency) {
     const db = getDB();
-    const rates = db.settings ? (db.settings.rates || {}) : {};
     const currencies = db.currencies || {};
+    const rates = db.settings ? (db.settings.rates || {}) : {};
     
-    // Normalize currency keys if needed
+    // Normalize currency keys to ISO currency standard code
     let code = currency || "USD";
-    if (code === "USA") code = "USD";
-    else if (code === "Europe (EUR)" || ["Germany", "France", "Italy", "Spain", "Netherlands"].includes(code)) code = "EUR";
-    else if (code === "UK") code = "GBP";
+    if (code === "USA" || code === "$") code = "USD";
+    else if (code.includes("Europe") || ["Germany", "France", "Italy", "Spain", "Netherlands", "EUR", "€"].includes(code)) code = "EUR";
+    else if (code === "UK" || code === "GBP" || code === "£") code = "GBP";
+    else if (code === "Canada" || code === "CAD") code = "CAD";
+    else if (code === "Australia" || code === "AUD") code = "AUD";
+    else if (code.includes("CHF")) code = "CHF";
+    else if (code.includes("JPY")) code = "JPY";
+    else if (code.includes("CNY")) code = "CNY";
+    else if (code.includes("HKD")) code = "HKD";
+    else if (code.includes("SGD")) code = "SGD";
+    else if (code.includes("NZD")) code = "NZD";
+    else if (code.includes("AED")) code = "AED";
+    else if (code.includes("SAR")) code = "SAR";
+    else if (code.includes("ZAR")) code = "ZAR";
+    else if (code.includes("INR")) code = "INR";
+    else if (code === "NGN" || code === "₦") code = "NGN";
 
-    // 1. Direct brand specific rate for exact currency or normalized code
-    if (brand && rates[brand]) {
-        if (rates[brand][currency] !== undefined && rates[brand][currency] > 0) return rates[brand][currency];
-        if (rates[brand][code] !== undefined && rates[brand][code] > 0) return rates[brand][code];
-    }
-
-    // 2. Direct currency manager rate from currencies table
-    if (currencies[code] && currencies[code].rate && currencies[code].rate > 0) {
+    // 1. Direct Central Currency Manager rate (Ground Truth)
+    if (currencies[code] && currencies[code].rate !== undefined && currencies[code].rate > 0) {
         return currencies[code].rate;
     }
-    if (currencies[currency] && currencies[currency].rate && currencies[currency].rate > 0) {
+    
+    if (currencies[currency] && currencies[currency].rate !== undefined && currencies[currency].rate > 0) {
         return currencies[currency].rate;
     }
 
-    // 3. Fallback to active USD base rate or default
+    // 2. Direct brand specific rate for exact currency or normalized code
+    if (brand && rates[brand]) {
+        if (rates[brand][code] !== undefined && rates[brand][code] > 0) return rates[brand][code];
+        if (rates[brand][currency] !== undefined && rates[brand][currency] > 0) return rates[brand][currency];
+    }
+
+    // 3. Fallback to active USD base rate or 1200
     if (currencies["USD"] && currencies["USD"].rate) {
         return currencies["USD"].rate;
     }

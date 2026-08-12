@@ -21,71 +21,63 @@ const SUPPORTED_REGIONS = [
     "UAE (AED)", "Saudi Arabia (SAR)", "South Africa (ZAR)", "India (INR)"
 ];
 
-// Preset rates for major brands in the administrator console
-const PRESET_EXCHANGE_RATES = {
-    "Amazon": { USD: 1275, EUR: 1175, NGN: 1980 },
-    "Walmart": { USD: 1203, EUR: 1105, NGN: 1860 },
-    "Best Buy": { USD: 1287, EUR: 1185, NGN: 2000 },
-    "Target": { USD: 1200, EUR: 1100, NGN: 1840 },
-    "Apple/iTunes": { USD: 1278, EUR: 1180, NGN: 1990 },
-    "Google Play": { USD: 1528, EUR: 1410, NGN: 2360 },
-    "Nike": { USD: 978, EUR: 905, NGN: 1520 },
-    "Steam": { USD: 1428, EUR: 1315, NGN: 2200 },
-    "Sephora": { USD: 898, EUR: 830, NGN: 1390 },
-    "Uber": { USD: 1428, EUR: 1315, NGN: 2200 }
+// Central Currency Registry Base Rates (Standard System Defaults)
+const DEFAULT_SYSTEM_CURRENCIES = {
+    "USD": { code: "USD", name: "United States Dollar", rate: 1200, status: "ACTIVE" },
+    "EUR": { code: "EUR", name: "Euro", rate: 1100, status: "ACTIVE" },
+    "GBP": { code: "GBP", name: "British Pound Sterling", rate: 1500, status: "ACTIVE" },
+    "CAD": { code: "CAD", name: "Canadian Dollar", rate: 900, status: "ACTIVE" },
+    "AUD": { code: "AUD", name: "Australian Dollar", rate: 820, status: "ACTIVE" },
+    "CHF": { code: "CHF", name: "Swiss Franc", rate: 1380, status: "ACTIVE" },
+    "SGD": { code: "SGD", name: "Singapore Dollar", rate: 1000, status: "ACTIVE" },
+    "NZD": { code: "NZD", name: "New Zealand Dollar", rate: 850, status: "ACTIVE" },
+    "AED": { code: "AED", name: "UAE Dirham", rate: 380, status: "ACTIVE" },
+    "SAR": { code: "SAR", name: "Saudi Riyal", rate: 370, status: "ACTIVE" },
+    "ZAR": { code: "ZAR", name: "South African Rand", rate: 80, status: "ACTIVE" },
+    "CNY": { code: "CNY", name: "Chinese Yuan", rate: 190, status: "ACTIVE" },
+    "HKD": { code: "HKD", name: "Hong Kong Dollar", rate: 180, status: "ACTIVE" },
+    "JPY": { code: "JPY", name: "Japanese Yen", rate: 10, status: "ACTIVE" },
+    "INR": { code: "INR", name: "Indian Rupee", rate: 18, status: "ACTIVE" },
+    "NGN": { code: "NGN", name: "Nigerian Naira", rate: 1, status: "ACTIVE" }
 };
 
-// Generate default rates for all brands and regions dynamically
+// Map supported country/region labels to central currency codes
+function getRegionCurrencyCode(region) {
+    if (!region) return "USD";
+    if (region === "USA" || region === "USD") return "USD";
+    if (region.includes("Europe") || ["Germany", "France", "Italy", "Spain", "Netherlands", "EUR"].includes(region)) return "EUR";
+    if (region === "UK" || region === "GBP") return "GBP";
+    if (region === "Canada" || region === "CAD") return "CAD";
+    if (region === "Australia" || region === "AUD") return "AUD";
+    if (region.includes("CHF")) return "CHF";
+    if (region.includes("SGD")) return "SGD";
+    if (region.includes("NZD")) return "NZD";
+    if (region.includes("AED")) return "AED";
+    if (region.includes("SAR")) return "SAR";
+    if (region.includes("ZAR")) return "ZAR";
+    if (region.includes("CNY")) return "CNY";
+    if (region.includes("HKD")) return "HKD";
+    if (region.includes("JPY")) return "JPY";
+    if (region.includes("INR")) return "INR";
+    if (region === "NGN") return "NGN";
+    return "USD";
+}
+
+// Generate default rates for all brands and regions dynamically from Central Currency Registry
 const DEFAULT_CARD_RATES = {};
 Object.keys(GIFT_CARD_CATEGORIES).forEach(cat => {
     GIFT_CARD_CATEGORIES[cat].forEach(brand => {
         DEFAULT_CARD_RATES[brand] = {};
         
-        const preset = PRESET_EXCHANGE_RATES[brand];
+        // Seed ISO currencies from standard currency manager defaults
+        Object.keys(DEFAULT_SYSTEM_CURRENCIES).forEach(code => {
+            DEFAULT_CARD_RATES[brand][code] = DEFAULT_SYSTEM_CURRENCIES[code].rate;
+        });
         
-        // Seed exact USD, EUR, NGN base rates
-        DEFAULT_CARD_RATES[brand]["USD"] = preset ? preset.USD : 1200;
-        DEFAULT_CARD_RATES[brand]["EUR"] = preset ? preset.EUR : 1100;
-        DEFAULT_CARD_RATES[brand]["NGN"] = preset ? preset.NGN : 1900;
-        
+        // Seed regional country labels from standard currency manager defaults
         SUPPORTED_REGIONS.forEach(region => {
-            let rateVal = 1200;
-            if (preset) {
-                if (region === "USA") rateVal = preset.USD;
-                else if (region.includes("Europe") || ["Germany", "France", "Italy", "Spain", "Netherlands"].includes(region)) rateVal = preset.EUR;
-                else if (region === "UK") rateVal = Math.floor(preset.EUR * 1.1);
-                else if (region === "Canada") rateVal = Math.floor(preset.USD * 0.8);
-                else if (region === "Australia") rateVal = Math.floor(preset.USD * 0.75);
-                else if (region.includes("CHF")) rateVal = Math.floor(preset.USD * 1.15);
-                else if (region.includes("JPY")) rateVal = Math.floor(preset.USD * 0.008);
-                else if (region.includes("CNY")) rateVal = Math.floor(preset.USD * 0.16);
-                else if (region.includes("HKD")) rateVal = Math.floor(preset.USD * 0.15);
-                else if (region.includes("SGD")) rateVal = Math.floor(preset.USD * 0.85);
-                else if (region.includes("NZD")) rateVal = Math.floor(preset.USD * 0.70);
-                else if (region.includes("AED")) rateVal = Math.floor(preset.USD * 0.32);
-                else if (region.includes("SAR")) rateVal = Math.floor(preset.USD * 0.31);
-                else if (region.includes("ZAR")) rateVal = Math.floor(preset.USD * 0.06);
-                else if (region.includes("INR")) rateVal = Math.floor(preset.USD * 0.014);
-                else rateVal = preset.USD;
-            } else {
-                const salt = (brand.charCodeAt(0) + brand.charCodeAt(brand.length - 1)) % 100;
-                if (region === "USA") rateVal = 1200 + salt;
-                else if (region === "UK") rateVal = 1450 + salt;
-                else if (region === "Canada") rateVal = 900 + salt;
-                else if (region === "Australia") rateVal = 820 + salt;
-                else if (region.includes("CHF")) rateVal = 1380 + salt;
-                else if (region.includes("JPY")) rateVal = 10 + (salt % 10);
-                else if (region.includes("CNY")) rateVal = 190 + salt;
-                else if (region.includes("HKD")) rateVal = 180 + salt;
-                else if (region.includes("SGD")) rateVal = 1000 + salt;
-                else if (region.includes("NZD")) rateVal = 850 + salt;
-                else if (region.includes("AED")) rateVal = 380 + salt;
-                else if (region.includes("SAR")) rateVal = 370 + salt;
-                else if (region.includes("ZAR")) rateVal = 80 + salt;
-                else if (region.includes("INR")) rateVal = 18 + (salt % 10);
-                else rateVal = 1350 + salt;
-            }
-            
+            const currCode = getRegionCurrencyCode(region);
+            const rateVal = DEFAULT_SYSTEM_CURRENCIES[currCode] ? DEFAULT_SYSTEM_CURRENCIES[currCode].rate : 1200;
             DEFAULT_CARD_RATES[brand][region] = rateVal;
         });
     });
@@ -234,14 +226,11 @@ const INITIAL_DATABASE = {
         maintenanceMode: false,
         rates: DEFAULT_CARD_RATES
     },
-    currencies: {
-        "USD": { code: "USD", name: "United States Dollar", rate: 1200, status: "ACTIVE" },
-        "EUR": { code: "EUR", name: "Euro", rate: 1100, status: "ACTIVE" },
-        "NGN": { code: "NGN", name: "Nigerian Naira", rate: 1, status: "ACTIVE" }
-    },
+    currencies: DEFAULT_SYSTEM_CURRENCIES,
     currencyHistory: [
         { currency: "USD", oldRate: 1200, newRate: 1200, operator: "system", timestamp: "2026-07-29T18:00:00Z" },
         { currency: "EUR", oldRate: 1100, newRate: 1100, operator: "system", timestamp: "2026-07-29T18:00:00Z" },
+        { currency: "GBP", oldRate: 1500, newRate: 1500, operator: "system", timestamp: "2026-07-29T18:00:00Z" },
         { currency: "NGN", oldRate: 1, newRate: 1, operator: "system", timestamp: "2026-07-29T18:00:00Z" }
     ]
 };
@@ -265,23 +254,20 @@ function getDB() {
         db.inventory = INITIAL_DATABASE.inventory || [];
         dirty = true;
     }
-    // Auto-migrate rates in database settings if updating to the comprehensive catalog or new presets
-    if (!db.settings.rates || Object.keys(db.settings.rates).length < 20 || !db.settings.rates["Amazon"] || db.settings.rates["Amazon"]["NGN"] !== 1980) {
-        db.settings.rates = DEFAULT_CARD_RATES;
+    if (!db.currencies || Object.keys(db.currencies).length < 5) {
+        db.currencies = DEFAULT_SYSTEM_CURRENCIES;
         dirty = true;
     }
-    if (!db.currencies) {
-        db.currencies = {
-            "USD": { code: "USD", name: "United States Dollar", rate: 1200, status: "ACTIVE" },
-            "EUR": { code: "EUR", name: "Euro", rate: 1100, status: "ACTIVE" },
-            "NGN": { code: "NGN", name: "Nigerian Naira", rate: 1, status: "ACTIVE" }
-        };
+    // Auto-migrate rates in database settings if missing or updating
+    if (!db.settings.rates || Object.keys(db.settings.rates).length < 20 || !db.settings.rates["Amazon"] || !db.settings.rates["Amazon"]["USD"]) {
+        db.settings.rates = DEFAULT_CARD_RATES;
         dirty = true;
     }
     if (!db.currencyHistory) {
         db.currencyHistory = [
             { currency: "USD", oldRate: 1200, newRate: 1200, operator: "system", timestamp: new Date().toISOString() },
             { currency: "EUR", oldRate: 1100, newRate: 1100, operator: "system", timestamp: new Date().toISOString() },
+            { currency: "GBP", oldRate: 1500, newRate: 1500, operator: "system", timestamp: new Date().toISOString() },
             { currency: "NGN", oldRate: 1, newRate: 1, operator: "system", timestamp: new Date().toISOString() }
         ];
         dirty = true;

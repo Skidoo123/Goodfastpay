@@ -1307,6 +1307,11 @@ function bulkUpdateUSDRate() {
         db.settings.rates[brand]["India (INR)"] = Math.floor(rateVal * 0.014);
     });
     
+    // Sync central currency registry USD rate as well
+    if (db.currencies && db.currencies["USD"]) {
+        db.currencies["USD"].rate = rateVal;
+    }
+    
     // Log event
     db.auditTrail.unshift({
         operator: currentAdmin.email,
@@ -2312,39 +2317,47 @@ function editCurrencyRate(code) {
     c.rate = newRate;
     db.currencies[code] = c;
     
-    // Calculate scale ratio to update card-specific rates
-    const ratio = newRate / oldRate;
-    
-    // Scale all card rates matching this currency
+    // Directly synchronize all card rates matching this currency
     Object.keys(db.settings.rates).forEach(brand => {
-        if (db.settings.rates[brand] && db.settings.rates[brand][code] !== undefined) {
-            const oldCardRate = db.settings.rates[brand][code];
-            db.settings.rates[brand][code] = Math.round(oldCardRate * ratio);
-            
-            // Propagate matching sub-regions if USD or EUR
-            if (code === "USD") {
-                db.settings.rates[brand]["USA"] = db.settings.rates[brand]["USD"];
-                if (db.settings.rates[brand]["Canada"] !== undefined) db.settings.rates[brand]["Canada"] = Math.round(db.settings.rates[brand]["Canada"] * ratio);
-                if (db.settings.rates[brand]["Australia"] !== undefined) db.settings.rates[brand]["Australia"] = Math.round(db.settings.rates[brand]["Australia"] * ratio);
-                if (db.settings.rates[brand]["Switzerland (CHF)"] !== undefined) db.settings.rates[brand]["Switzerland (CHF)"] = Math.round(db.settings.rates[brand]["Switzerland (CHF)"] * ratio);
-                if (db.settings.rates[brand]["Japan (JPY)"] !== undefined) db.settings.rates[brand]["Japan (JPY)"] = Math.round(db.settings.rates[brand]["Japan (JPY)"] * ratio);
-                if (db.settings.rates[brand]["China (CNY)"] !== undefined) db.settings.rates[brand]["China (CNY)"] = Math.round(db.settings.rates[brand]["China (CNY)"] * ratio);
-                if (db.settings.rates[brand]["Hong Kong (HKD)"] !== undefined) db.settings.rates[brand]["Hong Kong (HKD)"] = Math.round(db.settings.rates[brand]["Hong Kong (HKD)"] * ratio);
-                if (db.settings.rates[brand]["Singapore (SGD)"] !== undefined) db.settings.rates[brand]["Singapore (SGD)"] = Math.round(db.settings.rates[brand]["Singapore (SGD)"] * ratio);
-                if (db.settings.rates[brand]["New Zealand (NZD)"] !== undefined) db.settings.rates[brand]["New Zealand (NZD)"] = Math.round(db.settings.rates[brand]["New Zealand (NZD)"] * ratio);
-                if (db.settings.rates[brand]["UAE (AED)"] !== undefined) db.settings.rates[brand]["UAE (AED)"] = Math.round(db.settings.rates[brand]["UAE (AED)"] * ratio);
-                if (db.settings.rates[brand]["Saudi Arabia (SAR)"] !== undefined) db.settings.rates[brand]["Saudi Arabia (SAR)"] = Math.round(db.settings.rates[brand]["Saudi Arabia (SAR)"] * ratio);
-                if (db.settings.rates[brand]["South Africa (ZAR)"] !== undefined) db.settings.rates[brand]["South Africa (ZAR)"] = Math.round(db.settings.rates[brand]["South Africa (ZAR)"] * ratio);
-                if (db.settings.rates[brand]["India (INR)"] !== undefined) db.settings.rates[brand]["India (INR)"] = Math.round(db.settings.rates[brand]["India (INR)"] * ratio);
-            } else if (code === "EUR") {
-                db.settings.rates[brand]["Europe (EUR)"] = db.settings.rates[brand]["EUR"];
-                if (db.settings.rates[brand]["Germany"] !== undefined) db.settings.rates[brand]["Germany"] = db.settings.rates[brand]["EUR"];
-                if (db.settings.rates[brand]["France"] !== undefined) db.settings.rates[brand]["France"] = db.settings.rates[brand]["EUR"];
-                if (db.settings.rates[brand]["Italy"] !== undefined) db.settings.rates[brand]["Italy"] = db.settings.rates[brand]["EUR"];
-                if (db.settings.rates[brand]["Spain"] !== undefined) db.settings.rates[brand]["Spain"] = db.settings.rates[brand]["EUR"];
-                if (db.settings.rates[brand]["Netherlands"] !== undefined) db.settings.rates[brand]["Netherlands"] = db.settings.rates[brand]["EUR"];
-                if (db.settings.rates[brand]["UK"] !== undefined) db.settings.rates[brand]["UK"] = Math.round(db.settings.rates[brand]["UK"] * ratio);
-            }
+        if (!db.settings.rates[brand]) db.settings.rates[brand] = {};
+        db.settings.rates[brand][code] = newRate;
+        
+        // Propagate matching sub-regions
+        if (code === "USD") {
+            db.settings.rates[brand]["USA"] = newRate;
+        } else if (code === "EUR") {
+            db.settings.rates[brand]["Europe (EUR)"] = newRate;
+            db.settings.rates[brand]["Germany"] = newRate;
+            db.settings.rates[brand]["France"] = newRate;
+            db.settings.rates[brand]["Italy"] = newRate;
+            db.settings.rates[brand]["Spain"] = newRate;
+            db.settings.rates[brand]["Netherlands"] = newRate;
+        } else if (code === "GBP") {
+            db.settings.rates[brand]["UK"] = newRate;
+        } else if (code === "CAD") {
+            db.settings.rates[brand]["Canada"] = newRate;
+        } else if (code === "AUD") {
+            db.settings.rates[brand]["Australia"] = newRate;
+        } else if (code === "CHF") {
+            db.settings.rates[brand]["Switzerland (CHF)"] = newRate;
+        } else if (code === "SGD") {
+            db.settings.rates[brand]["Singapore (SGD)"] = newRate;
+        } else if (code === "NZD") {
+            db.settings.rates[brand]["New Zealand (NZD)"] = newRate;
+        } else if (code === "AED") {
+            db.settings.rates[brand]["UAE (AED)"] = newRate;
+        } else if (code === "SAR") {
+            db.settings.rates[brand]["Saudi Arabia (SAR)"] = newRate;
+        } else if (code === "ZAR") {
+            db.settings.rates[brand]["South Africa (ZAR)"] = newRate;
+        } else if (code === "CNY") {
+            db.settings.rates[brand]["China (CNY)"] = newRate;
+        } else if (code === "HKD") {
+            db.settings.rates[brand]["Hong Kong (HKD)"] = newRate;
+        } else if (code === "JPY") {
+            db.settings.rates[brand]["Japan (JPY)"] = newRate;
+        } else if (code === "INR") {
+            db.settings.rates[brand]["India (INR)"] = newRate;
         }
     });
     
