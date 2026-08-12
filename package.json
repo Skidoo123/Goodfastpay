@@ -1,0 +1,11 @@
+{
+  "name": "goodfastpay",
+  "version": "2.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Goodfastpay Digital Gift Card & Currency Exchange Platform",
+  "scripts": {
+    "dev": "npx serve .",
+    "start": "npx serve ."
+  }
+}
