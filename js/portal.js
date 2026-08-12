@@ -873,7 +873,10 @@ function handleCardSubmit(e) {
         
         saveDB(db);
         
-        // Send local notification alerts
+        // Push asynchronously to Supabase Cloud Database
+        if (typeof supabasePushSubmission === "function") {
+            supabasePushSubmission(newSubmission);
+        }
         dispatchNotification(
             currentUser.email,
             "Gift Card Trade Submitted",
@@ -1359,7 +1362,13 @@ function executeWithdrawal(amount) {
     
     saveDB(db);
     
-    dispatchNotification(
+    // Push asynchronously to Supabase Cloud Database
+    if (typeof supabasePushWithdrawal === "function") {
+        supabasePushWithdrawal(newRequest);
+    }
+    if (typeof supabaseUpdateProfile === "function") {
+        supabaseUpdateProfile({ wallet: user.wallet });
+    }
         currentUser.email,
         "Withdrawal Request Authorized",
         `Your withdrawal of ₦${amount.toLocaleString()} to ${user.bankDetails.bankName} was securely authorized with your Transaction PIN. Pending admin payout approval.`
@@ -2553,6 +2562,11 @@ function executeSaveBank(bankData) {
     });
     saveDB(db);
     
+    // Push to Supabase Cloud Database
+    if (typeof supabasePushBankAccount === "function") {
+        supabasePushBankAccount(bankData);
+    }
+    
     dispatchNotification(
         currentUser.email,
         "Bank Coordinates Configured",
@@ -3382,6 +3396,11 @@ function handlePinSetupOrChange(e) {
 
     db.users[currentUser.email] = user;
     saveDB(db);
+
+    // Push to Supabase Cloud Database
+    if (typeof supabaseUpdateProfile === "function") {
+        supabaseUpdateProfile({ transactionPin: newPin });
+    }
 
     currentUser.transactionPin = newPin;
     pinFailedAttempts = 0;

@@ -346,3 +346,369 @@ function syncLocalUserAccount(email, metadata, passwordHash = "") {
         saveDB(db);
     }
 }
+
+// ==============================================================================
+// SUPABASE CLOUD DATABASE SYNC & REALTIME ENGINE
+// ==============================================================================
+
+/**
+ * Fetch all platform tables from Supabase Cloud Database and synchronize locally
+ */
+async function syncFromSupabaseCloud() {
+    if (!supabaseClient || !isSupabaseConfigured) {
+        console.log("ℹ️ Supabase not configured or in offline mode. Reading from local database.");
+        return false;
+    }
+
+    try {
+        console.log("🔄 Synchronizing with Supabase Cloud Database...");
+        const db = getDB();
+        let updated = false;
+
+        // 1. Fetch Currencies
+        try {
+            const { data: currenciesData, error: currErr } = await supabaseClient
+                .from('currencies')
+                .select('*');
+            if (!currErr && currenciesData && currenciesData.length > 0) {
+                currenciesData.forEach(c => {
+                    db.currencies[c.code] = {
+                        name: c.name,
+                        rate: Number(c.rate),
+                        status: c.status || 'ACTIVE'
+                    };
+                });
+                updated = true;
+            }
+        } catch (e) {
+            console.warn("Currencies sync notice:", e.message);
+        }
+
+        // 2. Fetch Brand Specific Rates
+        try {
+            const { data: ratesData, error: ratesErr } = await supabaseClient
+                .from('brand_rates')
+                .select('*');
+            if (!ratesErr && ratesData && ratesData.length > 0) {
+                if (!db.settings.rates) db.settings.rates = {};
+                ratesData.forEach(r => {
+                    if (!db.settings.rates[r.brand]) db.settings.rates[r.brand] = {};
+                    db.settings.rates[r.brand][r.currency_code] = Number(r.rate);
+                });
+                updated = true;
+            }
+        } catch (e) {
+            console.warn("Rates sync notice:", e.message);
+        }
+
+        // 3. Fetch Available Inventory
+        try {
+            const { data: invData, error: invErr } = await supabaseClient
+                .from('inventory')
+                .select('*');
+            if (!invErr && invData && invData.length > 0) {
+                db.inventory = invData.map(i => ({
+                    id: i.id,
+                    brand: i.brand,
+                    cardValue: Number(i.card_value),
+                    currency: i.currency,
+                    country: i.country || 'USA',
+                    code: i.code,
+                    price: Number(i.price),
+                    status: i.status,
+                    purchasedBy: i.purchased_by,
+                    purchasedAt: i.purchased_at,
+                    createdAt: i.created_at
+                }));
+                updated = true;
+            }
+        } catch (e) {
+            console.warn("Inventory sync notice:", e.message);
+        }
+
+        // 4. Fetch User Data if signed in
+        if (typeof currentUser !== "undefined" && currentUser && currentUser.email) {
+            try {
+                // Fetch Profile from Supabase
+                const { data: profile, error: profErr } = await supabaseClient
+                    .from('profiles')
+                    .select('*')
+                    .eq('email', currentUser.email)
+                    .maybeSingle();
+
+                if (!profErr && profile) {
+                    if (!db.users[currentUser.email]) {
+                        syncLocalUserAccount(currentUser.email, profile);
+                    }
+                    const user = db.users[currentUser.email];
+                    user.name = profile.name || user.name;
+                    user.phone = profile.phone || user.phone;
+                    user.role = profile.role || user.role;
+                    user.status = profile.status || user.status;
+                    if (profile.transaction_pin) {
+                        user.transactionPin = profile.transaction_pin;
+                    }
+                    if (profile.wallet_balance !== undefined && profile.wallet_balance !== null) {
+                        user.wallet.balance = Number(profile.wallet_balance);
+                    }
+                    if (profile.wallet_pending_balance !== undefined && profile.wallet_pending_balance !== null) {
+                        user.wallet.pendingBalance = Number(profile.wallet_pending_balance);
+                    }
+                    db.users[currentUser.email] = user;
+                    updated = true;
+                }
+
+                // Fetch Linked Bank Accounts
+                const { data: banks, error: bankErr } = await supabaseClient
+                    .from('bank_accounts')
+                    .select('*')
+                    .order('created_at', { ascending: false });
+
+                if (!bankErr && banks && banks.length > 0) {
+                    const primaryBank = banks.find(b => b.is_primary) || banks[0];
+                    if (primaryBank) {
+                        db.users[currentUser.email].bankDetails = {
+                            bankName: primaryBank.bank_name,
+                            accountNumber: primaryBank.account_number,
+                            accountHolderName: primaryBank.account_holder_name
+                        };
+                        updated = true;
+                    }
+                }
+
+                // Fetch Submissions (trades)
+                const { data: subs, error: subsErr } = await supabaseClient
+                    .from('submissions')
+                    .select('*')
+                    .order('created_at', { ascending: false });
+
+                if (!subsErr && subs) {
+                    const mappedSubs = subs.map(s => ({
+                        id: s.id,
+                        user: currentUser.email,
+                        brand: s.brand,
+                        cardValue: Number(s.card_value),
+                        currency: s.currency,
+                        code: s.card_code,
+                        frontImage: s.front_image_url,
+                        backImage: s.back_image_url,
+                        status: s.status,
+                        payout: s.payout_amount ? Number(s.payout_amount) : 0,
+                        rejectionReason: s.rejection_reason,
+                        timestamp: s.created_at
+                    }));
+                    
+                    // Merge cloud submissions
+                    mappedSubs.forEach(cloudSub => {
+                        const idx = db.submissions.findIndex(x => x.id === cloudSub.id);
+                        if (idx >= 0) db.submissions[idx] = cloudSub;
+                        else db.submissions.unshift(cloudSub);
+                    });
+                    updated = true;
+                }
+
+                // Fetch Withdrawals
+                const { data: wds, error: wdErr } = await supabaseClient
+                    .from('withdrawals')
+                    .select('*')
+                    .order('created_at', { ascending: false });
+
+                if (!wdErr && wds) {
+                    const mappedWds = wds.map(w => ({
+                        id: w.id,
+                        user: currentUser.email,
+                        amount: Number(w.amount),
+                        fee: Number(w.fee || 50),
+                        netPayout: Number(w.net_payout),
+                        bankName: w.bank_name,
+                        accountNumber: w.account_number,
+                        accountHolder: w.account_holder_name,
+                        status: w.status,
+                        declineReason: w.decline_reason,
+                        timestamp: w.created_at
+                    }));
+
+                    mappedWds.forEach(cloudWd => {
+                        const idx = db.withdrawals.findIndex(x => x.id === cloudWd.id);
+                        if (idx >= 0) db.withdrawals[idx] = cloudWd;
+                        else db.withdrawals.unshift(cloudWd);
+                    });
+                    updated = true;
+                }
+
+                // Fetch Notifications
+                const { data: notifs, error: notifErr } = await supabaseClient
+                    .from('notifications')
+                    .select('*')
+                    .order('created_at', { ascending: false });
+
+                if (!notifErr && notifs) {
+                    db.users[currentUser.email].notifications = notifs.map(n => ({
+                        id: n.id,
+                        title: n.title,
+                        message: n.message,
+                        read: n.read,
+                        createdAt: n.created_at
+                    }));
+                    updated = true;
+                }
+
+                // Fetch Support Tickets
+                const { data: ticketsData, error: tktErr } = await supabaseClient
+                    .from('tickets')
+                    .select('*, ticket_messages(*)')
+                    .order('created_at', { ascending: false });
+
+                if (!tktErr && ticketsData) {
+                    db.tickets = ticketsData.map(t => ({
+                        id: t.id,
+                        userId: currentUser.email,
+                        title: t.title,
+                        category: t.category,
+                        priority: t.priority,
+                        status: t.status,
+                        createdAt: t.created_at,
+                        updatedAt: t.updated_at,
+                        description: t.description,
+                        attachments: t.attachments || [],
+                        assignedTo: t.assigned_to,
+                        messages: (t.ticket_messages || []).map(m => ({
+                            sender: m.sender_role,
+                            senderEmail: m.sender_email,
+                            text: m.message,
+                            timestamp: m.created_at
+                        })),
+                        userUnread: t.user_unread,
+                        adminUnread: t.admin_unread
+                    }));
+                    updated = true;
+                }
+
+            } catch (userErr) {
+                console.warn("User data sync notice:", userErr.message);
+            }
+        }
+
+        if (updated) {
+            saveDB(db);
+            console.log("✅ Supabase Cloud Database synced successfully with local state.");
+            if (typeof loadSession === "function") loadSession();
+            if (typeof renderAllAdminViews === "function") renderAllAdminViews();
+        }
+        return true;
+    } catch (err) {
+        console.error("Cloud database sync error:", err);
+        return false;
+    }
+}
+
+/**
+ * Push a new trade submission to Supabase Cloud Database
+ */
+async function supabasePushSubmission(sub) {
+    if (!supabaseClient || !isSupabaseConfigured) return;
+    try {
+        const { data: sessionData } = await supabaseClient.auth.getSession();
+        const userId = sessionData?.session?.user?.id;
+        if (!userId) return;
+
+        await supabaseClient.from('submissions').insert([{
+            id: sub.id,
+            user_id: userId,
+            brand: sub.brand,
+            card_value: sub.cardValue,
+            currency: sub.currency,
+            card_code: sub.code,
+            front_image_url: sub.frontImage || null,
+            back_image_url: sub.backImage || null,
+            status: sub.status || 'PENDING',
+            payout_amount: sub.payout || 0
+        }]);
+    } catch (e) {
+        console.warn("Could not push submission to Supabase:", e.message);
+    }
+}
+
+/**
+ * Push a new cash withdrawal request to Supabase Cloud Database
+ */
+async function supabasePushWithdrawal(wd) {
+    if (!supabaseClient || !isSupabaseConfigured) return;
+    try {
+        const { data: sessionData } = await supabaseClient.auth.getSession();
+        const userId = sessionData?.session?.user?.id;
+        if (!userId) return;
+
+        await supabaseClient.from('withdrawals').insert([{
+            id: wd.id,
+            user_id: userId,
+            amount: wd.amount,
+            fee: wd.fee || 50,
+            net_payout: wd.netPayout,
+            bank_name: wd.bankName,
+            account_number: wd.accountNumber,
+            account_holder_name: wd.accountHolder,
+            status: wd.status || 'PENDING'
+        }]);
+    } catch (e) {
+        console.warn("Could not push withdrawal to Supabase:", e.message);
+    }
+}
+
+/**
+ * Push linked bank account to Supabase Cloud Database
+ */
+async function supabasePushBankAccount(bankData) {
+    if (!supabaseClient || !isSupabaseConfigured) return;
+    try {
+        const { data: sessionData } = await supabaseClient.auth.getSession();
+        const userId = sessionData?.session?.user?.id;
+        if (!userId) return;
+
+        // Upsert primary bank account
+        await supabaseClient.from('bank_accounts').insert([{
+            user_id: userId,
+            bank_name: bankData.bankName,
+            account_number: bankData.accountNumber,
+            account_holder_name: bankData.accountHolderName,
+            is_primary: true
+        }]);
+    } catch (e) {
+        console.warn("Could not push bank to Supabase:", e.message);
+    }
+}
+
+/**
+ * Update user profile (Name, Phone, Transaction PIN) in Supabase Cloud
+ */
+async function supabaseUpdateProfile(updates) {
+    if (!supabaseClient || !isSupabaseConfigured) return;
+    try {
+        const { data: sessionData } = await supabaseClient.auth.getSession();
+        const userId = sessionData?.session?.user?.id;
+        if (!userId) return;
+
+        const payload = {};
+        if (updates.name !== undefined) payload.name = updates.name;
+        if (updates.phone !== undefined) payload.phone = updates.phone;
+        if (updates.transactionPin !== undefined) payload.transaction_pin = updates.transactionPin;
+        if (updates.wallet !== undefined && updates.wallet.balance !== undefined) {
+            payload.wallet_balance = updates.wallet.balance;
+        }
+
+        await supabaseClient
+            .from('profiles')
+            .update(payload)
+            .eq('id', userId);
+    } catch (e) {
+        console.warn("Could not update profile in Supabase:", e.message);
+    }
+}
+
+// Auto-trigger cloud sync on portal/admin load
+if (typeof window !== "undefined") {
+    window.addEventListener("load", () => {
+        setTimeout(syncFromSupabaseCloud, 800);
+    });
+}
+
