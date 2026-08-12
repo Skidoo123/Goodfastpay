@@ -230,7 +230,7 @@
 </head>
 <body class="bg-background text-on-surface font-body min-h-screen flex flex-col antialiased">
     <!-- TopNavBar -->
-    <nav class="fixed top-0 w-full z-50 bg-surface/60 backdrop-blur-xl border-b border-outline-variant/20">
+    <nav class="fixed top-0 w-full z-50 bg-surface/80 backdrop-blur-xl border-b border-outline-variant/20">
         <div class="flex justify-between items-center h-20 px-container-margin max-w-7xl mx-auto">
             <div class="flex items-center gap-3">
                 <a href="index.html" class="flex items-center gap-2">
@@ -244,34 +244,49 @@
                 <a class="text-on-surface-variant font-medium hover:text-primary transition-colors" href="#security">Security</a>
                 <a class="text-on-surface-variant font-medium hover:text-primary transition-colors" href="#stats">Performance</a>
             </div>
-            <div class="flex items-center gap-4">
-                <div id="unauth-actions" class="flex items-center gap-3">
-                    <button onclick="openAuthModal('login')" class="text-on-surface-variant hover:text-primary transition-colors font-medium px-3 py-1.5">Sign In</button>
-                    <button onclick="openAuthModal('register')" class="bg-gradient-to-r from-primary-container to-secondary-container text-on-primary px-4 py-2 rounded-lg font-medium hover:opacity-90 transition-opacity glow-accent">Get Started</button>
+            <div class="flex items-center gap-3">
+                <div id="unauth-actions" class="hidden sm:flex items-center gap-3">
+                    <button onclick="openAuthModal('login')" class="text-on-surface-variant hover:text-primary transition-colors font-medium px-3 py-1.5 cursor-pointer">Sign In</button>
+                    <button onclick="openAuthModal('register')" class="bg-gradient-to-r from-primary-container to-secondary-container text-on-primary px-4 py-2 rounded-lg font-medium hover:opacity-90 transition-opacity glow-accent cursor-pointer">Get Started</button>
                 </div>
                 <div id="auth-actions" style="display: none;" class="flex items-center gap-3">
                     <a href="portal.html" class="bg-gradient-to-r from-primary-container to-secondary-container text-on-primary px-4 py-2 rounded-lg font-medium hover:opacity-90 transition-opacity glow-accent flex items-center gap-2">
                         <i class="fas fa-wallet"></i> My Portal
                     </a>
                 </div>
+                <!-- Mobile Hamburger Toggle -->
+                <button class="md:hidden text-on-surface p-2.5 rounded-lg bg-surface-container hover:bg-surface-container-high transition-colors cursor-pointer" onclick="toggleLandingMobileNav()" aria-label="Toggle Navigation">
+                    <i class="fas fa-bars text-lg" id="landing-menu-icon"></i>
+                </button>
+            </div>
+        </div>
+        <!-- Mobile Dropdown Navigation -->
+        <div id="landing-mobile-menu" class="hidden md:hidden bg-surface/95 backdrop-blur-2xl border-b border-outline-variant/20 px-6 py-5 space-y-4">
+            <a class="block text-primary font-bold text-base py-1" href="#product" onclick="toggleLandingMobileNav()">Product</a>
+            <a class="block text-on-surface-variant font-medium hover:text-primary transition-colors text-base py-1" href="#solutions" onclick="toggleLandingMobileNav()">Solutions</a>
+            <a class="block text-on-surface-variant font-medium hover:text-primary transition-colors text-base py-1" href="#security" onclick="toggleLandingMobileNav()">Security</a>
+            <a class="block text-on-surface-variant font-medium hover:text-primary transition-colors text-base py-1" href="#stats" onclick="toggleLandingMobileNav()">Performance</a>
+            <div class="pt-3 border-t border-outline-variant/20 flex flex-col gap-2.5">
+                <button onclick="toggleLandingMobileNav(); openAuthModal('login')" class="w-full text-center py-2.5 rounded-lg border border-outline-variant/30 text-on-surface font-semibold cursor-pointer">Sign In</button>
+                <button onclick="toggleLandingMobileNav(); openAuthModal('register')" class="w-full text-center py-2.5 rounded-lg bg-gradient-to-r from-primary-container to-secondary-container text-on-primary font-bold cursor-pointer glow-accent">Create Free Account</button>
             </div>
         </div>
     </nav>
 
     <main class="flex-grow">
         <!-- Hero Section -->
-        <section class="relative min-h-screen flex items-center pt-20 overflow-hidden" id="product">
+        <section class="relative min-h-screen flex items-center pt-24 overflow-hidden" id="product">
             <!-- Background Shader -->
             <div class="absolute inset-0 w-full h-full -z-10">
                 <canvas id="shader-canvas" class="w-full h-full"></canvas>
             </div>
-            <div class="max-w-7xl mx-auto px-container-margin w-full grid md:grid-cols-2 gap-stack-lg items-center relative z-10 py-16">
-                <div class="space-y-stack-md">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full grid md:grid-cols-2 gap-8 md:gap-stack-lg items-center relative z-10 py-12 md:py-16">
+                <div class="space-y-4 sm:space-y-stack-md">
                     <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-mono tracking-wide">
                         <span class="w-2 h-2 rounded-full bg-tertiary animate-pulse"></span>
                         QUANTUM-VAULT PROTOCOL ACTIVE
                     </div>
-                    <h1 class="text-5xl md:text-7xl font-bold text-on-surface leading-tight">
+                    <h1 class="text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-bold text-on-surface leading-tight tracking-tight">
                         The Speed of Light.<br/>
                         <span class="gradient-text">The Security of Code.</span>
                     </h1>
@@ -921,6 +936,20 @@
                     window.location.href = "portal.html";
                 }
             }, 1000);
+        }
+
+        function toggleLandingMobileNav() {
+            const menu = document.getElementById("landing-mobile-menu");
+            const icon = document.getElementById("landing-menu-icon");
+            if (!menu) return;
+            menu.classList.toggle("hidden");
+            if (icon) {
+                if (menu.classList.contains("hidden")) {
+                    icon.className = "fas fa-bars text-lg";
+                } else {
+                    icon.className = "fas fa-xmark text-lg";
+                }
+            }
         }
 
         function resendOtp() {
