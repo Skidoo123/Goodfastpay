@@ -731,6 +731,32 @@ async function supabaseUpdateProfile(updates) {
     }
 }
 
+/**
+ * Push user Gift Card Purchase to Supabase Cloud
+ */
+async function supabasePushPurchase(cardId, userEmail, newBalance) {
+    if (!supabaseClient || !isSupabaseConfigured) return;
+    try {
+        await supabaseClient
+            .from('inventory')
+            .update({
+                status: 'SOLD',
+                purchased_by: userEmail,
+                purchased_at: new Date().toISOString()
+            })
+            .eq('id', cardId);
+        
+        await supabaseClient
+            .from('profiles')
+            .update({ wallet_balance: newBalance })
+            .eq('email', userEmail);
+            
+        console.log("⚡ Supabase Gift Card purchase synchronized:", cardId);
+    } catch (e) {
+        console.warn("Could not sync purchase to Supabase:", e.message);
+    }
+}
+
 // -------------------------------------------------------------
 // SUPABASE ADMIN CLOUD OPERATIONS
 // -------------------------------------------------------------

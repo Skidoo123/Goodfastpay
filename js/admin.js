@@ -674,6 +674,10 @@ function handleManualWalletAdjust(e) {
         db.users[email] = user;
         saveDB(db);
         
+        if (typeof supabaseAdminUpdateUserBalance === "function") {
+            supabaseAdminUpdateUserBalance(email, user.wallet.balance);
+        }
+        
         writeAuditLog(
             currentAdmin.email,
             "Wallet Manually Credited",
@@ -703,6 +707,10 @@ function handleManualWalletAdjust(e) {
         
         db.users[email] = user;
         saveDB(db);
+        
+        if (typeof supabaseAdminUpdateUserBalance === "function") {
+            supabaseAdminUpdateUserBalance(email, user.wallet.balance);
+        }
         
         writeAuditLog(
             currentAdmin.email,

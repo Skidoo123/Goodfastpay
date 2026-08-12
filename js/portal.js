@@ -1369,6 +1369,7 @@ function executeWithdrawal(amount) {
     if (typeof supabaseUpdateProfile === "function") {
         supabaseUpdateProfile({ wallet: user.wallet });
     }
+    dispatchNotification(
         currentUser.email,
         "Withdrawal Request Authorized",
         `Your withdrawal of ₦${amount.toLocaleString()} to ${user.bankDetails.bankName} was securely authorized with your Transaction PIN. Pending admin payout approval.`
@@ -1390,8 +1391,8 @@ function handleWithdrawalSubmit(e) {
     
     const amount = parseFloat(document.getElementById("withdraw-amount").value);
     
-    if (isNaN(amount) || amount < 1000) {
-        showToast("Minimum withdrawal limit is ₦1,000.00.", "danger");
+    if (isNaN(amount) || amount < 500) {
+        showToast("Minimum withdrawal limit is ₦500.00.", "danger");
         return;
     }
     
@@ -3042,6 +3043,11 @@ function executeCardPurchase(cardId) {
     
     saveDB(db);
     
+    // Push purchase to Supabase Cloud Database
+    if (typeof supabasePushPurchase === "function") {
+        supabasePushPurchase(card.id, user.email, user.wallet.balance);
+    }
+    
     // Dispatch notifications
     dispatchNotification(
         user.email,
@@ -3803,41 +3809,46 @@ let verificationTimeout = null;
 
 function handleBankAccountInput() {
     const numInput = document.getElementById("bank-account-number");
-    const bankInput = document.getElementById("bank-name");
+    const bankInput = document.getElementById("modal-bank-name") || document.getElementById("bank-name");
     const holderInput = document.getElementById("bank-account-holder");
     const statusContainer = document.getElementById("account-verification-status");
     const saveBtn = document.getElementById("save-bank-btn");
     
-    if (!numInput || !bankInput || !holderInput || !statusContainer) return;
+    if (!numInput || !bankInput || !holderInput) return;
     
     // Clean non-digits
     numInput.value = numInput.value.replace(/[^0-9]/g, '');
     
     // If not exactly 10 digits or no bank selected, reset verification status
     if (numInput.value.length < 10 || !bankInput.value) {
-        holderInput.value = "";
-        holderInput.placeholder = "Awaiting account details...";
-        statusContainer.innerHTML = "";
-        if (saveBtn) saveBtn.disabled = true;
+        if (holderInput && !holderInput.value) {
+            holderInput.placeholder = "Awaiting account details...";
+        }
+        if (statusContainer) statusContainer.innerHTML = "";
         return;
     }
     
     // Debounce and trigger simulated resolver
     if (verificationTimeout) clearTimeout(verificationTimeout);
     
-    statusContainer.innerHTML = `<span style="font-size:0.7rem; color:var(--primary); font-weight:700; display:flex; align-items:center; gap:4px;"><i class="fas fa-circle-notch fa-spin"></i> Verifying...</span>`;
-    holderInput.value = "Resolving account name...";
-    if (saveBtn) saveBtn.disabled = true;
+    if (statusContainer) {
+        statusContainer.innerHTML = `<span style="font-size:0.7rem; color:var(--primary); font-weight:700; display:flex; align-items:center; gap:4px;"><i class="fas fa-circle-notch fa-spin"></i> Verifying...</span>`;
+    }
     
     verificationTimeout = setTimeout(() => {
-        // Resolve a mock verified name
-        const mockName = (currentUser.name || "Abdallah").toUpperCase() + " " + bankInput.value.split(" ")[0].toUpperCase();
-        holderInput.value = mockName;
+        // Resolve verified name if not manually entered
+        if (!holderInput.value || holderInput.value.includes("Resolving") || holderInput.value.includes("Awaiting")) {
+            const userName = currentUser ? (currentUser.name || "Customer") : "Customer";
+            const mockName = userName.toUpperCase() + " " + (bankInput.value.split(" ")[0] || "BANK").toUpperCase();
+            holderInput.value = mockName;
+        }
         
-        statusContainer.innerHTML = `<span style="font-size:0.68rem; font-weight:800; display:inline-flex; align-items:center; gap:4px; color:#10b981;"><i class="fas fa-circle-check"></i> ✓ Verified</span>`;
+        if (statusContainer) {
+            statusContainer.innerHTML = `<span style="font-size:0.68rem; font-weight:800; display:inline-flex; align-items:center; gap:4px; color:#10b981;"><i class="fas fa-circle-check"></i> ✓ Verified</span>`;
+        }
         if (saveBtn) saveBtn.disabled = false;
         showToast("Bank account verified successfully!", "success");
-    }, 750);
+    }, 400);
 }
 
 function filterBanks(query) {
