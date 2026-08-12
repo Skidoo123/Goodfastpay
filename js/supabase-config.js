@@ -399,6 +399,16 @@ function setupSupabaseRealtimeSubscriptions() {
                 console.log('⚡ Realtime Inventory Update:', payload);
                 handleRealtimeInventoryChange(payload);
             })
+            // Listen for Security Logs (logins from other devices, password changes, etc.)
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'security_logs' }, payload => {
+                console.log('⚡ Realtime Security Log:', payload);
+                handleRealtimeSecurityLogChange(payload);
+            })
+            // Listen for Audit Trail
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'audit_trail' }, payload => {
+                console.log('⚡ Realtime Audit Trail:', payload);
+                handleRealtimeAuditTrailChange(payload);
+            })
             // Listen for Currencies & Rates
             .on('postgres_changes', { event: '*', schema: 'public', table: 'currencies' }, () => {
                 syncFromSupabaseCloud();
@@ -412,6 +422,55 @@ function setupSupabaseRealtimeSubscriptions() {
     } catch (e) {
         console.warn("Realtime setup notice:", e.message);
     }
+}
+
+function handleRealtimeSecurityLogChange(payload) {
+    const log = payload.new;
+    if (!log) return;
+
+    const db = getDB();
+    const email = log.user_email;
+    if (email && db.users[email]) {
+        if (!db.users[email].logs) db.users[email].logs = [];
+        const exists = db.users[email].logs.some(l => l.id === log.id || (l.timestamp === log.created_at && l.event === log.event));
+        if (!exists) {
+            db.users[email].logs.unshift({
+                id: log.id,
+                event: log.event,
+                ip: log.ip_address || '127.0.0.1',
+                userAgent: log.user_agent,
+                timestamp: log.created_at
+            });
+            saveDB(db);
+        }
+    }
+
+    if (typeof loadAdminSession === "function") loadAdminSession();
+    if (typeof inspectUserProfile === "function" && typeof activeUserInspectEmail !== "undefined" && activeUserInspectEmail === email) {
+        inspectUserProfile(email);
+    }
+}
+
+function handleRealtimeAuditTrailChange(payload) {
+    const log = payload.new;
+    if (!log) return;
+
+    const db = getDB();
+    if (!db.auditTrail) db.auditTrail = [];
+    const exists = db.auditTrail.some(l => l.id === log.id || (l.timestamp === log.created_at && l.event === log.event));
+    if (!exists) {
+        db.auditTrail.unshift({
+            id: log.id,
+            operator: log.operator_email,
+            event: log.event,
+            details: log.details,
+            timestamp: log.created_at
+        });
+        saveDB(db);
+    }
+
+    if (typeof renderAdminAuditLogs === "function") renderAdminAuditLogs();
+    if (typeof loadAdminSession === "function") loadAdminSession();
 }
 
 function handleRealtimeProfileChange(payload) {
@@ -779,6 +838,59 @@ async function syncFromSupabaseCloud() {
             console.warn("Notifications sync notice:", e.message);
         }
 
+        // 9. Fetch Audit Trail from Supabase Cloud
+        try {
+            const { data: auditLogs, error: auditErr } = await supabaseClient
+                .from('audit_trail')
+                .select('*')
+                .order('created_at', { ascending: false })
+                .limit(50);
+
+            if (!auditErr && auditLogs && auditLogs.length > 0) {
+                db.auditTrail = auditLogs.map(l => ({
+                    id: l.id,
+                    operator: l.operator_email,
+                    event: l.event,
+                    details: l.details,
+                    timestamp: l.created_at
+                }));
+                updated = true;
+            }
+        } catch (e) {
+            console.warn("Audit trail sync notice:", e.message);
+        }
+
+        // 10. Fetch Security Logs from Supabase Cloud
+        try {
+            const { data: secLogs, error: secErr } = await supabaseClient
+                .from('security_logs')
+                .select('*')
+                .order('created_at', { ascending: false })
+                .limit(100);
+
+            if (!secErr && secLogs && secLogs.length > 0) {
+                secLogs.forEach(l => {
+                    const email = l.user_email || profileIdToEmail[l.user_id];
+                    if (email && db.users[email]) {
+                        if (!db.users[email].logs) db.users[email].logs = [];
+                        const exists = db.users[email].logs.some(x => x.id === l.id || (x.timestamp === l.created_at && x.event === l.event));
+                        if (!exists) {
+                            db.users[email].logs.unshift({
+                                id: l.id,
+                                event: l.event,
+                                ip: l.ip_address || '127.0.0.1',
+                                userAgent: l.user_agent,
+                                timestamp: l.created_at
+                            });
+                        }
+                    }
+                });
+                updated = true;
+            }
+        } catch (e) {
+            console.warn("Security logs sync notice:", e.message);
+        }
+
         if (updated) {
             saveDB(db);
             console.log("✅ Supabase Cloud Database synced successfully.");
@@ -971,6 +1083,22 @@ async function supabasePushPurchase(cardId, userEmail, newBalance) {
             console.warn("Could not sync purchase directly to Supabase:", e.message);
         }
     }
+}
+
+/**
+ * Push user security log (login, password update, etc.) to Supabase Cloud
+ */
+async function supabasePushSecurityLog(userEmail, event, ip, userAgent, details) {
+    const email = userEmail || (typeof currentUser !== "undefined" && currentUser ? currentUser.email : "user@goodfastpay.com");
+    await callClientApi('log_security_event', { event, ip, userAgent, details }, email);
+}
+
+/**
+ * Push audit log to Supabase Cloud
+ */
+async function supabasePushAuditLog(operatorEmail, event, details) {
+    const email = operatorEmail || "admin@goodfastpay.com";
+    await callClientApi('log_security_event', { event, details }, email);
 }
 
 // -------------------------------------------------------------

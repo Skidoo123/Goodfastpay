@@ -920,13 +920,25 @@
             
             setSessionUser(email);
             
+            const platform = detectDevicePlatform();
+            const loginEvent = `Successful Login from ${platform}`;
+            
             const updatedDb = getDB();
-            updatedDb.users[email].logs.unshift({
-                event: "Successful Login (OTP Checked)",
-                timestamp: new Date().toISOString(),
-                ip: "197.34.120.44"
-            });
-            saveDB(updatedDb);
+            if (updatedDb.users[email]) {
+                if (!updatedDb.users[email].logs) updatedDb.users[email].logs = [];
+                updatedDb.users[email].logs.unshift({
+                    event: loginEvent,
+                    timestamp: new Date().toISOString(),
+                    ip: "client_ip",
+                    userAgent: navigator.userAgent
+                });
+                saveDB(updatedDb);
+            }
+
+            // Push to Supabase Cloud Security Logs & Audit Trail (Visible on Admin page in real time)
+            if (typeof supabasePushSecurityLog === "function") {
+                supabasePushSecurityLog(email, loginEvent, "client_ip", navigator.userAgent, `Logged in via ${platform}`);
+            }
             
             setTimeout(() => {
                 const checkUser = getSessionUser();
@@ -936,6 +948,18 @@
                     window.location.href = "portal.html";
                 }
             }, 1000);
+        }
+
+        function detectDevicePlatform() {
+            const ua = navigator.userAgent;
+            let dev = "Desktop Web Browser";
+            if (/iPhone/i.test(ua)) dev = "Apple iPhone (iOS)";
+            else if (/iPad/i.test(ua)) dev = "Apple iPad (iPadOS)";
+            else if (/Android/i.test(ua)) dev = "Android Mobile Device";
+            else if (/Macintosh/i.test(ua)) dev = "Mac Desktop/Laptop";
+            else if (/Windows/i.test(ua)) dev = "Windows PC";
+            else if (/Linux/i.test(ua)) dev = "Linux Workstation";
+            return dev;
         }
 
         function toggleLandingMobileNav() {

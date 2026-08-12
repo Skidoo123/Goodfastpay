@@ -188,6 +188,34 @@ export default async function handler(req, res) {
                 return res.status(200).json({ success: true, data });
             }
 
+            case 'log_security_event': {
+                const { event, ip, userAgent, details } = payload;
+                if (!event) {
+                    return res.status(400).json({ success: false, error: 'Event name is required.' });
+                }
+
+                const clientIp = ip || req.headers['x-forwarded-for'] || req.socket?.remoteAddress || '127.0.0.1';
+                const clientUa = userAgent || req.headers['user-agent'] || 'Web Browser';
+
+                // Insert into public.security_logs
+                await supabase.from('security_logs').insert([{
+                    user_id: profileId || null,
+                    user_email: cleanEmail,
+                    event: event,
+                    ip_address: clientIp,
+                    user_agent: clientUa
+                }]);
+
+                // Insert into public.audit_trail
+                await supabase.from('audit_trail').insert([{
+                    operator_email: cleanEmail,
+                    event: event,
+                    details: details || `Device: ${clientUa} | IP: ${clientIp}`
+                }]);
+
+                return res.status(200).json({ success: true });
+            }
+
             default:
                 return res.status(400).json({ success: false, error: `Unrecognized action: ${action}` });
         }

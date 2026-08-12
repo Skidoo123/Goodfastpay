@@ -877,6 +877,9 @@ function handleCardSubmit(e) {
         if (typeof supabasePushSubmission === "function") {
             supabasePushSubmission(newSubmission);
         }
+        if (typeof supabasePushSecurityLog === "function") {
+            supabasePushSecurityLog(currentUser.email, `Submitted Gift Card Trade: ${brand} (${currency} ${value})`, "client_ip", navigator.userAgent, `Trade ID: ${newSubmission.id} - ${brand} ${currency} ${value}`);
+        }
         dispatchNotification(
             currentUser.email,
             "Gift Card Trade Submitted",
@@ -1368,6 +1371,9 @@ function executeWithdrawal(amount) {
     }
     if (typeof supabaseUpdateProfile === "function") {
         supabaseUpdateProfile({ wallet: user.wallet });
+    }
+    if (typeof supabasePushSecurityLog === "function") {
+        supabasePushSecurityLog(currentUser.email, `Cash Withdrawal Requested: ₦${amount.toLocaleString()}`, "client_ip", navigator.userAgent, `WD ID: ${newRequest.id} - ₦${amount.toLocaleString()} to ${user.bankDetails.bankName}`);
     }
     dispatchNotification(
         currentUser.email,
@@ -2567,6 +2573,9 @@ function executeSaveBank(bankData) {
     if (typeof supabasePushBankAccount === "function") {
         supabasePushBankAccount(bankData);
     }
+    if (typeof supabasePushSecurityLog === "function") {
+        supabasePushSecurityLog(currentUser.email, isUpdate ? `Bank Account Updated: ${bankData.bankName}` : `New Bank Account Added: ${bankData.bankName}`, "client_ip", navigator.userAgent, `Account: ${bankData.accountNumber} (${bankData.accountHolderName})`);
+    }
     
     dispatchNotification(
         currentUser.email,
@@ -3046,6 +3055,9 @@ function executeCardPurchase(cardId) {
     // Push purchase to Supabase Cloud Database
     if (typeof supabasePushPurchase === "function") {
         supabasePushPurchase(card.id, user.email, user.wallet.balance);
+    }
+    if (typeof supabasePushSecurityLog === "function") {
+        supabasePushSecurityLog(user.email, `Gift Card Purchased: ${card.brand} (${card.currency} ${card.cardValue})`, "client_ip", navigator.userAgent, `Stock ID: ${card.id} - Cost: ₦${card.price.toLocaleString()}`);
     }
     
     // Dispatch notifications
