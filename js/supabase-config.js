@@ -77,7 +77,12 @@ if (typeof window !== "undefined") {
                     const user = data.session.user;
                     const email = user.email;
                     const meta = user.user_metadata || {};
+                    await supabaseEnsureProfileExists(email, {
+                        name: meta.full_name || meta.name || user.email.split("@")[0],
+                        phone: meta.phone || ""
+                    });
                     syncLocalUserAccount(email, {
+                        id: user.id,
                         name: meta.full_name || meta.name || user.email.split("@")[0],
                         phone: meta.phone || ""
                     });
@@ -92,11 +97,16 @@ if (typeof window !== "undefined") {
                 }
 
                 // Subscribe to auth state changes
-                supabaseClient.auth.onAuthStateChange((event, session) => {
+                supabaseClient.auth.onAuthStateChange(async (event, session) => {
                     if (event === 'SIGNED_IN' && session && session.user) {
                         const email = session.user.email;
                         const meta = session.user.user_metadata || {};
+                        await supabaseEnsureProfileExists(email, {
+                            name: meta.full_name || meta.name || email.split("@")[0],
+                            phone: meta.phone || ""
+                        });
                         syncLocalUserAccount(email, {
+                            id: session.user.id,
                             name: meta.full_name || meta.name || email.split("@")[0],
                             phone: meta.phone || ""
                         });
@@ -212,11 +222,17 @@ async function supabaseAuthSignUp(email, password, metadata = {}) {
                 return { success: true, user: null, isFallback: true };
             }
 
-            // Sync user locally
-            syncLocalUserAccount(cleanEmail, metadata, password);
+            // Sync user locally & ensure profile exists in Supabase
+            await supabaseEnsureProfileExists(cleanEmail, metadata);
+            syncLocalUserAccount(cleanEmail, {
+                id: data.user ? data.user.id : null,
+                name: metadata.name || "",
+                phone: metadata.phone || ""
+            }, password);
             return { success: true, user: data.user, session: data.session };
         } catch (e) {
             console.warn("Supabase network fallback:", e.message);
+            await supabaseEnsureProfileExists(cleanEmail, metadata);
             syncLocalUserAccount(cleanEmail, metadata, password);
             return { success: true, isFallback: true };
         }
@@ -259,9 +275,14 @@ async function supabaseAuthSignIn(email, password) {
             setSessionUser(cleanEmail);
 
             const db = getDB();
+            const metadata = data.user?.user_metadata || {};
+            await supabaseEnsureProfileExists(cleanEmail, {
+                name: metadata.full_name || cleanEmail.split("@")[0],
+                phone: metadata.phone || ""
+            });
             if (!db.users[cleanEmail] && data.user) {
-                const metadata = data.user.user_metadata || {};
                 syncLocalUserAccount(cleanEmail, {
+                    id: data.user.id,
                     name: metadata.full_name || cleanEmail.split("@")[0],
                     phone: metadata.phone || ""
                 }, password);
@@ -339,6 +360,7 @@ function syncLocalUserAccount(email, metadata = {}, password = "password123") {
     if (!db.users) db.users = {};
     if (!db.users[email]) {
         db.users[email] = {
+            id: metadata.id || null,
             name: metadata.name || metadata.full_name || email.split("@")[0],
             email: email,
             passwordHash: password,
@@ -359,6 +381,66 @@ function syncLocalUserAccount(email, metadata = {}, password = "password123") {
             ]
         };
         saveDB(db);
+    } else if (metadata.id) {
+        db.users[email].id = metadata.id;
+        saveDB(db);
+    }
+}
+
+/**
+ * Ensure user profile exists in public.profiles table in Supabase Cloud
+ */
+async function supabaseEnsureProfileExists(email, metadata = {}) {
+    if (!supabaseClient || !isSupabaseConfigured) return;
+    try {
+        const { data: existing, error: getErr } = await supabaseClient
+            .from('profiles')
+            .select('id, email')
+            .eq('email', email)
+            .maybeSingle();
+
+        if (getErr) {
+            console.warn("Error checking profile existence in Supabase:", getErr.message);
+            return;
+        }
+
+        if (!existing) {
+            const name = metadata.name || metadata.full_name || email.split("@")[0];
+            const phone = metadata.phone || "";
+            const role = email === "admin@goodfastpay.com" ? "ADMIN" : "USER";
+            
+            const { data: inserted, error: insertErr } = await supabaseClient
+                .from('profiles')
+                .insert([{
+                    email: email,
+                    name: name,
+                    phone: phone,
+                    role: role,
+                    status: 'ACTIVE',
+                    wallet_balance: 0.00,
+                    wallet_pending_balance: 0.00
+                }])
+                .select();
+            
+            if (insertErr) {
+                console.warn("Could not insert new profile directly to Supabase:", insertErr.message);
+            } else if (inserted && inserted[0]) {
+                console.log("⚡ Created profile in Supabase public.profiles for:", email);
+                const db = getDB();
+                if (db.users[email]) {
+                    db.users[email].id = inserted[0].id;
+                    saveDB(db);
+                }
+            }
+        } else {
+            const db = getDB();
+            if (db.users[email] && !db.users[email].id) {
+                db.users[email].id = existing.id;
+                saveDB(db);
+            }
+        }
+    } catch (err) {
+        console.warn("supabaseEnsureProfileExists exception:", err.message);
     }
 }
 
@@ -891,6 +973,56 @@ async function syncFromSupabaseCloud() {
             console.warn("Security logs sync notice:", e.message);
         }
 
+        // 11. Fetch Support Tickets & Messages from Supabase Cloud
+        try {
+            const { data: cloudTickets, error: tktErr } = await supabaseClient
+                .from('tickets')
+                .select('*')
+                .order('updated_at', { ascending: false });
+
+            if (!tktErr && cloudTickets) {
+                const { data: cloudMessages, error: msgErr } = await supabaseClient
+                    .from('ticket_messages')
+                    .select('*')
+                    .order('created_at', { ascending: true });
+
+                if (!msgErr && cloudMessages) {
+                    const ticketMessagesMap = {};
+                    cloudMessages.forEach(msg => {
+                        if (!ticketMessagesMap[msg.ticket_id]) {
+                            ticketMessagesMap[msg.ticket_id] = [];
+                        }
+                        ticketMessagesMap[msg.ticket_id].push({
+                            sender: msg.sender_role,
+                            senderEmail: msg.sender_email,
+                            text: msg.message,
+                            timestamp: msg.created_at
+                        });
+                    });
+
+                    db.tickets = cloudTickets.map(t => ({
+                        id: t.id,
+                        userId: t.user_email || profileIdToEmail[t.user_id] || (sessionUser ? sessionUser.email : 'user@goodfastpay.com'),
+                        title: t.title,
+                        category: t.category,
+                        priority: t.priority,
+                        status: t.status,
+                        description: t.description,
+                        attachments: t.attachments || [],
+                        assignedTo: t.assigned_to || 'Support Team',
+                        userUnread: t.user_unread,
+                        adminUnread: t.admin_unread,
+                        createdAt: t.created_at,
+                        updatedAt: t.updated_at,
+                        messages: ticketMessagesMap[t.id] || []
+                    }));
+                    updated = true;
+                }
+            }
+        } catch (e) {
+            console.warn("Tickets sync notice:", e.message);
+        }
+
         if (updated) {
             saveDB(db);
             console.log("✅ Supabase Cloud Database synced successfully.");
@@ -940,9 +1072,14 @@ async function supabasePushSubmission(sub) {
     // 2. Direct Supabase Client fallback / realtime trigger
     if (supabaseClient && isSupabaseConfigured) {
         try {
+            const db = getDB();
+            const localUser = db.users[userEmail];
+            const userIdUUID = localUser ? localUser.id : null;
+
             const payload = {
                 id: sub.id,
                 user_email: userEmail,
+                user_id: userIdUUID,
                 brand: sub.brand,
                 card_value: sub.cardValue,
                 currency: sub.currency || 'USD',
@@ -974,9 +1111,14 @@ async function supabasePushWithdrawal(wd) {
     // 2. Direct Supabase Client fallback / realtime trigger
     if (supabaseClient && isSupabaseConfigured) {
         try {
+            const db = getDB();
+            const localUser = db.users[userEmail];
+            const userIdUUID = localUser ? localUser.id : null;
+
             const payload = {
                 id: wd.id,
                 user_email: userEmail,
+                user_id: userIdUUID,
                 amount: wd.amount,
                 fee: wd.fee || 50,
                 net_payout: wd.netPayout || (wd.amount - 50),
@@ -1007,8 +1149,13 @@ async function supabasePushBankAccount(bankData) {
     // 2. Direct Supabase Client fallback
     if (supabaseClient && isSupabaseConfigured) {
         try {
+            const db = getDB();
+            const localUser = db.users[userEmail];
+            const userIdUUID = localUser ? localUser.id : null;
+
             await supabaseClient.from('bank_accounts').insert([{
                 user_email: userEmail,
+                user_id: userIdUUID,
                 bank_name: bankData.bankName,
                 account_number: bankData.accountNumber,
                 account_holder_name: bankData.accountHolderName,
@@ -1099,6 +1246,85 @@ async function supabasePushSecurityLog(userEmail, event, ip, userAgent, details)
 async function supabasePushAuditLog(operatorEmail, event, details) {
     const email = operatorEmail || "admin@goodfastpay.com";
     await callClientApi('log_security_event', { event, details }, email);
+}
+
+/**
+ * Push a new support ticket to Supabase Cloud
+ */
+async function supabasePushTicket(ticket) {
+    if (supabaseClient && isSupabaseConfigured) {
+        try {
+            const userEmail = ticket.userId || (typeof currentUser !== "undefined" && currentUser ? currentUser.email : "user@goodfastpay.com");
+            const db = getDB();
+            const localUser = db.users[userEmail];
+            const userIdUUID = localUser ? localUser.id : null;
+
+            const payload = {
+                id: ticket.id,
+                user_email: userEmail,
+                user_id: userIdUUID,
+                title: ticket.title,
+                category: ticket.category,
+                priority: ticket.priority || 'MEDIUM',
+                status: ticket.status || 'OPEN',
+                description: ticket.description,
+                attachments: ticket.attachments || [],
+                assigned_to: ticket.assignedTo || 'Unassigned',
+                user_unread: ticket.userUnread || false,
+                admin_unread: ticket.adminUnread || true,
+                created_at: ticket.createdAt,
+                updated_at: ticket.updatedAt
+            };
+
+            await supabaseClient.from('tickets').upsert([payload], { onConflict: 'id' });
+            console.log("⚡ Supabase Ticket pushed directly:", ticket.id);
+        } catch (e) {
+            console.warn("Could not push ticket directly to Supabase:", e.message);
+        }
+    }
+}
+
+/**
+ * Push a new ticket message to Supabase Cloud
+ */
+async function supabasePushTicketMessage(ticketId, message) {
+    if (supabaseClient && isSupabaseConfigured) {
+        try {
+            const payload = {
+                ticket_id: ticketId,
+                sender_role: message.sender,
+                sender_email: message.senderEmail,
+                message: message.text,
+                created_at: message.timestamp || new Date().toISOString()
+            };
+
+            await supabaseClient.from('ticket_messages').insert([payload]);
+            console.log("⚡ Supabase Ticket Message pushed directly for ticket:", ticketId);
+        } catch (e) {
+            console.warn("Could not push ticket message directly to Supabase:", e.message);
+        }
+    }
+}
+
+/**
+ * Update ticket metadata in Supabase Cloud
+ */
+async function supabaseUpdateTicketMeta(ticketId, updates) {
+    if (supabaseClient && isSupabaseConfigured) {
+        try {
+            const payload = {};
+            if (updates.status) payload.status = updates.status;
+            if (updates.userUnread !== undefined) payload.user_unread = updates.userUnread;
+            if (updates.adminUnread !== undefined) payload.admin_unread = updates.adminUnread;
+            if (updates.assignedTo !== undefined) payload.assigned_to = updates.assignedTo;
+            payload.updated_at = new Date().toISOString();
+
+            await supabaseClient.from('tickets').update(payload).eq('id', ticketId);
+            console.log("⚡ Supabase Ticket updated:", ticketId);
+        } catch (e) {
+            console.warn("Could not update ticket directly in Supabase:", e.message);
+        }
+    }
 }
 
 // -------------------------------------------------------------

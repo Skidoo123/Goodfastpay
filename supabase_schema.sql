@@ -388,3 +388,77 @@ DO $$
 BEGIN
     ALTER PUBLICATION supabase_realtime ADD TABLE public.ticket_messages;
 EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+
+-- ==============================================================================
+-- 8. AUTOMATIC PROFILE AND FOREIGN KEY SYNCHRONIZATION TRIGGERS
+-- ==============================================================================
+
+-- 8.1 Trigger to automatically create a profile in public.profiles when a new user signs up via auth
+CREATE OR REPLACE FUNCTION public.handle_new_user()
+RETURNS TRIGGER AS $$
+BEGIN
+    INSERT INTO public.profiles (id, email, name, role, status, wallet_balance, created_at)
+    VALUES (
+        NEW.id,
+        NEW.email,
+        COALESCE(NEW.raw_user_meta_data->>'full_name', NEW.raw_user_meta_data->>'name', split_part(NEW.email, '@', 1)),
+        COALESCE(NEW.raw_user_meta_data->>'role', 'USER'),
+        'ACTIVE',
+        0.00,
+        COALESCE(NEW.created_at, NOW())
+    )
+    ON CONFLICT (email) DO UPDATE SET
+        id = EXCLUDED.id,
+        name = COALESCE(public.profiles.name, EXCLUDED.name);
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
+CREATE TRIGGER on_auth_user_created
+    AFTER INSERT ON auth.users
+    FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
+
+-- 8.2 Trigger to automatically resolve user_id matching user_email on insert or update
+CREATE OR REPLACE FUNCTION public.resolve_user_id_from_email()
+RETURNS TRIGGER AS $$
+BEGIN
+    IF NEW.user_id IS NULL AND NEW.user_email IS NOT NULL THEN
+        SELECT id INTO NEW.user_id FROM public.profiles WHERE email = NEW.user_email;
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Recreate triggers for all tables containing user_id and user_email
+DROP TRIGGER IF EXISTS tr_resolve_submissions_user_id ON public.submissions;
+CREATE TRIGGER tr_resolve_submissions_user_id
+    BEFORE INSERT OR UPDATE ON public.submissions
+    FOR EACH ROW EXECUTE FUNCTION public.resolve_user_id_from_email();
+
+DROP TRIGGER IF EXISTS tr_resolve_withdrawals_user_id ON public.withdrawals;
+CREATE TRIGGER tr_resolve_withdrawals_user_id
+    BEFORE INSERT OR UPDATE ON public.withdrawals
+    FOR EACH ROW EXECUTE FUNCTION public.resolve_user_id_from_email();
+
+DROP TRIGGER IF EXISTS tr_resolve_bank_accounts_user_id ON public.bank_accounts;
+CREATE TRIGGER tr_resolve_bank_accounts_user_id
+    BEFORE INSERT OR UPDATE ON public.bank_accounts
+    FOR EACH ROW EXECUTE FUNCTION public.resolve_user_id_from_email();
+
+DROP TRIGGER IF EXISTS tr_resolve_tickets_user_id ON public.tickets;
+CREATE TRIGGER tr_resolve_tickets_user_id
+    BEFORE INSERT OR UPDATE ON public.tickets
+    FOR EACH ROW EXECUTE FUNCTION public.resolve_user_id_from_email();
+
+DROP TRIGGER IF EXISTS tr_resolve_notifications_user_id ON public.notifications;
+CREATE TRIGGER tr_resolve_notifications_user_id
+    BEFORE INSERT OR UPDATE ON public.notifications
+    FOR EACH ROW EXECUTE FUNCTION public.resolve_user_id_from_email();
+
+DROP TRIGGER IF EXISTS tr_resolve_security_logs_user_id ON public.security_logs;
+CREATE TRIGGER tr_resolve_security_logs_user_id
+    BEFORE INSERT OR UPDATE ON public.security_logs
+    FOR EACH ROW EXECUTE FUNCTION public.resolve_user_id_from_email();
+

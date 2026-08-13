@@ -4226,6 +4226,13 @@ function handleUserSubmitTicket(e) {
         
         saveDB(db);
         
+        if (typeof supabasePushTicket === "function") {
+            supabasePushTicket(newTicketObj);
+        }
+        if (typeof supabasePushTicketMessage === "function") {
+            supabasePushTicketMessage(newTicketObj.id, newTicketObj.messages[0]);
+        }
+        
         showToast(`Support Ticket ${newTicketId} opened successfully!`, "success");
         
         // Reset form variables
@@ -4405,6 +4412,15 @@ function closeTicketDirectly(ticketId) {
     });
     
     saveDB(db);
+    
+    if (typeof supabaseUpdateTicketMeta === "function") {
+        supabaseUpdateTicketMeta(ticketId, { status: "CLOSED", adminUnread: true });
+    }
+    if (typeof supabasePushTicketMessage === "function") {
+        const lastMsg = db.tickets[idx].messages[db.tickets[idx].messages.length - 1];
+        supabasePushTicketMessage(ticketId, lastMsg);
+    }
+    
     showToast("Ticket closed successfully.", "success");
     
     // Redraw
@@ -4633,6 +4649,19 @@ function handleUserChatReply(e) {
         }
         
         saveDB(db);
+        
+        if (typeof supabasePushTicketMessage === "function") {
+            supabasePushTicketMessage(activeUserTicketId, newMsg);
+            if (reopenMsg) {
+                supabasePushTicketMessage(activeUserTicketId, reopenMsg);
+            }
+        }
+        if (typeof supabaseUpdateTicketMeta === "function") {
+            supabaseUpdateTicketMeta(activeUserTicketId, {
+                status: db.tickets[ticketIdx].status,
+                adminUnread: true
+            });
+        }
         
         replyInput.value = "";
         fileInput.value = "";

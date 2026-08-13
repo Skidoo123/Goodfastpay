@@ -910,7 +910,11 @@ function approveCardTrade(id) {
     if (subIndex === -1) return;
     
     const sub = db.submissions[subIndex];
-    const user = db.users[sub.userId];
+    let user = db.users[sub.userId];
+    if (!user) {
+        syncLocalUserAccount(sub.userId);
+        user = db.users[sub.userId];
+    }
     
     // Approve credit to available balance
     user.wallet.balance += payoutAmount;
@@ -968,7 +972,11 @@ function rejectCardTrade(id) {
     if (subIndex === -1) return;
     
     const sub = db.submissions[subIndex];
-    const user = db.users[sub.userId];
+    let user = db.users[sub.userId];
+    if (!user) {
+        syncLocalUserAccount(sub.userId);
+        user = db.users[sub.userId];
+    }
     
     // Change submission state
     sub.status = "REJECTED";
@@ -1197,7 +1205,11 @@ function declineWithdrawalPayout(id) {
     if (wdIndex === -1) return;
     
     const wd = db.withdrawals[wdIndex];
-    const user = db.users[wd.userId];
+    let user = db.users[wd.userId];
+    if (!user) {
+        syncLocalUserAccount(wd.userId);
+        user = db.users[wd.userId];
+    }
     
     // Refund amount back to available balance
     user.wallet.balance += wd.amount;
@@ -2968,6 +2980,15 @@ function btnReopenTicket() {
         timestamp: new Date().toISOString()
     });
     saveDB(db);
+    
+    if (typeof supabaseUpdateTicketMeta === "function") {
+        supabaseUpdateTicketMeta(activeAdminTicketId, { status: "OPEN", userUnread: true });
+    }
+    if (typeof supabasePushTicketMessage === "function") {
+        const lastMsg = t.messages[t.messages.length - 1];
+        supabasePushTicketMessage(activeAdminTicketId, lastMsg);
+    }
+    
     writeAuditLog(currentAdmin.email, "Support Ticket Reopened", `Reopened ticket ${activeAdminTicketId}`);
     showToast("Ticket reopened successfully.", "success");
     selectAdminTicket(activeAdminTicketId);
@@ -2994,6 +3015,15 @@ function btnEscalateTicket() {
         timestamp: new Date().toISOString()
     });
     saveDB(db);
+    
+    if (typeof supabaseUpdateTicketMeta === "function") {
+        supabaseUpdateTicketMeta(activeAdminTicketId, { status: "ESCALATED", userUnread: true });
+    }
+    if (typeof supabasePushTicketMessage === "function") {
+        const lastMsg = t.messages[t.messages.length - 1];
+        supabasePushTicketMessage(activeAdminTicketId, lastMsg);
+    }
+    
     writeAuditLog(currentAdmin.email, "Support Ticket Escalated", `Escalated ticket ${activeAdminTicketId}`);
     showToast("Ticket escalated successfully.", "success");
     selectAdminTicket(activeAdminTicketId);
@@ -3020,6 +3050,15 @@ function btnAddInternalNote() {
     });
     t.updatedAt = new Date().toISOString();
     saveDB(db);
+    
+    if (typeof supabaseUpdateTicketMeta === "function") {
+        supabaseUpdateTicketMeta(activeAdminTicketId, {});
+    }
+    if (typeof supabasePushTicketMessage === "function") {
+        const lastMsg = t.messages[t.messages.length - 1];
+        supabasePushTicketMessage(activeAdminTicketId, lastMsg);
+    }
+    
     showToast("Internal note added successfully.", "success");
     selectAdminTicket(activeAdminTicketId);
 }
@@ -3446,6 +3485,16 @@ function handleAdminChatReply(e) {
         
         saveDB(db);
         
+        if (typeof supabasePushTicketMessage === "function") {
+            supabasePushTicketMessage(activeAdminTicketId, newMsg);
+        }
+        if (typeof supabaseUpdateTicketMeta === "function") {
+            supabaseUpdateTicketMeta(activeAdminTicketId, {
+                status: db.tickets[ticketIndex].status,
+                userUnread: true
+            });
+        }
+        
         replyInput.value = "";
         replyInput.style.height = "120px"; // Reset height
         fileInput.value = "";
@@ -3507,6 +3556,15 @@ function updateTicketStatus() {
     );
     
     saveDB(db);
+    
+    if (typeof supabaseUpdateTicketMeta === "function") {
+        supabaseUpdateTicketMeta(activeAdminTicketId, { status: status, userUnread: true });
+    }
+    if (typeof supabasePushTicketMessage === "function") {
+        const lastMsg = db.tickets[ticketIndex].messages[db.tickets[ticketIndex].messages.length - 1];
+        supabasePushTicketMessage(activeAdminTicketId, lastMsg);
+    }
+    
     showToast(`Ticket status updated to ${status}.`, "success");
     selectAdminTicket(activeAdminTicketId);
     renderSupportAnalytics();
@@ -3544,6 +3602,15 @@ function updateTicketAssignee() {
     );
     
     saveDB(db);
+    
+    if (typeof supabaseUpdateTicketMeta === "function") {
+        supabaseUpdateTicketMeta(activeAdminTicketId, { assignedTo: assignee });
+    }
+    if (typeof supabasePushTicketMessage === "function") {
+        const lastMsg = db.tickets[ticketIndex].messages[db.tickets[ticketIndex].messages.length - 1];
+        supabasePushTicketMessage(activeAdminTicketId, lastMsg);
+    }
+    
     showToast(`Staff assignee set to ${assignee}.`, "success");
     selectAdminTicket(activeAdminTicketId);
     
@@ -3594,6 +3661,15 @@ function handleArchiveTicket() {
         );
         
         saveDB(db);
+        
+        if (typeof supabaseUpdateTicketMeta === "function") {
+            supabaseUpdateTicketMeta(activeAdminTicketId, { status: "ARCHIVED" });
+        }
+        if (typeof supabasePushTicketMessage === "function") {
+            const lastMsg = db.tickets[idx].messages[db.tickets[idx].messages.length - 1];
+            supabasePushTicketMessage(activeAdminTicketId, lastMsg);
+        }
+        
         showToast(`Support Ticket ${activeAdminTicketId} has been archived.`, "success");
         
         activeAdminTicketId = null;
