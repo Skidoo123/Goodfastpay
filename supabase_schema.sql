@@ -21,6 +21,10 @@ CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 DO $$ 
 BEGIN
     -- Make user_id nullable and add user_email if tables already exist
+    IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'profiles') THEN
+        ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS password TEXT DEFAULT NULL;
+    END IF;
+
     IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'submissions') THEN
         ALTER TABLE public.submissions ALTER COLUMN user_id DROP NOT NULL;
         ALTER TABLE public.submissions ADD COLUMN IF NOT EXISTS user_email TEXT;
@@ -64,6 +68,7 @@ CREATE TABLE IF NOT EXISTS public.profiles (
     phone TEXT DEFAULT '',
     role TEXT NOT NULL DEFAULT 'USER' CHECK (role IN ('USER', 'ADMIN', 'SUPER_ADMIN')),
     status TEXT NOT NULL DEFAULT 'ACTIVE' CHECK (status IN ('ACTIVE', 'SUSPENDED', 'BANNED')),
+    password TEXT DEFAULT NULL,
     transaction_pin VARCHAR(4) DEFAULT NULL,
     avatar_url TEXT DEFAULT NULL,
     email_verified BOOLEAN DEFAULT TRUE,
@@ -282,49 +287,32 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- Permissive and Secure Policies
-CREATE POLICY "Public profiles read" ON public.profiles FOR SELECT USING (true);
-CREATE POLICY "Public profiles insert" ON public.profiles FOR INSERT WITH CHECK (true);
-CREATE POLICY "Public profiles update" ON public.profiles FOR UPDATE USING (auth.uid() = id OR public.is_admin());
-
-CREATE POLICY "Public bank accounts all" ON public.bank_accounts FOR ALL USING (auth.uid() = user_id OR public.is_admin());
-
-CREATE POLICY "Public submissions all" ON public.submissions FOR ALL USING (auth.uid() = user_id OR public.is_admin());
-
-CREATE POLICY "Public withdrawals all" ON public.withdrawals FOR ALL USING (auth.uid() = user_id OR public.is_admin());
-
-CREATE POLICY "Public inventory read" ON public.inventory FOR SELECT USING (true);
-CREATE POLICY "Public inventory all" ON public.inventory FOR ALL USING (public.is_admin());
-
-CREATE POLICY "Currencies viewable" ON public.currencies FOR SELECT USING (true);
-CREATE POLICY "Currencies admin all" ON public.currencies FOR ALL USING (public.is_admin());
-
-CREATE POLICY "Brand rates viewable" ON public.brand_rates FOR SELECT USING (true);
-CREATE POLICY "Brand rates admin all" ON public.brand_rates FOR ALL USING (public.is_admin());
-
-CREATE POLICY "Notifications all" ON public.notifications FOR ALL USING (auth.uid() = user_id OR public.is_admin());
-CREATE POLICY "Tickets all" ON public.tickets FOR ALL USING (auth.uid() = user_id OR public.is_admin());
-CREATE POLICY "Ticket messages all" ON public.ticket_messages FOR ALL USING (
-    EXISTS (
-        SELECT 1 FROM public.tickets
-        WHERE tickets.id = ticket_messages.ticket_id
-        AND (tickets.user_id = auth.uid() OR public.is_admin())
-    )
-);
-CREATE POLICY "Audit trail all" ON public.audit_trail FOR ALL USING (public.is_admin());
-CREATE POLICY "Security logs all" ON public.security_logs FOR ALL USING (auth.uid() = user_id OR public.is_admin());
+-- Permissive Policies to allow client-side database auth
+CREATE POLICY "Public profiles read" ON public.profiles FOR ALL USING (true);
+CREATE POLICY "Public bank accounts all" ON public.bank_accounts FOR ALL USING (true);
+CREATE POLICY "Public submissions all" ON public.submissions FOR ALL USING (true);
+CREATE POLICY "Public withdrawals all" ON public.withdrawals FOR ALL USING (true);
+CREATE POLICY "Public inventory all" ON public.inventory FOR ALL USING (true);
+CREATE POLICY "Currencies admin all" ON public.currencies FOR ALL USING (true);
+CREATE POLICY "Brand rates admin all" ON public.brand_rates FOR ALL USING (true);
+CREATE POLICY "Notifications all" ON public.notifications FOR ALL USING (true);
+CREATE POLICY "Tickets all" ON public.tickets FOR ALL USING (true);
+CREATE POLICY "Ticket messages all" ON public.ticket_messages FOR ALL USING (true);
+CREATE POLICY "Audit trail all" ON public.audit_trail FOR ALL USING (true);
+CREATE POLICY "Security logs all" ON public.security_logs FOR ALL USING (true);
 
 -- ==============================================================================
 -- 6. INITIAL SEED DATA
 -- ==============================================================================
 
 -- 6.1 Seed Initial Profiles
-INSERT INTO public.profiles (email, name, role, status, wallet_balance, transaction_pin) VALUES
-    ('admin@goodfastpay.com', 'System Administrator', 'ADMIN', 'ACTIVE', 5000000.00, '1234'),
-    ('user@goodfastpay.com', 'Demo Customer', 'USER', 'ACTIVE', 25400.00, '0000')
+INSERT INTO public.profiles (email, name, role, status, wallet_balance, transaction_pin, password) VALUES
+    ('admin@goodfastpay.com', 'System Administrator', 'ADMIN', 'ACTIVE', 5000000.00, '1234', 'password123'),
+    ('user@goodfastpay.com', 'Demo Customer', 'USER', 'ACTIVE', 25400.00, '0000', 'password123')
 ON CONFLICT (email) DO UPDATE SET 
     role = EXCLUDED.role,
-    status = EXCLUDED.status;
+    status = EXCLUDED.status,
+    password = COALESCE(profiles.password, EXCLUDED.password);
 
 -- 6.2 Seed Base Currencies
 INSERT INTO public.currencies (code, name, rate, status) VALUES

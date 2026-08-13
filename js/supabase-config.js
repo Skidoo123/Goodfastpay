@@ -75,55 +75,12 @@ if (typeof window !== "undefined") {
     window.addEventListener("DOMContentLoaded", async () => {
         if (supabaseClient) {
             try {
-                // Check if session exists
-                const { data } = await supabaseClient.auth.getSession();
-                if (data && data.session && data.session.user) {
-                    const user = data.session.user;
-                    const email = user.email;
-                    const meta = user.user_metadata || {};
-                    await supabaseEnsureProfileExists(email, {
-                        name: meta.full_name || meta.name || user.email.split("@")[0],
-                        phone: meta.phone || ""
-                    });
-                    syncLocalUserAccount(email, {
-                        id: user.id,
-                        name: meta.full_name || meta.name || user.email.split("@")[0],
-                        phone: meta.phone || ""
-                    });
-                    setSessionUser(email);
-                    
-                    if (window.location.pathname.endsWith("index.html") || window.location.pathname === "/") {
-                        const authActions = document.getElementById("auth-actions");
-                        const unauthActions = document.getElementById("unauth-actions");
-                        if (authActions) authActions.style.display = "flex";
-                        if (unauthActions) unauthActions.style.display = "none";
-                    }
-                }
-
-                // Subscribe to auth state changes
-                supabaseClient.auth.onAuthStateChange(async (event, session) => {
-                    if (event === 'SIGNED_IN' && session && session.user) {
-                        const email = session.user.email;
-                        const meta = session.user.user_metadata || {};
-                        await supabaseEnsureProfileExists(email, {
-                            name: meta.full_name || meta.name || email.split("@")[0],
-                            phone: meta.phone || ""
-                        });
-                        syncLocalUserAccount(email, {
-                            id: session.user.id,
-                            name: meta.full_name || meta.name || email.split("@")[0],
-                            phone: meta.phone || ""
-                        });
-                        setSessionUser(email);
-                    } else if (event === 'SIGNED_OUT') {
-                        clearSession();
-                    }
-                });
-
                 // Initialize Realtime Live Sync
                 setupSupabaseRealtimeSubscriptions();
+                // Pull latest data from database
+                await syncFromSupabaseCloud();
             } catch (err) {
-                console.warn("OAuth session check notice:", err);
+                console.warn("Session check notice:", err);
             }
         }
     });
@@ -211,39 +168,44 @@ async function supabaseAuthSignUp(email, password, metadata = {}) {
     
     if (supabaseClient && isSupabaseConfigured) {
         try {
-            const { data, error } = await supabaseClient.auth.signUp({
-                email: cleanEmail,
-                password: password,
-                options: {
-                    data: {
-                        full_name: metadata.name || "",
-                        phone: metadata.phone || "",
-                        role: "USER"
-                    }
-                }
-            });
+            // Check if profile exists
+            const { data: existing, error: checkErr } = await supabaseClient
+                .from('profiles')
+                .select('email')
+                .eq('email', cleanEmail)
+                .maybeSingle();
 
-            if (error) {
-                console.warn("Supabase Auth notice:", error.message);
-                if (error.message.includes("already registered") || error.status === 422) {
-                    return { success: false, message: "This email is already registered. Please sign in instead." };
-                }
-                // Resilient local account creation
-                syncLocalUserAccount(cleanEmail, metadata, password);
-                return { success: true, user: null, isFallback: true };
+            if (existing) {
+                return { success: false, message: "This email is already registered. Please sign in instead." };
             }
 
-            // Sync user locally & ensure profile exists in Supabase
-            await supabaseEnsureProfileExists(cleanEmail, metadata);
+            // Create new profile record in Supabase
+            const { data: newProfile, error: insertErr } = await supabaseClient
+                .from('profiles')
+                .insert([{
+                    email: cleanEmail,
+                    name: metadata.name || cleanEmail.split("@")[0],
+                    phone: metadata.phone || "",
+                    password: password,
+                    role: cleanEmail === "admin@goodfastpay.com" ? "ADMIN" : "USER",
+                    status: "ACTIVE"
+                }])
+                .select()
+                .single();
+
+            if (insertErr) {
+                return { success: false, message: insertErr.message };
+            }
+
             syncLocalUserAccount(cleanEmail, {
-                id: data.user ? data.user.id : null,
-                name: metadata.name || "",
-                phone: metadata.phone || ""
+                id: newProfile.id,
+                name: newProfile.name,
+                phone: newProfile.phone
             }, password);
-            return { success: true, user: data.user, session: data.session };
+
+            return { success: true };
         } catch (e) {
-            console.warn("Supabase network fallback:", e.message);
-            await supabaseEnsureProfileExists(cleanEmail, metadata);
+            console.warn("Supabase direct signup fallback:", e.message);
             syncLocalUserAccount(cleanEmail, metadata, password);
             return { success: true, isFallback: true };
         }
@@ -261,13 +223,16 @@ async function supabaseAuthSignIn(email, password) {
 
     if (supabaseClient && isSupabaseConfigured) {
         try {
-            const { data, error } = await supabaseClient.auth.signInWithPassword({
-                email: cleanEmail,
-                password: password
-            });
+            // Query profiles table for match
+            const { data: profile, error: dbErr } = await supabaseClient
+                .from('profiles')
+                .select('*')
+                .eq('email', cleanEmail)
+                .eq('password', password)
+                .maybeSingle();
 
-            if (error) {
-                console.warn("Supabase Sign In notice:", error.message);
+            if (dbErr || !profile) {
+                // Try fallback to local database
                 const db = getDB();
                 const localUser = db.users[cleanEmail];
                 if (localUser && localUser.passwordHash === password) {
@@ -280,31 +245,37 @@ async function supabaseAuthSignIn(email, password) {
                     setSessionUser(cleanEmail);
                     return { success: true, isLocalFallback: true };
                 }
-                return { success: false, message: error.message || "Invalid login credentials." };
+                return { success: false, message: "Invalid email or password." };
+            }
+
+            if (profile.status === "SUSPENDED") {
+                return { success: false, message: "Your account has been suspended. Please contact support." };
+            }
+            if (profile.status === "BANNED") {
+                return { success: false, message: "Your account has been permanently banned." };
             }
 
             setSessionUser(cleanEmail);
 
-            const db = getDB();
-            const metadata = data.user?.user_metadata || {};
-            await supabaseEnsureProfileExists(cleanEmail, {
-                name: metadata.full_name || cleanEmail.split("@")[0],
-                phone: metadata.phone || ""
-            });
-            if (!db.users[cleanEmail] && data.user) {
-                syncLocalUserAccount(cleanEmail, {
-                    id: data.user.id,
-                    name: metadata.full_name || cleanEmail.split("@")[0],
-                    phone: metadata.phone || ""
-                }, password);
-            }
+            // Sync user locally
+            syncLocalUserAccount(cleanEmail, {
+                id: profile.id,
+                name: profile.name,
+                phone: profile.phone
+            }, password);
 
-            return { success: true, user: data.user, session: data.session };
+            return { success: true, user: { email: cleanEmail, id: profile.id } };
         } catch (e) {
-            console.warn("Supabase sign in network fallback:", e.message);
+            console.warn("Supabase login fallback:", e.message);
             const db = getDB();
             const localUser = db.users[cleanEmail];
             if (localUser && localUser.passwordHash === password) {
+                if (localUser.status === "SUSPENDED") {
+                    return { success: false, message: "Your account has been suspended. Please contact support." };
+                }
+                if (localUser.status === "BANNED") {
+                    return { success: false, message: "Your account has been permanently banned." };
+                }
                 setSessionUser(cleanEmail);
                 return { success: true, isLocalFallback: true };
             }
@@ -332,13 +303,6 @@ async function supabaseAuthSignIn(email, password) {
  * Sign Out via Supabase Auth
  */
 async function supabaseAuthSignOut() {
-    try {
-        if (supabaseClient && isSupabaseConfigured) {
-            await supabaseClient.auth.signOut();
-        }
-    } catch (e) {
-        console.warn("Sign out notice:", e);
-    }
     clearSession();
     window.location.href = "index.html";
 }
@@ -1403,14 +1367,19 @@ async function supabaseUpdateProfile(updates, targetEmail = "") {
 async function supabaseUpdatePassword(newPassword) {
     if (supabaseClient && isSupabaseConfigured) {
         try {
-            const { error } = await supabaseClient.auth.updateUser({
-                password: newPassword
-            });
+            const user = getSessionUser();
+            if (!user || !user.email) return { success: false, message: "User session not active." };
+            
+            const { error } = await supabaseClient
+                .from('profiles')
+                .update({ password: newPassword })
+                .eq('email', user.email);
+
             if (error) {
-                console.warn("Could not update password in Supabase Auth:", error.message);
+                console.warn("Could not update password in profiles table:", error.message);
                 return { success: false, message: error.message };
             }
-            console.log("⚡ Password updated in Supabase Auth successfully.");
+            console.log("⚡ Password updated in profiles table successfully.");
             return { success: true };
         } catch (e) {
             console.warn("supabaseUpdatePassword exception:", e.message);

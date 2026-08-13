@@ -290,25 +290,20 @@
             // 4. AUTHENTICATION
             let authSuccess = false;
             try {
-                logToConsole("Checking current authenticated user session...", "info");
-                const { data: { session }, error: authErr } = await supabaseClient.auth.getSession();
+                logToConsole("Checking custom database authenticated user session...", "info");
+                const sessionEmail = sessionStorage.getItem("goodfastpay_user");
                 
-                if (authErr) {
-                    document.getElementById("auth-status-badge").className = "px-3 py-1 rounded-full text-xs font-semibold bg-red-950 text-red-400 font-mono";
-                    document.getElementById("auth-status-badge").textContent = "FAILED";
-                    document.getElementById("uuid-val").textContent = "ERROR: " + authErr.message;
-                    logToConsole(`Auth check failed: ${authErr.message}`, "error");
-                } else if (session && session.user) {
+                if (sessionEmail) {
                     document.getElementById("auth-status-badge").className = "px-3 py-1 rounded-full text-xs font-semibold bg-emerald-950 text-emerald-400 font-mono pulse-glow-success";
                     document.getElementById("auth-status-badge").textContent = "CONNECTED";
-                    document.getElementById("uuid-val").textContent = session.user.id;
-                    logToConsole(`Auth verified. Logged in as: ${session.user.email} (UUID: ${session.user.id})`, "success");
+                    document.getElementById("uuid-val").textContent = sessionEmail;
+                    logToConsole(`Custom Auth verified. Logged in as: ${sessionEmail}`, "success");
                     authSuccess = true;
                 } else {
                     document.getElementById("auth-status-badge").className = "px-3 py-1 rounded-full text-xs font-semibold bg-yellow-950 text-yellow-400 font-mono";
                     document.getElementById("auth-status-badge").textContent = "UNAUTHENTICATED";
-                    document.getElementById("uuid-val").textContent = "NO SESSION ACTIVE (Fallback Flow / Local Mode)";
-                    logToConsole("Notice: No authenticated session found in Supabase Auth. Using local session flow.", "warn");
+                    document.getElementById("uuid-val").textContent = "NO SESSION ACTIVE (Login required)";
+                    logToConsole("Notice: No active database session found. Please log in on the landing page.", "warn");
                 }
             } catch (e) {
                 document.getElementById("auth-status-badge").className = "px-3 py-1 rounded-full text-xs font-semibold bg-red-950 text-red-400 font-mono";
@@ -393,17 +388,10 @@
         }
 
         async function logoutTest() {
-            if (supabaseClient) {
-                try {
-                    logToConsole("Logging out current active session in Supabase Auth...", "info");
-                    await supabaseClient.auth.signOut();
-                    sessionStorage.removeItem("goodfastpay_user");
-                    logToConsole("Auth signOut completed. Session state cleared.", "success");
-                    runAllDiagnostics();
-                } catch(e) {
-                    logToConsole("Signout error: " + e.message, "error");
-                }
-            }
+            logToConsole("Logging out current active database session...", "info");
+            sessionStorage.removeItem("goodfastpay_user");
+            logToConsole("Session state cleared.", "success");
+            runAllDiagnostics();
         }
 
         window.addEventListener("load", () => {
