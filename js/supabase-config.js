@@ -491,6 +491,16 @@ function setupSupabaseRealtimeSubscriptions() {
                 console.log('⚡ Realtime Audit Trail:', payload);
                 handleRealtimeAuditTrailChange(payload);
             })
+            // Listen for Support Tickets
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'tickets' }, payload => {
+                console.log('⚡ Realtime Tickets Update:', payload);
+                handleRealtimeTicketChange(payload);
+            })
+            // Listen for Support Ticket Messages
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'ticket_messages' }, payload => {
+                console.log('⚡ Realtime Ticket Messages Update:', payload);
+                handleRealtimeTicketMessageChange(payload);
+            })
             // Listen for Currencies & Rates
             .on('postgres_changes', { event: '*', schema: 'public', table: 'currencies' }, () => {
                 syncFromSupabaseCloud();
@@ -552,6 +562,93 @@ function handleRealtimeAuditTrailChange(payload) {
     }
 
     if (typeof renderAdminAuditLogs === "function") renderAdminAuditLogs();
+    if (typeof loadAdminSession === "function") loadAdminSession();
+}
+
+function handleRealtimeTicketChange(payload) {
+    const t = payload.new;
+    if (!t) return;
+
+    const db = getDB();
+    const ticketId = t.id;
+
+    // Check if the ticket is already in local storage
+    const idx = db.tickets ? db.tickets.findIndex(x => x.id === ticketId) : -1;
+    if (!db.tickets) db.tickets = [];
+    
+    // Map cloud ticket to local structure, keeping existing messages if any
+    const existingMessages = idx >= 0 ? db.tickets[idx].messages : [];
+    
+    const mapped = {
+        id: t.id,
+        userId: t.user_email,
+        title: t.title,
+        category: t.category,
+        priority: t.priority,
+        status: t.status,
+        description: t.description,
+        attachments: t.attachments || [],
+        assignedTo: t.assigned_to || 'Unassigned',
+        userUnread: t.user_unread,
+        adminUnread: t.admin_unread,
+        createdAt: t.created_at,
+        updatedAt: t.updated_at,
+        messages: existingMessages
+    };
+
+    if (idx >= 0) {
+        db.tickets[idx] = { ...db.tickets[idx], ...mapped };
+    } else {
+        db.tickets.unshift(mapped);
+    }
+    saveDB(db);
+
+    if (typeof renderUserTicketsQueue === "function") renderUserTicketsQueue();
+    if (typeof renderAdminTicketsQueue === "function") renderAdminTicketsQueue();
+    if (typeof renderSupportAnalytics === "function") renderSupportAnalytics();
+    if (typeof loadSession === "function") loadSession();
+    if (typeof loadAdminSession === "function") loadAdminSession();
+}
+
+function handleRealtimeTicketMessageChange(payload) {
+    const msg = payload.new;
+    if (!msg) return;
+
+    const db = getDB();
+    const ticketId = msg.ticket_id;
+
+    if (!db.tickets) db.tickets = [];
+    const ticketIdx = db.tickets.findIndex(t => t.id === ticketId);
+    if (ticketIdx === -1) {
+        // If ticket not found locally, trigger a full cloud sync to get it
+        syncFromSupabaseCloud();
+        return;
+    }
+
+    const t = db.tickets[ticketIdx];
+    if (!t.messages) t.messages = [];
+
+    // Avoid duplicate messages
+    const exists = t.messages.some(m => m.timestamp === msg.created_at && m.text === msg.message && m.senderEmail === msg.sender_email);
+    if (!exists) {
+        t.messages.push({
+            sender: msg.sender_role,
+            senderEmail: msg.sender_email,
+            text: msg.message,
+            timestamp: msg.created_at
+        });
+        db.tickets[ticketIdx] = t;
+        saveDB(db);
+    }
+
+    if (typeof renderUserChatMessages === "function" && typeof activeUserTicketId !== "undefined" && activeUserTicketId === ticketId) {
+        renderUserChatMessages(t);
+    }
+    if (typeof renderAdminChatMessages === "function" && typeof activeAdminTicketId !== "undefined" && activeAdminTicketId === ticketId) {
+        renderAdminChatMessages(t);
+    }
+
+    if (typeof loadSession === "function") loadSession();
     if (typeof loadAdminSession === "function") loadAdminSession();
 }
 
