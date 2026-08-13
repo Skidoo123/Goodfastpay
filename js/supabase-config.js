@@ -459,63 +459,77 @@ function setupSupabaseRealtimeSubscriptions() {
             supabaseClient.removeChannel(realtimeChannel);
         }
 
+        console.log("⚡ Supabase Realtime Channels: SUBSCRIBING");
+
         realtimeChannel = supabaseClient
             .channel('goodfastpay-live-sync')
             // Listen for Profile changes (Status suspension, balance changes)
             .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, payload => {
-                console.log('⚡ Realtime Profile Update:', payload);
+                console.log('⚡ DATABASE EVENT RECEIVED for table profiles:', payload);
                 handleRealtimeProfileChange(payload);
             })
             // Listen for Trade Submissions
             .on('postgres_changes', { event: '*', schema: 'public', table: 'submissions' }, payload => {
-                console.log('⚡ Realtime Submissions Update:', payload);
+                console.log('⚡ DATABASE EVENT RECEIVED for table submissions:', payload);
                 handleRealtimeSubmissionChange(payload);
             })
             // Listen for Withdrawals
             .on('postgres_changes', { event: '*', schema: 'public', table: 'withdrawals' }, payload => {
-                console.log('⚡ Realtime Withdrawals Update:', payload);
+                console.log('⚡ DATABASE EVENT RECEIVED for table withdrawals:', payload);
                 handleRealtimeWithdrawalChange(payload);
             })
             // Listen for Inventory Stock
             .on('postgres_changes', { event: '*', schema: 'public', table: 'inventory' }, payload => {
-                console.log('⚡ Realtime Inventory Update:', payload);
+                console.log('⚡ DATABASE EVENT RECEIVED for table inventory:', payload);
                 handleRealtimeInventoryChange(payload);
             })
             // Listen for Security Logs (logins from other devices, password changes, etc.)
             .on('postgres_changes', { event: '*', schema: 'public', table: 'security_logs' }, payload => {
-                console.log('⚡ Realtime Security Log:', payload);
+                console.log('⚡ DATABASE EVENT RECEIVED for table security_logs:', payload);
                 handleRealtimeSecurityLogChange(payload);
             })
             // Listen for Audit Trail
             .on('postgres_changes', { event: '*', schema: 'public', table: 'audit_trail' }, payload => {
-                console.log('⚡ Realtime Audit Trail:', payload);
+                console.log('⚡ DATABASE EVENT RECEIVED for table audit_trail:', payload);
                 handleRealtimeAuditTrailChange(payload);
             })
             // Listen for Support Tickets
             .on('postgres_changes', { event: '*', schema: 'public', table: 'tickets' }, payload => {
-                console.log('⚡ Realtime Tickets Update:', payload);
+                console.log('⚡ DATABASE EVENT RECEIVED for table tickets:', payload);
                 handleRealtimeTicketChange(payload);
             })
             // Listen for Support Ticket Messages
             .on('postgres_changes', { event: '*', schema: 'public', table: 'ticket_messages' }, payload => {
-                console.log('⚡ Realtime Ticket Messages Update:', payload);
+                console.log('⚡ DATABASE EVENT RECEIVED for table ticket_messages:', payload);
                 handleRealtimeTicketMessageChange(payload);
             })
             // Listen for Notifications
             .on('postgres_changes', { event: '*', schema: 'public', table: 'notifications' }, payload => {
-                console.log('⚡ Realtime Notifications Update:', payload);
+                console.log('⚡ DATABASE EVENT RECEIVED for table notifications:', payload);
                 handleRealtimeNotificationChange(payload);
             })
+            // Listen for Bank Accounts
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'bank_accounts' }, payload => {
+                console.log('⚡ DATABASE EVENT RECEIVED for table bank_accounts:', payload);
+                handleRealtimeBankAccountChange(payload);
+            })
             // Listen for Currencies & Rates
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'currencies' }, () => {
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'currencies' }, payload => {
+                console.log('⚡ DATABASE EVENT RECEIVED for table currencies:', payload);
                 syncFromSupabaseCloud();
             })
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'brand_rates' }, () => {
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'brand_rates' }, payload => {
+                console.log('⚡ DATABASE EVENT RECEIVED for table brand_rates:', payload);
                 syncFromSupabaseCloud();
-            })
-            .subscribe();
+            });
 
-        console.log("⚡ Supabase Realtime Channels subscribed.");
+        realtimeChannel.subscribe((status) => {
+            console.log(`⚡ Supabase Realtime Channel Status: ${status}`);
+            if (status === "SUBSCRIBED") {
+                console.log("⚡ Supabase Realtime Channels: SUBSCRIBED");
+            }
+        });
+
     } catch (e) {
         console.warn("Realtime setup notice:", e.message);
     }
@@ -690,6 +704,32 @@ function handleRealtimeNotificationChange(payload) {
                 }
             }));
         }
+    }
+}
+
+function handleRealtimeBankAccountChange(payload) {
+    console.log("⚡ DATABASE EVENT RECEIVED for table bank_accounts:", payload);
+    const db = getDB();
+    if (payload.eventType === "DELETE") {
+        // Trigger a pull to remove it
+        syncFromSupabaseCloud();
+        return;
+    }
+
+    const b = payload.new;
+    if (!b) return;
+
+    const email = b.user_email;
+    if (email && db.users[email]) {
+        db.users[email].bankDetails = {
+            bankName: b.bank_name,
+            accountNumber: b.account_number,
+            accountHolderName: b.account_holder_name
+        };
+        saveDB(db);
+        if (typeof renderUsersList === "function") renderUsersList();
+        if (typeof loadAdminSession === "function") loadAdminSession();
+        if (typeof loadSession === "function") loadSession();
     }
 }
 

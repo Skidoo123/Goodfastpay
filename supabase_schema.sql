@@ -270,36 +270,49 @@ DROP POLICY IF EXISTS "Ticket messages all" ON public.ticket_messages;
 DROP POLICY IF EXISTS "Audit trail all" ON public.audit_trail;
 DROP POLICY IF EXISTS "Security logs all" ON public.security_logs;
 
+-- Helper to check if current user is an administrator
+CREATE OR REPLACE FUNCTION public.is_admin()
+RETURNS BOOLEAN AS $$
+BEGIN
+    RETURN EXISTS (
+        SELECT 1 FROM public.profiles
+        WHERE profiles.id = auth.uid()
+        AND profiles.role = 'ADMIN'
+    );
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
 -- Permissive and Secure Policies
 CREATE POLICY "Public profiles read" ON public.profiles FOR SELECT USING (true);
 CREATE POLICY "Public profiles insert" ON public.profiles FOR INSERT WITH CHECK (true);
-CREATE POLICY "Public profiles update" ON public.profiles FOR UPDATE USING (true);
+CREATE POLICY "Public profiles update" ON public.profiles FOR UPDATE USING (auth.uid() = id OR public.is_admin());
 
-CREATE POLICY "Public bank accounts all" ON public.bank_accounts FOR ALL USING (true);
+CREATE POLICY "Public bank accounts all" ON public.bank_accounts FOR ALL USING (auth.uid() = user_id OR public.is_admin());
 
-CREATE POLICY "Public submissions read" ON public.submissions FOR SELECT USING (true);
-CREATE POLICY "Public submissions insert" ON public.submissions FOR INSERT WITH CHECK (true);
-CREATE POLICY "Public submissions update" ON public.submissions FOR UPDATE USING (true);
+CREATE POLICY "Public submissions all" ON public.submissions FOR ALL USING (auth.uid() = user_id OR public.is_admin());
 
-CREATE POLICY "Public withdrawals read" ON public.withdrawals FOR SELECT USING (true);
-CREATE POLICY "Public withdrawals insert" ON public.withdrawals FOR INSERT WITH CHECK (true);
-CREATE POLICY "Public withdrawals update" ON public.withdrawals FOR UPDATE USING (true);
+CREATE POLICY "Public withdrawals all" ON public.withdrawals FOR ALL USING (auth.uid() = user_id OR public.is_admin());
 
 CREATE POLICY "Public inventory read" ON public.inventory FOR SELECT USING (true);
-CREATE POLICY "Public inventory update" ON public.inventory FOR UPDATE USING (true);
-CREATE POLICY "Public inventory all" ON public.inventory FOR ALL USING (true);
+CREATE POLICY "Public inventory all" ON public.inventory FOR ALL USING (public.is_admin());
 
 CREATE POLICY "Currencies viewable" ON public.currencies FOR SELECT USING (true);
-CREATE POLICY "Currencies admin all" ON public.currencies FOR ALL USING (true);
+CREATE POLICY "Currencies admin all" ON public.currencies FOR ALL USING (public.is_admin());
 
 CREATE POLICY "Brand rates viewable" ON public.brand_rates FOR SELECT USING (true);
-CREATE POLICY "Brand rates admin all" ON public.brand_rates FOR ALL USING (true);
+CREATE POLICY "Brand rates admin all" ON public.brand_rates FOR ALL USING (public.is_admin());
 
-CREATE POLICY "Notifications all" ON public.notifications FOR ALL USING (true);
-CREATE POLICY "Tickets all" ON public.tickets FOR ALL USING (true);
-CREATE POLICY "Ticket messages all" ON public.ticket_messages FOR ALL USING (true);
-CREATE POLICY "Audit trail all" ON public.audit_trail FOR ALL USING (true);
-CREATE POLICY "Security logs all" ON public.security_logs FOR ALL USING (true);
+CREATE POLICY "Notifications all" ON public.notifications FOR ALL USING (auth.uid() = user_id OR public.is_admin());
+CREATE POLICY "Tickets all" ON public.tickets FOR ALL USING (auth.uid() = user_id OR public.is_admin());
+CREATE POLICY "Ticket messages all" ON public.ticket_messages FOR ALL USING (
+    EXISTS (
+        SELECT 1 FROM public.tickets
+        WHERE tickets.id = ticket_messages.ticket_id
+        AND (tickets.user_id = auth.uid() OR public.is_admin())
+    )
+);
+CREATE POLICY "Audit trail all" ON public.audit_trail FOR ALL USING (public.is_admin());
+CREATE POLICY "Security logs all" ON public.security_logs FOR ALL USING (auth.uid() = user_id OR public.is_admin());
 
 -- ==============================================================================
 -- 6. INITIAL SEED DATA
@@ -387,6 +400,21 @@ EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 DO $$
 BEGIN
     ALTER PUBLICATION supabase_realtime ADD TABLE public.ticket_messages;
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+DO $$
+BEGIN
+    ALTER PUBLICATION supabase_realtime ADD TABLE public.bank_accounts;
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+DO $$
+BEGIN
+    ALTER PUBLICATION supabase_realtime ADD TABLE public.security_logs;
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+DO $$
+BEGIN
+    ALTER PUBLICATION supabase_realtime ADD TABLE public.audit_trail;
 EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
 
