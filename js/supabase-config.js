@@ -55,6 +55,10 @@ if (typeof window !== "undefined") {
         .then(res => res.ok ? res.json() : null)
         .then(cfg => {
             if (cfg && cfg.supabaseUrl && cfg.supabaseAnonKey && typeof configureSupabaseCredentials === "function") {
+                if (cfg.supabaseUrl.includes("your-project-id") || cfg.supabaseAnonKey.startsWith("your-")) {
+                    console.warn("⚡ Placeholder environment variables detected in Vercel configuration. Ignoring.");
+                    return;
+                }
                 if (cfg.supabaseUrl !== SUPABASE_URL || cfg.supabaseAnonKey !== SUPABASE_ANON_KEY) {
                     configureSupabaseCredentials(cfg.supabaseUrl, cfg.supabaseAnonKey);
                     console.log("⚡ Supabase credentials updated dynamically from Vercel Environment.");
@@ -130,6 +134,13 @@ if (typeof window !== "undefined") {
  */
 function configureSupabaseCredentials(url, key) {
     if (!url || !key) return false;
+    
+    // Ignore placeholder values
+    if (url.includes("your-project-id") || key.startsWith("your-") || key.length < 50) {
+        console.warn("⚡ Ignoring placeholder credentials from configuration.");
+        return false;
+    }
+    
     localStorage.setItem("goodfastpay_supabase_url", url);
     localStorage.setItem("goodfastpay_supabase_key", key);
     if (typeof supabase !== "undefined") {
