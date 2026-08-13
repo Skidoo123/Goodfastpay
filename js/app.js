@@ -457,6 +457,10 @@ function dispatchNotification(userId, title, message) {
         });
         
         saveDB(db);
+
+        if (typeof supabasePushNotification === "function") {
+            supabasePushNotification(userId, notification);
+        }
         
         // Dispatch live browser event for instant dashboard updating
         window.dispatchEvent(new CustomEvent('goodfastpay_notification', { detail: { userId, notification } }));

@@ -486,6 +486,10 @@ function modalEditUser(email) {
         ip: "system"
     });
     saveDB(db);
+
+    if (typeof supabaseUpdateProfile === "function") {
+        supabaseUpdateProfile({ name: newName.trim(), phone: newPhone.trim() }, email);
+    }
     
     writeAuditLog(currentAdmin.email, "User Profile Edited", `User: ${email} updated by Admin.`);
     showToast("User profile successfully updated.", "success");
@@ -535,6 +539,10 @@ function modalResetTransactionPin(email) {
         });
         saveDB(db);
 
+        if (typeof supabaseUpdateProfile === "function") {
+            supabaseUpdateProfile({ transactionPin: null }, email);
+        }
+
         writeAuditLog(currentAdmin.email, "User PIN Cleared", `Cleared Transaction PIN for user: ${email}`);
         showToast(`Transaction PIN cleared for ${user.name}. User will be prompted to set a new PIN.`, "success");
     } else if (/^\d{4}$/.test(trimmed)) {
@@ -545,6 +553,10 @@ function modalResetTransactionPin(email) {
             ip: "system"
         });
         saveDB(db);
+
+        if (typeof supabaseUpdateProfile === "function") {
+            supabaseUpdateProfile({ transactionPin: trimmed }, email);
+        }
 
         writeAuditLog(currentAdmin.email, "User PIN Reset", `Updated Transaction PIN for user: ${email}`);
         showToast(`Transaction PIN updated to '${trimmed}' for ${user.name}.`, "success");
@@ -573,6 +585,10 @@ function modalVerifyEmail(email) {
         ip: "system"
     });
     saveDB(db);
+
+    if (typeof supabaseUpdateProfile === "function") {
+        supabaseUpdateProfile({ emailVerified: true }, email);
+    }
     
     writeAuditLog(currentAdmin.email, "User Email Verified", `Manually verified email for user: ${email}`);
     showToast(`Email verified successfully for ${user.name}.`, "success");
@@ -596,6 +612,10 @@ function modalVerifyPhone(email) {
         ip: "system"
     });
     saveDB(db);
+
+    if (typeof supabaseUpdateProfile === "function") {
+        supabaseUpdateProfile({ phoneVerified: true }, email);
+    }
     
     writeAuditLog(currentAdmin.email, "User Phone Verified", `Manually verified phone for user: ${email}`);
     showToast(`Phone number verified successfully for ${user.name}.`, "success");
@@ -630,6 +650,10 @@ function modalBanDevice(email) {
         ip: "system"
     });
     saveDB(db);
+
+    if (typeof supabaseAdminUpdateUserStatus === "function") {
+        supabaseAdminUpdateUserStatus(email, "BANNED", finalReason);
+    }
     
     writeAuditLog(
         currentAdmin.email,

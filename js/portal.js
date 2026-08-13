@@ -2605,6 +2605,10 @@ function executeDeleteBank() {
     });
     saveDB(db);
 
+    if (typeof supabaseDeleteBankAccount === "function") {
+        supabaseDeleteBankAccount();
+    }
+
     dispatchNotification(
         currentUser.email,
         "Bank Account Removed",
@@ -2645,6 +2649,11 @@ function handleEditProfileSubmit(e) {
         ip: "197.34.120.44"
     });
     saveDB(db);
+
+    if (typeof supabaseUpdateProfile === "function") {
+        supabaseUpdateProfile({ name: name, phone: phone });
+    }
+
     closeEditProfileModal();
     loadSession();
     renderSettingsProfile();
@@ -2688,6 +2697,11 @@ function handleChangePasswordSubmit(e) {
         ip: "197.34.120.44"
     });
     saveDB(db);
+
+    if (typeof supabaseUpdatePassword === "function") {
+        supabaseUpdatePassword(newPw);
+    }
+
     closeChangePasswordModal();
     showToast("Password updated successfully!", "success");
 }
@@ -3246,6 +3260,10 @@ function handlePasswordUpdate(e) {
     db.users[currentUser.email] = user;
     saveDB(db);
     
+    if (typeof supabaseUpdatePassword === "function") {
+        supabaseUpdatePassword(newPassword);
+    }
+    
     currentUser.passwordHash = newPassword;
     showToast("Password updated successfully.", "success");
     document.getElementById("password-settings-form").reset();
@@ -3496,6 +3514,10 @@ function handlePinResetWithPassword(e) {
 
     db.users[currentUser.email] = user;
     saveDB(db);
+
+    if (typeof supabaseUpdateProfile === "function") {
+        supabaseUpdateProfile({ transactionPin: newPin });
+    }
 
     currentUser.transactionPin = newPin;
     pinFailedAttempts = 0;

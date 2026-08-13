@@ -501,6 +501,11 @@ function setupSupabaseRealtimeSubscriptions() {
                 console.log('⚡ Realtime Ticket Messages Update:', payload);
                 handleRealtimeTicketMessageChange(payload);
             })
+            // Listen for Notifications
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'notifications' }, payload => {
+                console.log('⚡ Realtime Notifications Update:', payload);
+                handleRealtimeNotificationChange(payload);
+            })
             // Listen for Currencies & Rates
             .on('postgres_changes', { event: '*', schema: 'public', table: 'currencies' }, () => {
                 syncFromSupabaseCloud();
@@ -650,6 +655,42 @@ function handleRealtimeTicketMessageChange(payload) {
 
     if (typeof loadSession === "function") loadSession();
     if (typeof loadAdminSession === "function") loadAdminSession();
+}
+
+function handleRealtimeNotificationChange(payload) {
+    const n = payload.new;
+    if (!n) return;
+
+    const db = getDB();
+    const email = n.user_email;
+    if (email && db.users[email]) {
+        if (!db.users[email].notifications) db.users[email].notifications = [];
+        const exists = db.users[email].notifications.some(x => x.id === n.id);
+        if (!exists) {
+            db.users[email].notifications.unshift({
+                id: n.id,
+                title: n.title,
+                message: n.message,
+                read: n.read,
+                createdAt: n.created_at
+            });
+            saveDB(db);
+
+            // Dispatch live browser event for instant dashboard updating
+            window.dispatchEvent(new CustomEvent('goodfastpay_notification', {
+                detail: {
+                    userId: email,
+                    notification: {
+                        id: n.id,
+                        title: n.title,
+                        message: n.message,
+                        read: n.read,
+                        createdAt: n.created_at
+                    }
+                }
+            }));
+        }
+    }
 }
 
 function handleRealtimeProfileChange(payload) {
@@ -912,18 +953,25 @@ async function syncFromSupabaseCloud() {
                 .select('*')
                 .order('created_at', { ascending: false });
 
-            if (!bankErr && banks && banks.length > 0) {
-                banks.forEach(b => {
-                    const bankEmail = b.user_email || profileIdToEmail[b.user_id];
-                    if (bankEmail && db.users[bankEmail]) {
-                        db.users[bankEmail].bankDetails = {
-                            bankName: b.bank_name,
-                            accountNumber: b.account_number,
-                            accountHolderName: b.account_holder_name
-                        };
-                        updated = true;
-                    }
+            if (!bankErr && banks) {
+                // Clear bankDetails for all users to ensure deleted/unlinked accounts are synced
+                Object.keys(db.users).forEach(email => {
+                    db.users[email].bankDetails = null;
                 });
+
+                if (banks.length > 0) {
+                    banks.forEach(b => {
+                        const bankEmail = b.user_email || profileIdToEmail[b.user_id];
+                        if (bankEmail && db.users[bankEmail]) {
+                            db.users[bankEmail].bankDetails = {
+                                bankName: b.bank_name,
+                                accountNumber: b.account_number,
+                                accountHolderName: b.account_holder_name
+                            };
+                            updated = true;
+                        }
+                    });
+                }
             }
         } catch (e) {
             console.warn("Bank accounts sync notice:", e.message);
@@ -1266,10 +1314,10 @@ async function supabasePushBankAccount(bankData) {
 }
 
 /**
- * Update user profile (Name, Phone, Transaction PIN) in Supabase Cloud
+ * Update user profile (Name, Phone, Transaction PIN, Verification status) in Supabase Cloud
  */
-async function supabaseUpdateProfile(updates) {
-    const userEmail = typeof currentUser !== "undefined" && currentUser ? currentUser.email : "user@goodfastpay.com";
+async function supabaseUpdateProfile(updates, targetEmail = "") {
+    const userEmail = targetEmail || (typeof currentUser !== "undefined" && currentUser ? currentUser.email : "user@goodfastpay.com");
 
     // 1. Primary: Serverless API execution
     await callClientApi('update_profile', { updates }, userEmail);
@@ -1284,14 +1332,85 @@ async function supabaseUpdateProfile(updates) {
             if (updates.wallet !== undefined && updates.wallet.balance !== undefined) {
                 payload.wallet_balance = updates.wallet.balance;
             }
+            if (updates.emailVerified !== undefined) payload.email_verified = updates.emailVerified;
+            if (updates.phoneVerified !== undefined) payload.phone_verified = updates.phoneVerified;
 
             await supabaseClient
                 .from('profiles')
                 .update(payload)
                 .eq('email', userEmail);
-            console.log("⚡ Supabase Profile updated directly.");
+            console.log("⚡ Supabase Profile updated directly:", userEmail);
         } catch (e) {
             console.warn("Could not update profile directly in Supabase:", e.message);
+        }
+    }
+}
+
+/**
+ * Update user login password in Supabase Auth
+ */
+async function supabaseUpdatePassword(newPassword) {
+    if (supabaseClient && isSupabaseConfigured) {
+        try {
+            const { error } = await supabaseClient.auth.updateUser({
+                password: newPassword
+            });
+            if (error) {
+                console.warn("Could not update password in Supabase Auth:", error.message);
+                return { success: false, message: error.message };
+            }
+            console.log("⚡ Password updated in Supabase Auth successfully.");
+            return { success: true };
+        } catch (e) {
+            console.warn("supabaseUpdatePassword exception:", e.message);
+            return { success: false, message: e.message };
+        }
+    }
+    return { success: true, isLocalOnly: true };
+}
+
+/**
+ * Delete linked bank accounts in Supabase Cloud
+ */
+async function supabaseDeleteBankAccount() {
+    const userEmail = typeof currentUser !== "undefined" && currentUser ? currentUser.email : "user@goodfastpay.com";
+    
+    // 1. Primary: Serverless API execution
+    await callClientApi('delete_bank', {}, userEmail);
+
+    // 2. Direct Supabase Client fallback
+    if (supabaseClient && isSupabaseConfigured) {
+        try {
+            await supabaseClient.from('bank_accounts').delete().eq('user_email', userEmail);
+            console.log("⚡ Supabase Bank Account deleted directly.");
+        } catch (e) {
+            console.warn("Could not delete bank directly in Supabase:", e.message);
+        }
+    }
+}
+
+/**
+ * Push a new user notification to Supabase Cloud
+ */
+async function supabasePushNotification(userEmail, notification) {
+    if (supabaseClient && isSupabaseConfigured) {
+        try {
+            const db = getDB();
+            const localUser = db.users[userEmail];
+            const userIdUUID = localUser ? localUser.id : null;
+
+            await supabaseClient.from('notifications').insert([{
+                id: notification.id,
+                user_email: userEmail,
+                user_id: userIdUUID,
+                title: notification.title,
+                message: notification.message,
+                read: notification.read || false,
+                created_at: notification.createdAt || new Date().toISOString()
+            }]);
+            console.log("⚡ Supabase Notification pushed directly for:", userEmail);
+        } catch (e) {
+            console.warn("Could not push notification directly to Supabase:", e.message);
         }
     }
 }
@@ -1335,6 +1454,25 @@ async function supabasePushPurchase(cardId, userEmail, newBalance) {
 async function supabasePushSecurityLog(userEmail, event, ip, userAgent, details) {
     const email = userEmail || (typeof currentUser !== "undefined" && currentUser ? currentUser.email : "user@goodfastpay.com");
     await callClientApi('log_security_event', { event, ip, userAgent, details }, email);
+
+    if (supabaseClient && isSupabaseConfigured) {
+        try {
+            const db = getDB();
+            const localUser = db.users[email];
+            const userIdUUID = localUser ? localUser.id : null;
+
+            await supabaseClient.from('security_logs').insert([{
+                user_email: email,
+                user_id: userIdUUID,
+                event: event,
+                ip_address: ip || '127.0.0.1',
+                user_agent: userAgent || 'Web Browser'
+            }]);
+            console.log("⚡ Supabase Security Log pushed directly.");
+        } catch (e) {
+            console.warn("Could not push security log directly to Supabase:", e.message);
+        }
+    }
 }
 
 /**
@@ -1343,6 +1481,19 @@ async function supabasePushSecurityLog(userEmail, event, ip, userAgent, details)
 async function supabasePushAuditLog(operatorEmail, event, details) {
     const email = operatorEmail || "admin@goodfastpay.com";
     await callClientApi('log_security_event', { event, details }, email);
+
+    if (supabaseClient && isSupabaseConfigured) {
+        try {
+            await supabaseClient.from('audit_trail').insert([{
+                operator_email: email,
+                event: event,
+                details: details
+            }]);
+            console.log("⚡ Supabase Audit Log pushed directly.");
+        } catch (e) {
+            console.warn("Could not push audit log directly to Supabase:", e.message);
+        }
+    }
 }
 
 /**
