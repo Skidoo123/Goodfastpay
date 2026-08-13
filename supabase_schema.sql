@@ -403,13 +403,14 @@ BEGIN
         NEW.id,
         NEW.email,
         COALESCE(NEW.raw_user_meta_data->>'full_name', NEW.raw_user_meta_data->>'name', split_part(NEW.email, '@', 1)),
-        COALESCE(NEW.raw_user_meta_data->>'role', 'USER'),
+        CASE WHEN NEW.email = 'admin@goodfastpay.com' THEN 'ADMIN' ELSE COALESCE(NEW.raw_user_meta_data->>'role', 'USER') END,
         'ACTIVE',
         0.00,
         COALESCE(NEW.created_at, NOW())
     )
     ON CONFLICT (email) DO UPDATE SET
         id = EXCLUDED.id,
+        role = EXCLUDED.role,
         name = COALESCE(public.profiles.name, EXCLUDED.name);
     RETURN NEW;
 END;
