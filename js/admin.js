@@ -3996,6 +3996,19 @@ function syncAdminActiveChat() {
 let activeAdminRole = localStorage.getItem("goodfastpay_admin_role") || "SUPER_ADMIN";
 
 function switchAdminRole(newRole) {
+    const db = getDB();
+    const loggedUser = currentAdmin ? (db.users[currentAdmin.email] || currentAdmin) : null;
+    const assignedRole = (loggedUser && loggedUser.staffRole) ? loggedUser.staffRole : "SUPER_ADMIN";
+
+    if (assignedRole !== "SUPER_ADMIN" && newRole !== assignedRole) {
+        if (typeof showToast === "function") {
+            showToast(`Access Restricted: Your staff role is locked to ${assignedRole.replace('_', ' ')} assigned by Super Admin.`, "danger");
+        }
+        activeAdminRole = assignedRole;
+        applyAdminRolePermissions();
+        return;
+    }
+
     activeAdminRole = newRole;
     localStorage.setItem("goodfastpay_admin_role", newRole);
     applyAdminRolePermissions();
@@ -4005,8 +4018,30 @@ function switchAdminRole(newRole) {
 }
 
 function applyAdminRolePermissions() {
+    const db = getDB();
+    const loggedUser = currentAdmin ? (db.users[currentAdmin.email] || currentAdmin) : null;
+    const assignedRole = (loggedUser && loggedUser.staffRole) ? loggedUser.staffRole : "SUPER_ADMIN";
+
+    // Enforce locked assigned role for non-Super-Admin accounts
+    if (assignedRole !== "SUPER_ADMIN") {
+        activeAdminRole = assignedRole;
+        localStorage.setItem("goodfastpay_admin_role", activeAdminRole);
+    }
+
     const roleSelector = document.getElementById("admin-role-selector");
-    if (roleSelector) roleSelector.value = activeAdminRole;
+    if (roleSelector) {
+        roleSelector.value = activeAdminRole;
+        if (assignedRole !== "SUPER_ADMIN") {
+            roleSelector.disabled = true;
+            roleSelector.style.cursor = "not-allowed";
+            roleSelector.style.opacity = "0.7";
+            roleSelector.title = `Role is permanently locked to your assigned staff permissions (${assignedRole})`;
+        } else {
+            roleSelector.disabled = false;
+            roleSelector.style.cursor = "pointer";
+            roleSelector.style.opacity = "1";
+        }
+    }
 
     const isSuper = activeAdminRole === "SUPER_ADMIN";
     const isSupport = activeAdminRole === "SUPPORT_AGENT";

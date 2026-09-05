@@ -72,6 +72,7 @@
     </style>
 </head>
 <body>
+    <div class="live-rate-marquee-container"></div>
 
     <div class="dashboard-layout">
         <!-- SIDEBAR BACKDROP OVERLAY FOR MOBILE -->
@@ -241,6 +242,9 @@
                     </div>
                 </div>
 
+                <!-- VIP Loyalty Tier Status Widget -->
+                <div id="vip-loyalty-widget-container"></div>
+
                 <!-- Summary Cards grid -->
                 <div class="dash-grid stats-summary-grid" style="margin-bottom: 24px;">
                     <div class="card stats-card" style="margin-bottom: 0; padding: 18px 16px;">
@@ -377,21 +381,42 @@
 
                                 <!-- Card Code / PIN -->
                                 <div class="input-group">
-                                    <label class="input-label">Card Code / PIN Code</label>
-                                    <input type="text" id="sell-code" class="input-field" placeholder="Enter card claim code or PIN" required>
+                                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                                        <label class="input-label" style="margin-bottom: 0;">Card Code / PIN Code</label>
+                                        <span style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600;">(Optional if uploading images)</span>
+                                    </div>
+                                    <input type="text" id="sell-code" class="input-field" placeholder="Enter card claim code or PIN">
                                 </div>
 
-                                <!-- Upload Card Image -->
+                                <!-- Dual Upload Card Images (Front & Back) -->
                                 <div class="input-group" style="margin-bottom: 24px;">
-                                    <label class="input-label">Upload Card Image</label>
-                                    <div class="card-upload-dropzone" onclick="document.getElementById('sell-img-front').click()">
-                                        <div class="upload-icon-circle">
-                                            <i class="fa-regular fa-image"></i>
+                                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                                        <label class="input-label" style="margin-bottom: 0;">Upload Card Images</label>
+                                        <span style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600;">(Optional if PIN is entered)</span>
+                                    </div>
+                                    
+                                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin-top: 6px;">
+                                        <!-- Front Image Dropzone -->
+                                        <div class="card-upload-dropzone upload-box" onclick="document.getElementById('sell-img-front').click()" style="padding: 16px 12px; text-align: center;">
+                                            <div class="upload-icon-circle" style="width: 38px; height: 38px; margin: 0 auto 6px auto; font-size: 1.1rem;">
+                                                <i class="fa-regular fa-image"></i>
+                                            </div>
+                                            <div class="upload-main-text" style="font-size: 0.82rem; font-weight: 700;">Card Front</div>
+                                            <div class="upload-sub-text" style="font-size: 0.7rem;">Tap to upload</div>
+                                            <input type="file" id="sell-img-front" accept="image/*" onchange="previewUpload(this, 'preview-front'); handleCardImageOCRScan(this);" style="display:none;">
+                                            <img id="preview-front" class="upload-preview" style="max-height: 100px; border-radius: 8px; margin-top: 8px; display: none;">
                                         </div>
-                                        <div class="upload-main-text">Tap to upload</div>
-                                        <div class="upload-sub-text">JPEG, PNG, max 5MB</div>
-                                        <input type="file" id="sell-img-front" accept="image/*" onchange="previewUpload(this, 'preview-front')" style="display:none;">
-                                        <img id="preview-front" class="upload-preview" style="max-height: 120px; border-radius: 8px; margin-top: 8px;">
+
+                                        <!-- Back Image Dropzone -->
+                                        <div class="card-upload-dropzone upload-box" onclick="document.getElementById('sell-img-back').click()" style="padding: 16px 12px; text-align: center;">
+                                            <div class="upload-icon-circle" style="width: 38px; height: 38px; margin: 0 auto 6px auto; font-size: 1.1rem;">
+                                                <i class="fa-solid fa-barcode"></i>
+                                            </div>
+                                            <div class="upload-main-text" style="font-size: 0.82rem; font-weight: 700;">Card Back</div>
+                                            <div class="upload-sub-text" style="font-size: 0.7rem;">Tap to upload</div>
+                                            <input type="file" id="sell-img-back" accept="image/*" onchange="previewUpload(this, 'preview-back')" style="display:none;">
+                                            <img id="preview-back" class="upload-preview" style="max-height: 100px; border-radius: 8px; margin-top: 8px; display: none;">
+                                        </div>
                                     </div>
                                 </div>
 
@@ -1417,5 +1442,10 @@
     <!-- html2pdf Library for PDF Receipt Downloads -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <script src="js/portal.js?v=2.3"></script>
+    <script src="js/ocr-scanner.js?v=2.4"></script>
+    <script src="js/payout-tracker.js?v=2.4"></script>
+    <script src="js/rate-ticker.js?v=2.4"></script>
+    <script src="js/loyalty.js?v=2.4"></script>
+    <script src="js/copilot-ai.js?v=2.4"></script>
 </body>
 </html>

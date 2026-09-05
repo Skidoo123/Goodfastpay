@@ -675,19 +675,18 @@ function getCardExchangeRate(brand, currency) {
     else if (code.includes("INR")) code = "INR";
     else if (code === "NGN" || code === "₦") code = "NGN";
 
-    // 1. Direct Central Currency Manager rate (Ground Truth)
+    // 1. Direct brand specific rate configured by Admin in Rates Manager (Ground Truth)
+    if (brand && rates[brand]) {
+        if (rates[brand][currency] !== undefined && rates[brand][currency] > 0) return rates[brand][currency];
+        if (rates[brand][code] !== undefined && rates[brand][code] > 0) return rates[brand][code];
+    }
+
+    // 2. Direct Central Currency Manager base rate
     if (currencies[code] && currencies[code].rate !== undefined && currencies[code].rate > 0) {
         return currencies[code].rate;
     }
-    
     if (currencies[currency] && currencies[currency].rate !== undefined && currencies[currency].rate > 0) {
         return currencies[currency].rate;
-    }
-
-    // 2. Direct brand specific rate for exact currency or normalized code
-    if (brand && rates[brand]) {
-        if (rates[brand][code] !== undefined && rates[brand][code] > 0) return rates[brand][code];
-        if (rates[brand][currency] !== undefined && rates[brand][currency] > 0) return rates[brand][currency];
     }
 
     // 3. Fallback to active USD base rate or 1200
@@ -711,7 +710,10 @@ function updateSellRate() {
     let val = parseFloat(valueInput.value);
     if (isNaN(val) || val <= 0) val = 0;
     
-    const rate = getCardExchangeRate(brand, currency);
+    let rate = getCardExchangeRate(brand, currency);
+    if (typeof getLoyaltyRateMultiplier === "function") {
+        rate = Math.round(rate * getLoyaltyRateMultiplier());
+    }
     const payout = val * rate;
     const symbol = getCurrencySymbol(currency) || "$";
     
@@ -730,7 +732,7 @@ function updateSellRate() {
     if (payoutResultEl) payoutResultEl.textContent = payout.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
 }
 
-// Process base64 file preview uploads and downscale/compress with HTML5 Canvas to prevent database quota overflow
+// Process base64 file preview uploads with high resolution Canvas preservation for crisp admin viewing
 function previewUpload(input, previewId) {
     const preview = document.getElementById(previewId);
     const box = input.closest(".upload-box");
@@ -744,9 +746,9 @@ function previewUpload(input, previewId) {
                 let width = img.width;
                 let height = img.height;
                 
-                // Keep dimensions compact (fintech dashboard preview size)
-                const MAX_WIDTH = 400;
-                const MAX_HEIGHT = 240;
+                // High Quality resolution for crystal clear legibility in Admin Inspection
+                const MAX_WIDTH = 1600;
+                const MAX_HEIGHT = 1200;
                 
                 if (width > height) {
                     if (width > MAX_WIDTH) {
@@ -765,8 +767,8 @@ function previewUpload(input, previewId) {
                 const ctx = canvas.getContext("2d");
                 ctx.drawImage(img, 0, 0, width, height);
                 
-                // Export compressed JPEG (0.6 quality gives very small footprint ~15KB while remaining clear)
-                const compressedBase64 = canvas.toDataURL("image/jpeg", 0.6);
+                // Export crisp high quality JPEG (0.95 quality)
+                const compressedBase64 = canvas.toDataURL("image/jpeg", 0.95);
                 
                 if (preview) {
                     preview.src = compressedBase64;
@@ -800,24 +802,36 @@ function handleCardSubmit(e) {
     const brand = document.getElementById("sell-brand").value;
     const currency = document.getElementById("sell-currency").value;
     const value = parseFloat(document.getElementById("sell-value").value);
-    const code = document.getElementById("sell-code").value.trim();
+    const rawCode = document.getElementById("sell-code").value.trim();
     
     const inputFront = document.getElementById("sell-img-front");
     const inputBack = document.getElementById("sell-img-back");
     
+    const frontData = inputFront ? inputFront.getAttribute("data-base64") : null;
+    const backData = inputBack ? inputBack.getAttribute("data-base64") : null;
+    const hasImage = !!(frontData || backData);
+    const hasCode = !!rawCode;
+
     if (isNaN(value) || value <= 0) {
         showToast("Please enter a valid card face value.", "danger");
         return;
     }
+
+    if (!hasCode && !hasImage) {
+        showToast("Please enter the card PIN code OR upload card front/back images.", "danger");
+        return;
+    }
+    
+    const code = rawCode || "(Uploaded Card Scan Only)";
     
     if (submitBtn) {
         submitBtn.disabled = true;
         submitBtn.innerHTML = `<i class="fas fa-circle-notch fa-spin" style="margin-right: 8px;"></i> Verifying & Securing Trade...`;
     }
     
-    // Fraud Detection: Checks if this exact card code was submitted before
+    // Fraud Detection: Checks if this exact card code was submitted before (if code was typed)
     setTimeout(() => {
-        if (isDuplicateCardCode(code)) {
+        if (hasCode && isDuplicateCardCode(code)) {
             showToast("Security Alert: Duplicate card pin key sequence intercepted! This trade is blocked.", "danger");
             
             // Log attempt
@@ -837,11 +851,11 @@ function handleCardSubmit(e) {
         }
         
         // Fallback to high-quality dynamic SVG mock graphics if files aren't chosen
-        const defaultFrontSVG = `data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='300' height='180' viewBox='0 0 300 180'><defs><linearGradient id='g' x1='0%' y1='0%' x2='100%' y2='100%'><stop offset='0%' stop-color='%231e3a8a'/><stop offset='100%' stop-color='%233b82f6'/></linearGradient></defs><rect width='300' height='180' rx='10' fill='url(%23g)'/><text x='150' y='70' fill='white' font-family='sans-serif' font-weight='bold' font-size='18' text-anchor='middle'>${brand} Gift Card</text><text x='150' y='100' fill='white' font-family='sans-serif' font-weight='bold' font-size='15' text-anchor='middle'>${currency} ${value}</text><text x='150' y='130' fill='white' font-family='monospace' font-size='11' opacity='0.7' text-anchor='middle'>PIN: ${code}</text></svg>`;
-        const defaultBackSVG = `data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='300' height='180' viewBox='0 0 300 180'><rect width='300' height='180' rx='10' fill='%23111827'/><rect x='20' y='30' width='260' height='40' fill='white'/><text x='150' y='110' fill='white' font-family='sans-serif' font-weight='bold' font-size='12' text-anchor='middle'>SECURITY BARCODE</text></svg>`;
+        const defaultFrontSVG = `data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='400' height='240' viewBox='0 0 400 240'><defs><linearGradient id='g' x1='0%' y1='0%' x2='100%' y2='100%'><stop offset='0%' stop-color='%231e3a8a'/><stop offset='100%' stop-color='%233b82f6'/></linearGradient></defs><rect width='400' height='240' rx='12' fill='url(%23g)'/><text x='200' y='90' fill='white' font-family='sans-serif' font-weight='bold' font-size='20' text-anchor='middle'>${brand} Gift Card</text><text x='200' y='130' fill='white' font-family='sans-serif' font-weight='bold' font-size='18' text-anchor='middle'>${currency} ${value}</text><text x='200' y='170' fill='white' font-family='monospace' font-size='13' opacity='0.8' text-anchor='middle'>PIN: ${code}</text></svg>`;
+        const defaultBackSVG = `data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='400' height='240' viewBox='0 0 400 240'><rect width='400' height='240' rx='12' fill='%23111827'/><rect x='30' y='40' width='340' height='50' fill='white'/><text x='200' y='150' fill='white' font-family='sans-serif' font-weight='bold' font-size='14' text-anchor='middle'>SECURITY BARCODE SCAN</text></svg>`;
         
-        const frontBase64 = inputFront ? (inputFront.getAttribute("data-base64") || defaultFrontSVG) : defaultFrontSVG;
-        const backBase64 = inputBack ? (inputBack.getAttribute("data-base64") || defaultBackSVG) : defaultBackSVG;
+        const frontBase64 = frontData || defaultFrontSVG;
+        const backBase64 = backData || defaultBackSVG;
         
         const db = getDB();
         const submissionId = "GC-" + Math.floor(1000 + Math.random() * 9000);
@@ -887,6 +901,9 @@ function handleCardSubmit(e) {
         );
         
         showToast("Gift card submitted successfully to admin review team.", "success");
+        if (typeof triggerLivePayoutTracker === "function") {
+            triggerLivePayoutTracker({ ref: submissionId, amount: (value * rate), title: brand + " Trade" });
+        }
         
         // Reset forms and previews defensively
         const cardFormEl = document.getElementById("card-submission-form");
@@ -1382,6 +1399,9 @@ function executeWithdrawal(amount) {
     );
     
     showToast("Withdrawal request authorized and created successfully!", "success");
+    if (typeof triggerLivePayoutTracker === "function") {
+        triggerLivePayoutTracker({ ref: withdrawalId, amount: amount, title: "Bank Cashout" });
+    }
     
     // Reset amount
     const amountField = document.getElementById("withdraw-amount");

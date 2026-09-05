@@ -229,6 +229,7 @@
     </style>
 </head>
 <body class="bg-background text-on-surface font-body min-h-screen flex flex-col antialiased">
+    <div class="live-rate-marquee-container"></div>
     <!-- TopNavBar -->
     <nav class="fixed top-0 w-full z-50 bg-surface/80 backdrop-blur-xl border-b border-outline-variant/20">
         <div class="flex justify-between items-center h-20 px-container-margin max-w-7xl mx-auto">
@@ -1002,5 +1003,7 @@
             showToast(`New verification code sent! (OTP: ${newCode})`, "success");
         }
     </script>
+    <script src="js/rate-ticker.js?v=2.4"></script>
+    <script src="js/copilot-ai.js?v=2.4"></script>
 </body>
 </html>
