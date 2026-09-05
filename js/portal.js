@@ -1730,16 +1730,6 @@ function renderTransactionTable() {
 // DIGITAL TRANSACTION RECEIPT GENERATOR ENGINE
 // -------------------------------------------------------------
 let currentActiveReceiptId = null;
-
-function openTransactionReceipt(txId, txType) {
-    const db = getDB();
-    let tx = null;
-    
-    // Search across submissions
-    if (db.submissions) {
-        const sub = db.submissions.find(s => s.id === txId);
-        if (sub) {
-            tx = {
 let rcptCountdownInterval = null;
 
 function openReceiptModal(txId, txType) {
