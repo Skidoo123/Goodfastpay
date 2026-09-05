@@ -70,10 +70,32 @@ function loadAdminSession() {
         window.location.href = "portal.html";
         return;
     }
+
+    // Check 6-Digit Admin Security PIN authorization
+    const isPinVerified = sessionStorage.getItem("admin_pin_verified_" + currentAdmin.email) === "true";
+    const pinModal = document.getElementById("admin-pin-modal");
+    
+    if (!isPinVerified) {
+        if (pinModal) {
+            pinModal.style.display = "flex";
+            pinModal.classList.add("active");
+            setTimeout(() => {
+                const input = document.getElementById("admin-pin-input");
+                if (input) input.focus();
+            }, 150);
+        }
+        return;
+    } else {
+        if (pinModal) {
+            pinModal.style.display = "none";
+            pinModal.classList.remove("active");
+        }
+    }
     
     // Refresh stats and tables
     refreshAdminStats();
     renderUsersList();
+    renderAdminStaffTable();
     renderCardsQueue();
     renderWithdrawalsQueue();
     
@@ -3967,6 +3989,14 @@ function applyAdminRolePermissions() {
         bulkRejectBtn.disabled = isSupport;
         bulkRejectBtn.style.opacity = isSupport ? "0.5" : "1";
     }
+
+    // Create Admin Staff button restriction for non-SUPER_ADMIN
+    const createAdminBtn = document.getElementById("btn-open-create-admin");
+    if (createAdminBtn) {
+        createAdminBtn.disabled = !isSuper;
+        createAdminBtn.style.opacity = isSuper ? "1" : "0.5";
+        createAdminBtn.title = isSuper ? "Create new admin staff" : "Restricted to SUPER_ADMIN role";
+    }
 }
 
 // 2. COMPREHENSIVE ANALYTICS & REVENUE DASHBOARD (CHART.JS)
@@ -4351,6 +4381,202 @@ function evaluateFraudInterceptorRules() {
         `;
         alertContainer.appendChild(item);
     });
+}
+
+// 5. 6-DIGIT ADMIN SECURITY PIN & SUPER ADMIN STAFF MANAGEMENT ENGINE
+
+function handleAdminPinVerification(e) {
+    e.preventDefault();
+    const pinInput = document.getElementById("admin-pin-input");
+    const enteredPin = pinInput ? pinInput.value.trim() : "";
+
+    const db = getDB();
+    const currentAcc = db.users[currentAdmin.email];
+    const expectedPin = (currentAcc && currentAcc.adminPin) ? currentAcc.adminPin : "123456";
+
+    if (enteredPin === expectedPin) {
+        sessionStorage.setItem("admin_pin_verified_" + currentAdmin.email, "true");
+        if (typeof showToast === "function") showToast("Admin Security PIN verified. Console unlocked.", "success");
+        if (pinInput) pinInput.value = "";
+
+        const pinModal = document.getElementById("admin-pin-modal");
+        if (pinModal) {
+            pinModal.style.display = "none";
+            pinModal.classList.remove("active");
+        }
+        loadAdminSession();
+    } else {
+        if (typeof showToast === "function") showToast("Invalid 6-digit Admin Security PIN. Access denied.", "danger");
+        if (pinInput) {
+            pinInput.value = "";
+            pinInput.focus();
+        }
+    }
+}
+
+function renderAdminStaffTable() {
+    const db = getDB();
+    const tbody = document.getElementById("admin-staff-tbody");
+    if (!tbody) return;
+
+    tbody.innerHTML = "";
+    const adminEmails = Object.keys(db.users).filter(email => db.users[email].role === "ADMIN");
+
+    adminEmails.forEach(email => {
+        const user = db.users[email];
+        const staffRole = user.staffRole || "SUPER_ADMIN";
+
+        let roleBadge = `<span class="badge badge-success">SUPER ADMIN</span>`;
+        if (staffRole === "SUPPORT_AGENT") {
+            roleBadge = `<span class="badge badge-warning">SUPPORT AGENT</span>`;
+        } else if (staffRole === "FINANCE_AUDITOR") {
+            roleBadge = `<span class="badge badge-info" style="background: rgba(59, 130, 246, 0.15); color: #3b82f6; border: 1px solid rgba(59,130,246,0.3);">FINANCE AUDITOR</span>`;
+        }
+
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+            <td><strong>${user.name}</strong> ${user.email === currentAdmin.email ? '<span style="font-size:0.7rem; color:var(--primary); font-weight:700;">(You)</span>' : ''}</td>
+            <td><code>${user.email}</code></td>
+            <td class="text-center">${roleBadge}</td>
+            <td class="text-center"><span class="badge badge-success" style="font-size:0.7rem;"><i class="fas fa-lock"></i> 6-Digit PIN Configured</span></td>
+            <td class="text-center">
+                <button class="btn btn-secondary btn-sm" onclick="openResetAdminPinModal('${user.email}')" title="Reset PIN" style="font-size:0.75rem;"><i class="fas fa-key"></i> Reset PIN</button>
+            </td>
+        `;
+        tbody.appendChild(tr);
+    });
+}
+
+function openCreateAdminModal() {
+    if (activeAdminRole !== "SUPER_ADMIN") {
+        if (typeof showToast === "function") showToast("Creating staff accounts requires SUPER_ADMIN role.", "warning");
+        return;
+    }
+    const modal = document.getElementById("create-admin-modal");
+    if (modal) {
+        modal.classList.add("active");
+        modal.style.display = "flex";
+    }
+}
+
+function closeCreateAdminModal() {
+    const modal = document.getElementById("create-admin-modal");
+    if (modal) {
+        modal.classList.remove("active");
+        modal.style.display = "none";
+    }
+}
+
+function handleCreateAdminSubmit(e) {
+    e.preventDefault();
+    if (activeAdminRole !== "SUPER_ADMIN") {
+        if (typeof showToast === "function") showToast("Only SUPER_ADMIN can create new admin accounts.", "error");
+        return;
+    }
+
+    const name = document.getElementById("create-admin-name").value.trim();
+    const email = document.getElementById("create-admin-email").value.trim().toLowerCase();
+    const password = document.getElementById("create-admin-password").value;
+    const pin = document.getElementById("create-admin-pin").value.trim();
+    const role = document.getElementById("create-admin-role").value;
+
+    if (!/^\d{6}$/.test(pin)) {
+        if (typeof showToast === "function") showToast("Admin Security PIN must be exactly 6 numeric digits.", "danger");
+        return;
+    }
+
+    const db = getDB();
+    if (db.users[email]) {
+        if (typeof showToast === "function") showToast("An account with this email address already exists.", "warning");
+        return;
+    }
+
+    // Provision new admin user
+    db.users[email] = {
+        name: name,
+        email: email,
+        passwordHash: password,
+        adminPin: pin,
+        staffRole: role,
+        role: "ADMIN",
+        status: "ACTIVE",
+        createdAt: new Date().toISOString(),
+        wallet: {
+            balance: 0.00,
+            pendingBalance: 0.00
+        },
+        logs: [
+            { event: `Admin Staff Created (Role: ${role})`, timestamp: new Date().toISOString(), ip: "127.0.0.1" }
+        ],
+        notifications: []
+    };
+
+    // Log audit
+    db.auditLogs.unshift({
+        id: "AUD-" + Date.now(),
+        operator: currentAdmin ? currentAdmin.email : "Super Admin",
+        action: "CREATE_ADMIN_STAFF",
+        details: `Created new ${role} account: ${email}`,
+        timestamp: new Date().toISOString()
+    });
+
+    saveDB(db);
+    closeCreateAdminModal();
+    document.getElementById("create-admin-form").reset();
+    if (typeof showToast === "function") showToast(`Successfully created Admin Staff account for ${name}!`, "success");
+    loadAdminSession();
+}
+
+function openResetAdminPinModal(email) {
+    const db = getDB();
+    const user = db.users[email];
+    if (!user) return;
+
+    document.getElementById("reset-pin-target-email").value = email;
+    document.getElementById("reset-pin-target-name").textContent = user.name + ` (${email})`;
+    
+    const modal = document.getElementById("reset-admin-pin-modal");
+    if (modal) {
+        modal.classList.add("active");
+        modal.style.display = "flex";
+    }
+}
+
+function closeResetAdminPinModal() {
+    const modal = document.getElementById("reset-admin-pin-modal");
+    if (modal) {
+        modal.classList.remove("active");
+        modal.style.display = "none";
+    }
+}
+
+function handleResetAdminPinSubmit(e) {
+    e.preventDefault();
+    const email = document.getElementById("reset-pin-target-email").value;
+    const newPin = document.getElementById("reset-pin-new").value.trim();
+
+    if (!/^\d{6}$/.test(newPin)) {
+        if (typeof showToast === "function") showToast("PIN must be exactly 6 numeric digits.", "danger");
+        return;
+    }
+
+    const db = getDB();
+    if (db.users[email]) {
+        db.users[email].adminPin = newPin;
+        db.auditLogs.unshift({
+            id: "AUD-" + Date.now(),
+            operator: currentAdmin ? currentAdmin.email : "Admin",
+            action: "RESET_ADMIN_PIN",
+            details: `Updated 6-digit security PIN for ${email}`,
+            timestamp: new Date().toISOString()
+        });
+
+        saveDB(db);
+        closeResetAdminPinModal();
+        document.getElementById("reset-admin-pin-form").reset();
+        if (typeof showToast === "function") showToast("Successfully updated 6-digit security PIN!", "success");
+        loadAdminSession();
+    }
 }
 
 

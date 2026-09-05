@@ -116,6 +116,8 @@ const INITIAL_DATABASE = {
             name: "Chief Admin",
             email: "admin@goodfastpay.com",
             passwordHash: "AdminGoodfastpay2026!",
+            adminPin: "123456",
+            staffRole: "SUPER_ADMIN",
             phone: "+1 555-0100",
             role: "ADMIN",
             status: "ACTIVE",
@@ -148,12 +150,12 @@ const INITIAL_DATABASE = {
             cardValue: 50,
             currency: "EUR",
             cardCode: "AMZN-K9L2-P3O1",
-            frontImageUrl: "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='300' height='180' viewBox='0 0 300 180'><defs><linearGradient id='am' x1='0%' y1='0%' x2='100%' y2='100%'><stop offset='0%' stop-color='%23232F3E'/><stop offset='100%' stop-color='%23FF9900'/></linearGradient></defs><rect width='300' height='180' rx='10' fill='url(%23am)'/><text x='150' y='80' fill='white' font-family='sans-serif' font-weight='bold' font-size='20' text-anchor='middle'>Amazon Gift Card</text><text x='150' y='110' fill='white' font-family='monospace' font-size='12' opacity='0.8' text-anchor='middle'>PIN: AMZN-K9L2-P3O1</text><text x='150' y='140' fill='white' font-family='sans-serif' font-weight='bold' font-size='14' text-anchor='middle'>50 EUR</text></svg>",
-            backImageUrl: "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='300' height='180' viewBox='0 0 300 180'><rect width='300' height='180' rx='10' fill='%2327272a'/><rect x='20' y='30' width='260' height='40' fill='white'/><line x1='45' y1='35' x2='45' y2='65' stroke='black' stroke-width='4'/><line x1='55' y1='35' x2='55' y2='65' stroke='black' stroke-width='6'/><line x1='75' y1='35' x2='75' y2='65' stroke='black' stroke-width='2'/><line x1='85' y1='35' x2='85' y2='65' stroke='black' stroke-width='8'/><line x1='105' y1='35' x2='105' y2='65' stroke='black' stroke-width='4'/><line x1='125' y1='35' x2='125' y2='65' stroke='black' stroke-width='2'/><line x1='145' y1='35' x2='145' y2='65' stroke='black' stroke-width='6'/><line x1='165' y1='35' x2='165' y2='65' stroke='black' stroke-width='8'/><line x1='185' y1='35' x2='185' y2='65' stroke='black' stroke-width='2'/><line x1='205' y1='35' x2='205' y2='65' stroke='black' stroke-width='4'/><line x1='225' y1='35' x2='225' y2='65' stroke='black' stroke-width='6'/><line x1='245' y1='35' x2='245' y2='65' stroke='black' stroke-width='2'/><text x='150' y='100' fill='white' font-family='sans-serif' font-size='8' opacity='0.6' text-anchor='middle'>DO NOT SHARE THIS CODE. FOR SECURITY VERIFICATION ONLY.</text><text x='150' y='120' fill='white' font-family='monospace' font-size='10' text-anchor='middle'>Bar Code ID: 8812739812739</text></svg>",
-            status: "REJECTED",
-            payoutAmount: 0.00,
-            rejectionReason: "Card has already been redeemed / invalid pin.",
-            createdAt: "2026-07-24T11:20:00Z"
+            frontImageUrl: "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='300' height='180' viewBox='0 0 300 180'><defs><linearGradient id='g2' x1='0%' y1='0%' x2='100%' y2='100%'><stop offset='0%' stop-color='%2311998e'/><stop offset='100%' stop-color='%2338ef7d'/></linearGradient></defs><rect width='300' height='180' rx='10' fill='url(%23g2)'/><text x='150' y='80' fill='white' font-family='sans-serif' font-weight='bold' font-size='20' text-anchor='middle'>Amazon Gift Card</text><text x='150' y='110' fill='white' font-family='monospace' font-size='12' opacity='0.8' text-anchor='middle'>PIN: AMZN-K9L2-P3O1</text><text x='150' y='140' fill='white' font-family='sans-serif' font-weight='bold' font-size='14' text-anchor='middle'>50 EUR (€)</text></svg>",
+            backImageUrl: "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='300' height='180' viewBox='0 0 300 180'><rect width='300' height='180' rx='10' fill='%230f172a'/><rect x='20' y='30' width='260' height='40' fill='white'/><line x1='40' y1='35' x2='40' y2='65' stroke='black' stroke-width='4'/><line x1='50' y1='35' x2='50' y2='65' stroke='black' stroke-width='2'/><line x1='60' y1='35' x2='60' y2='65' stroke='black' stroke-width='6'/><line x1='80' y1='35' x2='80' y2='65' stroke='black' stroke-width='2'/><line x1='90' y1='35' x2='90' y2='65' stroke='black' stroke-width='4'/><line x1='110' y1='35' x2='110' y2='65' stroke='black' stroke-width='8'/><text x='150' y='100' fill='white' font-family='sans-serif' font-size='8' opacity='0.6' text-anchor='middle'>VERIFICATION STAMP ONLY</text></svg>",
+            status: "PENDING",
+            payoutAmount: 55000.00,
+            rejectionReason: null,
+            createdAt: "2026-07-29T11:20:00Z"
         }
     ],
     inventory: [
@@ -268,6 +270,21 @@ function getDB() {
     if (db.users && db.users["user@goodfastpay.com"] && db.users["user@goodfastpay.com"].transactionPin === undefined) {
         db.users["user@goodfastpay.com"].transactionPin = "1234";
         dirty = true;
+    }
+    // Auto-migrate adminPin and staffRole for admin users if missing in existing localStorage
+    if (db.users) {
+        Object.keys(db.users).forEach(email => {
+            if (db.users[email].role === "ADMIN") {
+                if (!db.users[email].adminPin) {
+                    db.users[email].adminPin = "123456";
+                    dirty = true;
+                }
+                if (!db.users[email].staffRole) {
+                    db.users[email].staffRole = "SUPER_ADMIN";
+                    dirty = true;
+                }
+            }
+        });
     }
     // Auto-migrate rates in database settings if missing or updating
     if (!db.settings.rates || Object.keys(db.settings.rates).length < 20 || !db.settings.rates["Amazon"] || !db.settings.rates["Amazon"]["USD"]) {
