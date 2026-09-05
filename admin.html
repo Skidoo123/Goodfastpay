@@ -145,7 +145,14 @@
                     <span class="badge badge-success" style="display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; font-weight: 700; text-transform: uppercase; font-size: 0.75rem;"><i class="fas fa-shield-halved"></i> Platform Secure</span>
                     <div style="display: flex; align-items: center; gap: 8px; background: var(--bg-secondary); padding: 6px 12px; border-radius: var(--radius-md); border: 1px solid var(--border-color);">
                         <div style="width: 28px; height: 28px; background: var(--primary); color: #ffffff; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 0.85rem;">A</div>
-                        <span style="font-size: 0.85rem; font-weight: 700; color: var(--text-primary);">Admin</span>
+                        <div style="display: flex; flex-direction: column;">
+                            <span style="font-size: 0.8rem; font-weight: 700; color: var(--text-primary);" id="admin-header-name">Admin Console</span>
+                            <select id="admin-role-selector" onchange="switchAdminRole(this.value)" style="font-size: 0.7rem; background: transparent; border: none; color: var(--primary); font-weight: 700; cursor: pointer; outline: none; padding: 0;">
+                                <option value="SUPER_ADMIN" selected>Role: SUPER ADMIN</option>
+                                <option value="SUPPORT_AGENT">Role: SUPPORT AGENT</option>
+                                <option value="FINANCE_AUDITOR">Role: FINANCE AUDITOR</option>
+                            </select>
+                        </div>
                     </div>
                 </div>
             </header>
@@ -192,6 +199,48 @@
                     </div>
                 </div>
 
+                <!-- AUTOMATED FRAUD INTERCEPTOR RULES & ALERT CENTER -->
+                <div class="card" style="margin-bottom: 24px; border: 1px solid rgba(239, 68, 68, 0.3); background: rgba(239, 68, 68, 0.04);">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
+                        <h4 style="font-weight: 800; color: var(--danger); display: flex; align-items: center; gap: 8px; margin: 0; font-size: 1.05rem;">
+                            <i class="fas fa-shield-cat"></i> Automated Fraud Interceptor & Risk Sentinel
+                        </h4>
+                        <span class="badge badge-danger" id="fraud-alert-count-badge" style="font-size: 0.75rem; padding: 4px 8px;">0 Alerts Detected</span>
+                    </div>
+                    <div id="fraud-interceptor-alerts-list" style="display: flex; flex-direction: column; gap: 8px;">
+                        <!-- Populated dynamically by evaluateFraudInterceptorRules() -->
+                    </div>
+                </div>
+
+                <!-- COMPREHENSIVE ANALYTICS & REVENUE DASHBOARD (CHART.JS) -->
+                <div class="grid-2" style="margin-bottom: 24px;">
+                    <div class="card" style="padding: 20px;">
+                        <h4 style="font-weight: 800; font-size: 1rem; margin-bottom: 16px; display: flex; align-items: center; gap: 8px;">
+                            <i class="fas fa-chart-line" style="color: var(--primary);"></i> Daily Trade Volume Trend (₦)
+                        </h4>
+                        <div style="height: 250px; position: relative;">
+                            <canvas id="chart-volume-canvas"></canvas>
+                        </div>
+                    </div>
+                    <div class="card" style="padding: 20px;">
+                        <h4 style="font-weight: 800; font-size: 1rem; margin-bottom: 16px; display: flex; align-items: center; gap: 8px;">
+                            <i class="fas fa-chart-pie" style="color: var(--secondary);"></i> Profit Margin Breakdown per Brand
+                        </h4>
+                        <div style="height: 250px; position: relative;">
+                            <canvas id="chart-margin-canvas"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card" style="padding: 20px; margin-bottom: 24px;">
+                    <h4 style="font-weight: 800; font-size: 1rem; margin-bottom: 16px; display: flex; align-items: center; gap: 8px;">
+                        <i class="fas fa-clock" style="color: var(--accent);"></i> Peak Trading Hours Distribution (24-Hour)
+                    </h4>
+                    <div style="height: 220px; position: relative;">
+                        <canvas id="chart-peak-hours-canvas"></canvas>
+                    </div>
+                </div>
+
                 <div class="grid-2">
                     <div class="card">
                         <h3 style="font-size: 1.1rem; font-weight: 800; margin-bottom: 20px;"><i class="fas fa-chart-line" style="color: var(--primary); margin-right: 8px;"></i> System Resource Status</h3>
@@ -232,7 +281,7 @@
                         <p style="color: var(--text-secondary); font-size: 0.85rem; line-height: 1.5; margin-bottom: 16px;">Export the complete local JSON dataset or wipe current logs for sandbox refresh testing.</p>
                         <div style="display: flex; gap: 12px;">
                             <button class="btn btn-secondary btn-sm" onclick="exportAdminDB()"><i class="fas fa-download"></i> Backup DB</button>
-                            <button class="btn btn-danger btn-sm" onclick="confirmResetDB()"><i class="fas fa-trash-can"></i> Reset Sandbox</button>
+                            <button class="btn btn-danger btn-sm" onclick="confirmResetDB()" id="btn-admin-reset-sandbox"><i class="fas fa-trash-can"></i> Reset Sandbox</button>
                         </div>
                     </div>
                 </div>
@@ -282,6 +331,22 @@
                             <button class="btn btn-secondary btn-sm" style="padding: 4px 8px; font-size: 0.75rem;" onclick="filterCardsQueue('COMPLETED', this)">Completed</button>
                             <button class="btn btn-secondary btn-sm" style="padding: 4px 8px; font-size: 0.75rem;" onclick="filterCardsQueue('REJECTED', this)">Rejected</button>
                             <button class="btn btn-secondary btn-sm" style="padding: 4px 8px; font-size: 0.75rem;" onclick="filterCardsQueue('ALL', this)">All</button>
+                        </div>
+                        
+                        <!-- Bulk Submissions Processing Toolbar -->
+                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 16px; background: var(--bg-tertiary); border-bottom: 1px solid var(--border-color); flex-wrap: wrap; gap: 8px;">
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <input type="checkbox" id="select-all-cards-cb" onchange="toggleSelectAllCards(this)" style="cursor: pointer;">
+                                <label for="select-all-cards-cb" style="font-size: 0.75rem; font-weight: 700; cursor: pointer; color: var(--text-secondary);">Select All Pending</label>
+                            </div>
+                            <div style="display: flex; gap: 6px;">
+                                <button class="btn btn-accent btn-sm" onclick="bulkApproveCards()" style="font-size: 0.72rem; padding: 4px 8px;" id="btn-bulk-approve">
+                                    <i class="fas fa-check-double"></i> Batch Approve
+                                </button>
+                                <button class="btn btn-danger btn-sm" onclick="bulkRejectCards()" style="font-size: 0.72rem; padding: 4px 8px;" id="btn-bulk-reject">
+                                    <i class="fas fa-ban"></i> Batch Reject
+                                </button>
+                            </div>
                         </div>
                         
                         <div id="admin-cards-list" style="max-height: 520px; overflow-y: auto;">
@@ -1081,6 +1146,8 @@
     <!-- Supabase JS Client & Auth Config -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="js/supabase-config.js?v=2.3"></script>
+    <!-- Chart.js CDN for Analytics Dashboard -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="js/admin.js?v=2.3"></script>
 </body>
 </html>

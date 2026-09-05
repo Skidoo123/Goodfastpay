@@ -1333,12 +1333,89 @@
         </a>
     </nav>
 
+    <!-- DIGITAL TRANSACTION RECEIPT MODAL -->
+    <div class="modal-overlay" id="receipt-modal">
+        <div class="modal-content" style="max-width: 480px; padding: 0; background: transparent; border: none;">
+            <div id="receipt-printable-area" style="background: var(--card-bg, #1c1f2c); border: 1px solid rgba(255,255,255,0.15); border-radius: 20px; padding: 28px 24px; color: #e0e1f4; font-family: sans-serif; position: relative; box-shadow: 0 20px 50px rgba(0,0,0,0.6);">
+                <button class="modal-close" onclick="closeReceiptModal()" style="position: absolute; top: 16px; right: 16px; z-index: 10;"><i class="fas fa-xmark"></i></button>
+                
+                <!-- Receipt Header -->
+                <div style="text-align: center; border-bottom: 1px dashed rgba(255,255,255,0.15); padding-bottom: 20px; margin-bottom: 20px;">
+                    <div style="display: inline-flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+                        <img src="images/logo.png" style="height: 28px; width: 28px; border-radius: 6px;" onerror="this.onerror=null; this.src='https://lh3.googleusercontent.com/aida/AP1WRLtU10Nmghy4wzIQ-SxgirTFAv7BLNE5qoOF0-HwTQxJ6rCUr58WWuUdtLpoooMpeZGgLfmP0CiE82elQ-m8QC5rMDBFH_jT1-yOJiJ13TRoup_drN8ox0xNPLux3EfbZ0i6UIncpXYAc4DRl9RZE0ZWA6tczUQ5mSxyUXwvgIbEg7FPrxFFhmSumMwF7w49idE3C4-ZXZfA0K5quHqoH0hEkM9XCo3OxypLyslTd8WAm6kqbPzvqZEhsA6U';">
+                        <span style="font-weight: 800; font-size: 1.3rem; letter-spacing: -0.5px; color: #ffffff;">Good<span style="color:#03b5d3;">fast</span>pay</span>
+                    </div>
+                    <div style="font-size: 0.72rem; color: #8c909f; text-transform: uppercase; letter-spacing: 1px; font-weight: 700;">Official Digital Transaction Receipt</div>
+                    <div id="rcpt-status-badge" style="display: inline-block; margin-top: 10px; font-size: 0.75rem; font-weight: 800; padding: 4px 14px; border-radius: 20px;"></div>
+                </div>
+                
+                <!-- Amount Display -->
+                <div style="text-align: center; margin-bottom: 24px;">
+                    <div style="font-size: 0.8rem; color: #8c909f; margin-bottom: 4px;" id="rcpt-amount-label">Transaction Amount</div>
+                    <div style="font-size: 2.2rem; font-weight: 900; color: #ffffff; letter-spacing: -0.5px;" id="rcpt-amount-val">₦0.00</div>
+                </div>
+
+                <!-- Transaction Details Grid -->
+                <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); border-radius: 12px; padding: 16px; font-size: 0.85rem; margin-bottom: 20px;">
+                    <div style="display: flex; justify-content: space-between; padding-bottom: 10px; margin-bottom: 10px; border-bottom: 1px solid rgba(255,255,255,0.06);">
+                        <span style="color: #8c909f;">Transaction Type</span>
+                        <strong id="rcpt-type" style="color: #ffffff;">-</strong>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; padding-bottom: 10px; margin-bottom: 10px; border-bottom: 1px solid rgba(255,255,255,0.06);">
+                        <span style="color: #8c909f;">Reference ID</span>
+                        <strong id="rcpt-ref" style="font-family: monospace; color: #03b5d3; font-size: 0.9rem;">-</strong>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; padding-bottom: 10px; margin-bottom: 10px; border-bottom: 1px solid rgba(255,255,255,0.06);">
+                        <span style="color: #8c909f;">Date & Time</span>
+                        <span id="rcpt-date" style="color: #e0e1f4;">-</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; padding-bottom: 10px; margin-bottom: 10px; border-bottom: 1px solid rgba(255,255,255,0.06);">
+                        <span style="color: #8c909f;">Details / Description</span>
+                        <span id="rcpt-details" style="color: #e0e1f4; text-align: right; max-width: 220px;">-</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between;">
+                        <span style="color: #8c909f;">Processing Fee</span>
+                        <span id="rcpt-fee" style="color: #4edea3; font-weight: 700;">₦0.00</span>
+                    </div>
+                </div>
+
+                <!-- Footer & Verification Stamp -->
+                <div style="display: flex; align-items: center; justify-content: space-between; border-top: 1px dashed rgba(255,255,255,0.15); padding-top: 16px;">
+                    <div>
+                        <div style="font-size: 0.72rem; color: #4edea3; font-weight: 700; display: flex; align-items: center; gap: 6px;">
+                            <i class="fas fa-shield-halved"></i> Cryptographically Verified
+                        </div>
+                        <div style="font-size: 0.65rem; color: #8c909f; margin-top: 2px;">Goodfastpay Protocol v2.3</div>
+                    </div>
+                    <div style="text-align: right;">
+                        <svg width="36" height="36" viewBox="0 0 100 100" style="opacity: 0.85;">
+                            <rect width="100" height="100" fill="#10131f" rx="12"/>
+                            <path d="M15 15h30v30H15zM55 15h30v30H55zM15 55h30v30H15z" fill="#03b5d3"/>
+                            <path d="M22 22h16v16H22zM62 22h16v16H62zM22 62h16v16H22z" fill="#10131f"/>
+                            <path d="M55 55h15v15H55zM70 70h15v15H70zM55 80h15v5H55z" fill="#4edea3"/>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Modal Download Action Button -->
+            <div style="margin-top: 14px; text-align: center;">
+                <button type="button" onclick="downloadTransactionReceiptPDF()" class="btn-dark-navy" style="width: 100%; border-radius: 12px; font-weight: 700; padding: 12px; font-size: 0.95rem;">
+                    <i class="fas fa-file-pdf" style="margin-right: 6px; color: #03b5d3;"></i> Download Official PDF Receipt
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- Core Scripts -->
     <script src="js/app.js?v=2.3"></script>
 
     <!-- Supabase JS Client & Auth Config -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="js/supabase-config.js?v=2.3"></script>
+
+    <!-- html2pdf Library for PDF Receipt Downloads -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <script src="js/portal.js?v=2.3"></script>
 </body>
 </html>

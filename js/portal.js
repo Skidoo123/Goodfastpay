@@ -1689,13 +1689,176 @@ function renderTransactionTable() {
                     <div class="tx-status-container">${statusBadge}</div>
                 </div>
             </div>
-            <div class="tx-card-meta-row">
+            <div class="tx-card-meta-row" style="display: flex; justify-content: space-between; align-items: center; margin-top: 8px; font-size: 0.75rem;">
                 <span class="tx-timestamp">${dateFormatted} • ${timeFormatted}</span>
-                <span class="tx-ref-id">ID: ${tx.id}</span>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <span class="tx-ref-id">ID: ${tx.id}</span>
+                    <button type="button" onclick="openTransactionReceipt('${tx.id}', '${tx.type}')" style="background: rgba(3, 181, 211, 0.12); color: #03b5d3; border: 1px solid rgba(3, 181, 211, 0.25); padding: 3px 10px; border-radius: 6px; font-size: 0.72rem; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 4px;" title="View Digital Receipt">
+                        <i class="fas fa-receipt"></i> Receipt
+                    </button>
+                </div>
             </div>
         `;
         container.appendChild(card);
     });
+}
+
+// -------------------------------------------------------------
+// DIGITAL TRANSACTION RECEIPT GENERATOR ENGINE
+// -------------------------------------------------------------
+let currentActiveReceiptId = null;
+
+function openTransactionReceipt(txId, txType) {
+    const db = getDB();
+    let tx = null;
+    
+    // Search across submissions
+    if (db.submissions) {
+        const sub = db.submissions.find(s => s.id === txId);
+        if (sub) {
+            tx = {
+                id: sub.id,
+                type: "Gift Card Sale",
+                amount: sub.payoutAmount !== null ? sub.payoutAmount : (sub.cardValue * 1200),
+                status: sub.status,
+                date: new Date(sub.createdAt),
+                details: `${sub.brand} (${sub.currency} ${sub.cardValue})`,
+                fee: 0
+            };
+        }
+    }
+    
+    // Search across withdrawals
+    if (!tx && db.withdrawals) {
+        const wd = db.withdrawals.find(w => w.id === txId);
+        if (wd) {
+            tx = {
+                id: wd.id,
+                type: "Cash Withdrawal",
+                amount: wd.amount,
+                status: wd.status,
+                date: new Date(wd.createdAt),
+                details: `${wd.bankName} - ${wd.accountNumber}`,
+                fee: wd.fee || 50
+            };
+        }
+    }
+    
+    // Search across inventory purchases
+    if (!tx && db.inventory) {
+        const item = db.inventory.find(i => i.id === txId);
+        if (item) {
+            tx = {
+                id: item.id,
+                type: "Gift Card Purchase",
+                amount: item.price,
+                status: "COMPLETED",
+                date: new Date(item.purchasedAt || Date.now()),
+                details: `${item.brand} (${item.currency} ${item.cardValue})`,
+                fee: 0
+            };
+        }
+    }
+    
+    // Search across wallet adjustments
+    if (!tx && db.adjustments) {
+        const adj = db.adjustments.find(a => a.id === txId);
+        if (adj) {
+            const isCredit = adj.adjustmentType === "CREDIT" || (adj.type && adj.type.toLowerCase().includes("credit"));
+            tx = {
+                id: adj.id,
+                type: isCredit ? "Admin Balance Credit" : "Admin Balance Deduction",
+                amount: adj.amount,
+                status: adj.status || "COMPLETED",
+                date: new Date(adj.createdAt),
+                details: adj.reason || "Wallet Adjustment by Admin",
+                fee: 0
+            };
+        }
+    }
+
+    if (!tx) {
+        tx = {
+            id: txId,
+            type: txType || "Account Transaction",
+            amount: 0,
+            status: "COMPLETED",
+            date: new Date(),
+            details: "Official System Transaction Record",
+            fee: 0
+        };
+    }
+
+    currentActiveReceiptId = tx.id;
+
+    const amountValEl = document.getElementById("rcpt-amount-val");
+    if (amountValEl) amountValEl.textContent = `₦${Number(tx.amount || 0).toLocaleString(undefined, {minimumFractionDigits: 2})}`;
+
+    const typeEl = document.getElementById("rcpt-type");
+    if (typeEl) typeEl.textContent = tx.type;
+
+    const refEl = document.getElementById("rcpt-ref");
+    if (refEl) refEl.textContent = tx.id;
+
+    const dateEl = document.getElementById("rcpt-date");
+    if (dateEl) dateEl.textContent = tx.date.toLocaleString();
+
+    const detailsEl = document.getElementById("rcpt-details");
+    if (detailsEl) detailsEl.textContent = tx.details;
+
+    const feeEl = document.getElementById("rcpt-fee");
+    if (feeEl) feeEl.textContent = tx.fee ? `₦${Number(tx.fee).toLocaleString(undefined, {minimumFractionDigits: 2})}` : "₦0.00 (Waived)";
+
+    const badgeEl = document.getElementById("rcpt-status-badge");
+    if (badgeEl) {
+        if (tx.status === "PENDING") {
+            badgeEl.className = "tx-badge-review";
+            badgeEl.innerHTML = `<i class="fas fa-hourglass-half" style="margin-right: 4px;"></i> PENDING VERIFICATION`;
+            badgeEl.style.background = "rgba(245, 158, 11, 0.15)";
+            badgeEl.style.color = "#f59e0b";
+        } else if (tx.status === "COMPLETED") {
+            badgeEl.className = "tx-badge-success";
+            badgeEl.innerHTML = `<i class="fas fa-check-circle" style="margin-right: 4px;"></i> SUCCESSFUL & SETTLED`;
+            badgeEl.style.background = "rgba(16, 185, 129, 0.15)";
+            badgeEl.style.color = "#10b981";
+        } else {
+            badgeEl.className = "tx-badge-danger";
+            badgeEl.innerHTML = `<i class="fas fa-xmark-circle" style="margin-right: 4px;"></i> DECLINED / FAILED`;
+            badgeEl.style.background = "rgba(239, 68, 68, 0.15)";
+            badgeEl.style.color = "#ef4444";
+        }
+    }
+
+    document.getElementById("receipt-modal").classList.add("active");
+}
+
+function closeReceiptModal() {
+    document.getElementById("receipt-modal").classList.remove("active");
+}
+
+function downloadTransactionReceiptPDF() {
+    const element = document.getElementById("receipt-printable-area");
+    if (!element) return;
+    
+    showToast("Generating official digital PDF receipt...", "info");
+
+    const opt = {
+        margin:       [0.2, 0.2, 0.2, 0.2],
+        filename:     `Goodfastpay_Receipt_${currentActiveReceiptId || 'TX'}.pdf`,
+        image:        { type: 'jpeg', quality: 0.98 },
+        html2canvas:  { scale: 2, useCORS: true, backgroundColor: '#1c1f2c' },
+        jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' }
+    };
+
+    if (typeof html2pdf === "function") {
+        html2pdf().set(opt).from(element).save().then(() => {
+            showToast("PDF Receipt downloaded successfully!", "success");
+        }).catch(err => {
+            window.print();
+        });
+    } else {
+        window.print();
+    }
 }
 
 // Render Selling Trade History panel table
