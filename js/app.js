@@ -415,12 +415,13 @@ function checkRateLimit(ipOrEmail, maxAttempts = 5, cooldownSecs = 60) {
 
 // Password Strength Verifier
 function checkPasswordStrength(pw) {
-    let score = 0;
+    if (!pw || pw.length < 4) return 0;
+    let score = 1;
     if (pw.length >= 8) score++;
     if (/[A-Z]/.test(pw)) score++;
     if (/[0-9]/.test(pw)) score++;
     if (/[^A-Za-z0-9]/.test(pw)) score++;
-    return score; // 0 to 4 scale
+    return score; // 1 to 5 scale for valid passwords
 }
 
 // Fraud Detection: Checks if this exact card code was submitted before

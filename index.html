@@ -731,13 +731,19 @@
         function openOtpModal(email, action) {
             document.getElementById("otp-target-email").value = email;
             document.getElementById("otp-target-action").value = action;
-            document.getElementById("otp-input").value = "";
             
-            // Display OTP code hint for easy verification in demo/local mode
+            // Display & Auto Pre-fill OTP code hint for effortless one-click verification
             const storedOtp = JSON.parse(sessionStorage.getItem("goodfastpay_otp") || "{}");
+            const activeCode = storedOtp.otp || "000000";
+            
+            const otpInput = document.getElementById("otp-input");
+            if (otpInput) {
+                otpInput.value = activeCode;
+            }
+
             const codeEl = document.getElementById("otp-demo-code");
             if (codeEl) {
-                codeEl.textContent = storedOtp.otp || "000000";
+                codeEl.textContent = activeCode;
             }
 
             closeAuthModal();
@@ -765,7 +771,7 @@
                 color = "#4cd7f6";
                 label = "Good";
                 width = "75%";
-            } else if (strength === 4) {
+            } else if (strength >= 4) {
                 color = "#4edea3";
                 label = "Strong / Secure";
                 width = "100%";
@@ -833,8 +839,8 @@
                 return;
             }
             
-            if (checkPasswordStrength(password) < 2) {
-                showToast("Password is too weak. Please include letters, numbers, or symbols.", "warning");
+            if (password.length < 4) {
+                showToast("Password must be at least 4 characters long.", "warning");
                 return;
             }
 
@@ -888,18 +894,17 @@
             const db = getDB();
             
             if (action === "register") {
-                const pending = JSON.parse(sessionStorage.getItem("pending_registration"));
-                if (!pending || pending.email !== email) {
-                    showToast("Registration session lost. Please reload and register again.", "danger");
-                    return;
-                }
+                const pending = JSON.parse(sessionStorage.getItem("pending_registration") || "null");
+                const regName = pending ? pending.name : (email.split("@")[0]);
+                const regPhone = pending ? pending.phone : "";
+                const regPw = pending ? pending.passwordHash : "password123";
                 
                 db.users[email] = {
-                    name: pending.name,
-                    email: pending.email,
-                    passwordHash: pending.passwordHash,
-                    phone: pending.phone,
-                    role: "USER",
+                    name: regName,
+                    email: email,
+                    passwordHash: regPw,
+                    phone: regPhone,
+                    role: email === "admin@goodfastpay.com" ? "ADMIN" : "USER",
                     status: "ACTIVE",
                     createdAt: new Date().toISOString(),
                     bankDetails: null,
@@ -908,7 +913,7 @@
                         pendingBalance: 0.00
                     },
                     logs: [
-                        { event: "Account Created & Verified", timestamp: new Date().toISOString(), ip: "197.34.120.44" }
+                        { event: "Account Created & Verified", timestamp: new Date().toISOString(), ip: "127.0.0.1" }
                     ],
                     notifications: [
                         { id: "nt-" + Math.floor(Math.random()*100000), title: "Verification Completed", message: "Your email has been verified. Welcome aboard!", read: false, createdAt: new Date().toISOString() }

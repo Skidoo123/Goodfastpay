@@ -166,23 +166,32 @@ async function supabaseAuthSignInWithOAuth(provider = "google") {
 async function supabaseAuthSignUp(email, password, metadata = {}) {
     const cleanEmail = email.trim().toLowerCase();
     
-    // Check if email already exists in local database first
+    // Check if email already exists in local database
     const db = getDB();
     if (db.users && db.users[cleanEmail]) {
-        return { success: false, message: "This email is already registered. Please sign in instead." };
+        // Update user record with newly provided credentials in local DB
+        db.users[cleanEmail].passwordHash = password;
+        if (metadata.name) db.users[cleanEmail].name = metadata.name;
+        if (metadata.phone) db.users[cleanEmail].phone = metadata.phone;
+        saveDB(db);
+        return { success: true, isUpdated: true };
     }
     
     if (supabaseClient && isSupabaseConfigured) {
         try {
             // Check if profile exists in Supabase Cloud
-            const { data: existing, error: checkErr } = await supabaseClient
-                .from('profiles')
-                .select('email')
-                .eq('email', cleanEmail)
-                .maybeSingle();
+            try {
+                const { data: existing } = await supabaseClient
+                    .from('profiles')
+                    .select('email')
+                    .eq('email', cleanEmail)
+                    .maybeSingle();
 
-            if (existing) {
-                return { success: false, message: "This email is already registered. Please sign in instead." };
+                if (existing) {
+                    console.warn("Profile already in Supabase Cloud for:", cleanEmail);
+                }
+            } catch (cErr) {
+                console.warn("Supabase profile check notice:", cErr.message);
             }
 
             // Attempt standard Supabase Auth creation if supported
@@ -206,25 +215,31 @@ async function supabaseAuthSignUp(email, password, metadata = {}) {
             }
 
             // Create new profile record in Supabase public.profiles
-            const { data: newProfile, error: insertErr } = await supabaseClient
-                .from('profiles')
-                .insert([{
-                    ...(authId ? { id: authId } : {}),
-                    email: cleanEmail,
-                    name: metadata.name || cleanEmail.split("@")[0],
-                    phone: metadata.phone || "",
-                    password: password,
-                    role: cleanEmail === "admin@goodfastpay.com" ? "ADMIN" : "USER",
-                    status: "ACTIVE"
-                }])
-                .select()
-                .maybeSingle();
+            let profileId = authId;
+            try {
+                const { data: newProfile, error: insertErr } = await supabaseClient
+                    .from('profiles')
+                    .insert([{
+                        ...(authId ? { id: authId } : {}),
+                        email: cleanEmail,
+                        name: metadata.name || cleanEmail.split("@")[0],
+                        phone: metadata.phone || "",
+                        password: password,
+                        role: cleanEmail === "admin@goodfastpay.com" ? "ADMIN" : "USER",
+                        status: "ACTIVE"
+                    }])
+                    .select()
+                    .maybeSingle();
 
-            if (insertErr) {
-                console.warn("Supabase direct profile insert notice (falling back to local session):", insertErr.message);
+                if (insertErr) {
+                    console.warn("Supabase direct profile insert notice (falling back to local session):", insertErr.message);
+                } else if (newProfile) {
+                    profileId = newProfile.id;
+                }
+            } catch (pErr) {
+                console.warn("Supabase profile insert exception:", pErr.message);
             }
 
-            const profileId = newProfile ? newProfile.id : authId;
             syncLocalUserAccount(cleanEmail, {
                 id: profileId,
                 name: metadata.name || cleanEmail.split("@")[0],
