@@ -425,7 +425,10 @@ async function supabaseEnsureProfileExists(email, metadata = {}) {
         if (!existing) {
             const name = metadata.name || metadata.full_name || email.split("@")[0];
             const phone = metadata.phone || "";
-            const role = email === "admin@goodfastpay.com" ? "ADMIN" : "USER";
+            const db = getDB();
+            const localUser = db.users ? db.users[email] : null;
+            const role = metadata.role || (localUser && localUser.role ? localUser.role : (email === "admin@goodfastpay.com" ? "ADMIN" : "USER"));
+            const pwd = metadata.password || (localUser ? localUser.passwordHash : "");
             
             const { data: inserted, error: insertErr } = await supabaseClient
                 .from('profiles')
@@ -433,6 +436,7 @@ async function supabaseEnsureProfileExists(email, metadata = {}) {
                     email: email,
                     name: name,
                     phone: phone,
+                    password: pwd,
                     role: role,
                     status: 'ACTIVE',
                     wallet_balance: 0.00,

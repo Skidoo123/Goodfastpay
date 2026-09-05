@@ -4558,13 +4558,18 @@ function handleCreateAdminSubmit(e) {
     const pin = document.getElementById("create-admin-pin").value.trim();
     const role = document.getElementById("create-admin-role").value;
 
+    if (!name || !email || !password || !pin) {
+        if (typeof showToast === "function") showToast("Please fill in all required fields.", "warning");
+        return;
+    }
+
     if (!/^\d{6}$/.test(pin)) {
         if (typeof showToast === "function") showToast("Admin Security PIN must be exactly 6 numeric digits.", "danger");
         return;
     }
 
     const db = getDB();
-    if (db.users[email]) {
+    if (db.users && db.users[email]) {
         if (typeof showToast === "function") showToast("An account with this email address already exists.", "warning");
         return;
     }
@@ -4589,7 +4594,16 @@ function handleCreateAdminSubmit(e) {
         notifications: []
     };
 
-    // Log audit
+    // Log audit trail safely
+    if (!db.auditTrail) db.auditTrail = [];
+    db.auditTrail.unshift({
+        operator: currentAdmin ? currentAdmin.email : "Super Admin",
+        event: "Admin Staff Created",
+        details: `Created new ${role} account for ${name} (${email})`,
+        timestamp: new Date().toISOString()
+    });
+
+    if (!db.auditLogs) db.auditLogs = [];
     db.auditLogs.unshift({
         id: "AUD-" + Date.now(),
         operator: currentAdmin ? currentAdmin.email : "Super Admin",
@@ -4599,8 +4613,15 @@ function handleCreateAdminSubmit(e) {
     });
 
     saveDB(db);
+
+    // Sync to Supabase Cloud if connected
+    if (typeof supabaseEnsureProfileExists === "function") {
+        supabaseEnsureProfileExists(email, { name, role: "ADMIN", staffRole: role, password: password });
+    }
+
     closeCreateAdminModal();
-    document.getElementById("create-admin-form").reset();
+    const form = document.getElementById("create-admin-form");
+    if (form) form.reset();
     if (typeof showToast === "function") showToast(`Successfully created Admin Staff account for ${name}!`, "success");
     loadAdminSession();
 }
@@ -4639,8 +4660,18 @@ function handleResetAdminPinSubmit(e) {
     }
 
     const db = getDB();
-    if (db.users[email]) {
+    if (db.users && db.users[email]) {
         db.users[email].adminPin = newPin;
+
+        if (!db.auditTrail) db.auditTrail = [];
+        db.auditTrail.unshift({
+            operator: currentAdmin ? currentAdmin.email : "Admin",
+            event: "Reset Admin Security PIN",
+            details: `Updated 6-digit security PIN for ${email}`,
+            timestamp: new Date().toISOString()
+        });
+
+        if (!db.auditLogs) db.auditLogs = [];
         db.auditLogs.unshift({
             id: "AUD-" + Date.now(),
             operator: currentAdmin ? currentAdmin.email : "Admin",
@@ -4651,7 +4682,8 @@ function handleResetAdminPinSubmit(e) {
 
         saveDB(db);
         closeResetAdminPinModal();
-        document.getElementById("reset-admin-pin-form").reset();
+        const form = document.getElementById("reset-admin-pin-form");
+        if (form) form.reset();
         if (typeof showToast === "function") showToast("Successfully updated 6-digit security PIN!", "success");
         loadAdminSession();
     }
