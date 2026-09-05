@@ -904,6 +904,9 @@ function handleCardSubmit(e) {
         if (typeof triggerLivePayoutTracker === "function") {
             triggerLivePayoutTracker({ ref: submissionId, amount: (value * rate), title: brand + " Trade" });
         }
+        setTimeout(() => {
+            if (typeof openReceiptModal === "function") openReceiptModal(submissionId);
+        }, 1200);
         
         // Reset forms and previews defensively
         const cardFormEl = document.getElementById("card-submission-form");
@@ -1737,13 +1740,32 @@ function openTransactionReceipt(txId, txType) {
         const sub = db.submissions.find(s => s.id === txId);
         if (sub) {
             tx = {
+let rcptCountdownInterval = null;
+
+function openReceiptModal(txId, txType) {
+    if (rcptCountdownInterval) {
+        clearInterval(rcptCountdownInterval);
+        rcptCountdownInterval = null;
+    }
+
+    const db = getDB();
+    let tx = null;
+
+    // Search across submissions
+    if (db.submissions) {
+        const sub = db.submissions.find(s => s.id === txId);
+        if (sub) {
+            const estRate = getCardExchangeRate(sub.brand, sub.currency);
+            const payout = sub.payoutAmount !== null ? sub.payoutAmount : (sub.cardValue * estRate);
+            tx = {
                 id: sub.id,
                 type: "Gift Card Sale",
-                amount: sub.payoutAmount !== null ? sub.payoutAmount : (sub.cardValue * 1200),
+                amount: payout,
                 status: sub.status,
                 date: new Date(sub.createdAt),
                 details: `${sub.brand} (${sub.currency} ${sub.cardValue})`,
-                fee: 0
+                fee: 0,
+                rejectionReason: sub.rejectionReason
             };
         }
     }
@@ -1759,7 +1781,8 @@ function openTransactionReceipt(txId, txType) {
                 status: wd.status,
                 date: new Date(wd.createdAt),
                 details: `${wd.bankName} - ${wd.accountNumber}`,
-                fee: wd.fee || 50
+                fee: wd.fee || 50,
+                rejectionReason: wd.declineReason
             };
         }
     }
@@ -1830,22 +1853,80 @@ function openTransactionReceipt(txId, txType) {
     if (feeEl) feeEl.textContent = tx.fee ? `₦${Number(tx.fee).toLocaleString(undefined, {minimumFractionDigits: 2})}` : "₦0.00 (Waived)";
 
     const badgeEl = document.getElementById("rcpt-status-badge");
-    if (badgeEl) {
-        if (tx.status === "PENDING") {
+    const bannerEl = document.getElementById("rcpt-eta-banner");
+
+    if (tx.status === "PENDING") {
+        if (badgeEl) {
             badgeEl.className = "tx-badge-review";
             badgeEl.innerHTML = `<i class="fas fa-hourglass-half" style="margin-right: 4px;"></i> PENDING VERIFICATION`;
             badgeEl.style.background = "rgba(245, 158, 11, 0.15)";
             badgeEl.style.color = "#f59e0b";
-        } else if (tx.status === "COMPLETED") {
+        }
+
+        const createdMs = tx.date.getTime();
+        const totalDurationSecs = 300; // 5 minutes confirmation SLA
+
+        const updateCountdown = () => {
+            const elapsedSecs = Math.floor((Date.now() - createdMs) / 1000);
+            const remainingSecs = Math.max(0, totalDurationSecs - elapsedSecs);
+            const mins = Math.floor(remainingSecs / 60);
+            const secs = remainingSecs % 60;
+            const formattedTime = `${mins < 10 ? '0' + mins : mins}:${secs < 10 ? '0' + secs : secs}`;
+
+            if (bannerEl) {
+                bannerEl.style.display = "block";
+                bannerEl.style.background = "rgba(245, 158, 11, 0.12)";
+                bannerEl.style.borderColor = "rgba(245, 158, 11, 0.3)";
+                bannerEl.style.color = "#f59e0b";
+                bannerEl.innerHTML = `
+                    <div style="display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 0.88rem; font-weight: 800;">
+                        <i class="fas fa-hourglass-half fa-spin"></i> PENDING VERIFICATION • CONFIRMATION ETA: <span style="color: #fbbf24; font-family: monospace; font-size: 1rem;">${formattedTime}</span>
+                    </div>
+                    <span style="display: block; font-size: 0.73rem; opacity: 0.9; margin-top: 4px; text-align: center;">Your card trade is under review by admin. Confirmation expected within 5 minutes.</span>
+                `;
+            }
+        };
+
+        updateCountdown();
+        rcptCountdownInterval = setInterval(updateCountdown, 1000);
+
+    } else if (tx.status === "COMPLETED" || tx.status === "SUCCESSFUL") {
+        if (badgeEl) {
             badgeEl.className = "tx-badge-success";
             badgeEl.innerHTML = `<i class="fas fa-check-circle" style="margin-right: 4px;"></i> SUCCESSFUL & SETTLED`;
             badgeEl.style.background = "rgba(16, 185, 129, 0.15)";
             badgeEl.style.color = "#10b981";
-        } else {
+        }
+        if (bannerEl) {
+            bannerEl.style.display = "block";
+            bannerEl.style.background = "rgba(16, 185, 129, 0.12)";
+            bannerEl.style.borderColor = "rgba(16, 185, 129, 0.3)";
+            bannerEl.style.color = "#10b981";
+            bannerEl.innerHTML = `
+                <div style="display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 0.88rem; font-weight: 800;">
+                    <i class="fas fa-circle-check"></i> TRANSACTION SUCCESSFUL & CONFIRMED
+                </div>
+                <span style="display: block; font-size: 0.73rem; opacity: 0.9; margin-top: 4px; text-align: center;">Trade verified. Funds confirmed and credited to your available wallet balance.</span>
+            `;
+        }
+    } else {
+        if (badgeEl) {
             badgeEl.className = "tx-badge-danger";
             badgeEl.innerHTML = `<i class="fas fa-xmark-circle" style="margin-right: 4px;"></i> DECLINED / FAILED`;
             badgeEl.style.background = "rgba(239, 68, 68, 0.15)";
             badgeEl.style.color = "#ef4444";
+        }
+        if (bannerEl) {
+            bannerEl.style.display = "block";
+            bannerEl.style.background = "rgba(239, 68, 68, 0.12)";
+            bannerEl.style.borderColor = "rgba(239, 68, 68, 0.3)";
+            bannerEl.style.color = "#ef4444";
+            bannerEl.innerHTML = `
+                <div style="display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 0.88rem; font-weight: 800;">
+                    <i class="fas fa-circle-xmark"></i> TRANSACTION DECLINED
+                </div>
+                <span style="display: block; font-size: 0.73rem; opacity: 0.9; margin-top: 4px; text-align: center;">${tx.rejectionReason || 'Trade could not be confirmed.'}</span>
+            `;
         }
     }
 
@@ -1853,6 +1934,10 @@ function openTransactionReceipt(txId, txType) {
 }
 
 function closeReceiptModal() {
+    if (rcptCountdownInterval) {
+        clearInterval(rcptCountdownInterval);
+        rcptCountdownInterval = null;
+    }
     document.getElementById("receipt-modal").classList.remove("active");
 }
 
@@ -1915,10 +2000,21 @@ function renderSellHistory() {
             <td><strong>${s.brand}</strong></td>
             <td>${symbol}${s.cardValue} (${s.currency})</td>
             <td style="font-weight:800;">₦${estPayout.toLocaleString()}</td>
-            <td>${statusBadge}</td>
+            <td>
+                <div style="display: flex; align-items: center; gap: 6px;">
+                    ${statusBadge}
+                    <button type="button" onclick="event.stopPropagation(); openReceiptModal('${s.id}')" style="background: rgba(3, 181, 211, 0.15); border: 1px solid rgba(3, 181, 211, 0.3); color: #03b5d3; padding: 3px 8px; border-radius: 6px; font-size: 0.72rem; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 4px;" title="View Official Receipt">
+                        <i class="fas fa-file-invoice"></i> Receipt
+                    </button>
+                </div>
+            </td>
         `;
         tbody.appendChild(tr);
     });
+}
+
+function openTransactionReceipt(txId, txType) {
+    openReceiptModal(txId, txType);
 }
 
 // Render withdrawal history ledger (Responsive Cards)

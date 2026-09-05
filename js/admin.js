@@ -1392,47 +1392,144 @@ function declineWithdrawalPayout(id) {
 }
 
 // EXCHANGE RATES CONFIGURATORS
+let adminRatesActiveCurrencyFilter = "ALL";
+
+function setAdminRatesCurrencyFilter(currCode, btnElem) {
+    adminRatesActiveCurrencyFilter = currCode;
+    const chips = document.querySelectorAll("#admin-rates-filter-tags .rates-tag-chip");
+    chips.forEach(c => c.classList.remove("active"));
+    if (btnElem) btnElem.classList.add("active");
+    filterAdminRatesTable();
+}
+
+function filterAdminRatesTable() {
+    const searchInput = document.getElementById("admin-rates-search");
+    const query = searchInput ? searchInput.value.toLowerCase().trim() : "";
+    const rows = document.querySelectorAll("#admin-rates-tbody tr");
+
+    rows.forEach(row => {
+        const brand = (row.dataset.brand || "").toLowerCase();
+        const curr = row.dataset.curr || "";
+
+        const matchesQuery = !query || brand.includes(query) || curr.toLowerCase().includes(query);
+        const matchesFilter = adminRatesActiveCurrencyFilter === "ALL" || curr === adminRatesActiveCurrencyFilter;
+
+        if (matchesQuery && matchesFilter) {
+            row.style.display = "";
+        } else {
+            row.style.display = "none";
+        }
+    });
+}
+
+function updateRatePreviewCell(inputElem) {
+    const row = inputElem.closest("tr");
+    if (!row) return;
+
+    const rateVal = parseFloat(inputElem.value) || 0;
+    const multiplierInput = row.querySelector(".rate-multiplier-input");
+    const multVal = multiplierInput ? (parseFloat(multiplierInput.value) || 100) : 100;
+
+    const previewCell = row.querySelector(".rate-preview-cell");
+    if (previewCell) {
+        const finalPayout = rateVal * 100 * (multVal / 100);
+        previewCell.innerHTML = `<span style="color: #10b981; font-weight: 800; font-size: 0.92rem;">₦${finalPayout.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span> <span style="font-size: 0.72rem; color: var(--text-muted);">/ $100</span>`;
+    }
+}
+
+function resetSingleRateRow(brand, code) {
+    const db = getDB();
+    const baseRate = db.currencies[code] ? db.currencies[code].rate : 850;
+    const input = document.querySelector(`.rate-input[data-brand="${brand}"][data-curr="${code}"]`);
+    const mult = document.querySelector(`.rate-multiplier-input[data-brand="${brand}"][data-curr="${code}_mult"]`);
+    if (input) input.value = baseRate;
+    if (mult) mult.value = 100;
+    if (input) updateRatePreviewCell(input);
+    if (typeof showToast === "function") showToast(`Reset ${brand} (${code}) to base rate: ₦${baseRate}`, "info");
+}
+
 function renderRatesConfigurator() {
     const db = getDB();
-    const theadRow = document.getElementById("admin-rates-thead-row");
     const tbody = document.getElementById("admin-rates-tbody");
-    if (!tbody || !theadRow) return;
-    
-    const activeCurrencies = Object.keys(db.currencies || {}).filter(code => db.currencies[code].status === "ACTIVE");
-    
-    // Generate headers
-    let headersHTML = `<th>Card Brand</th>`;
-    activeCurrencies.forEach(code => {
-        headersHTML += `<th style="width: 20%; text-align: right;" class="text-right">USA Rate (${code})</th>`;
-    });
-    theadRow.innerHTML = headersHTML;
-    
+    if (!tbody) return;
     tbody.innerHTML = "";
-    
-    const rates = db.settings.rates;
-    Object.keys(rates).forEach(brand => {
-        const tr = document.createElement("tr");
-        
-        // Brand logo + name
-        const logoHTML = getBrandLogoHTML(brand);
-        
-        let colsHTML = `
-            <td>
-                <div style="display: flex; align-items: center;">
-                    ${logoHTML}
-                    <strong>${brand}</strong>
-                </div>
-            </td>
-        `;
-        
+
+    const rates = db.settings.rates || {};
+    const activeCurrencies = Object.keys(db.currencies || {}).filter(code => db.currencies[code].status === "ACTIVE");
+    if (!activeCurrencies.includes("USD")) activeCurrencies.unshift("USD");
+
+    const flagMap = {
+        USD: "🇺🇸",
+        EUR: "🇪🇺",
+        GBP: "🇬🇧",
+        CAD: "🇨🇦",
+        AUD: "🇦🇺",
+        CHF: "🇨🇭",
+        JPY: "🇯🇵",
+        CNY: "🇨🇳",
+        NGN: "🇳🇬"
+    };
+
+    const brands = Object.keys(rates);
+    if (brands.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; padding: 24px; color: var(--text-muted);">No card rates configured.</td></tr>`;
+        return;
+    }
+
+    brands.forEach(brand => {
         activeCurrencies.forEach(code => {
-            const val = rates[brand] && rates[brand][code] !== undefined ? rates[brand][code] : (db.currencies[code] ? db.currencies[code].rate : 1000);
-            colsHTML += `<td class="text-right"><input type="number" class="input-field rate-input text-right" style="padding: 6px 12px; width: 100%; max-width: 130px; margin-left: auto; background: var(--bg-tertiary);" data-brand="${brand}" data-curr="${code}" value="${val}"></td>`;
+            const tr = document.createElement("tr");
+            tr.dataset.brand = brand;
+            tr.dataset.curr = code;
+
+            const logoHTML = getBrandLogoHTML(brand);
+            const flag = flagMap[code] || "🌐";
+            const val = (rates[brand] && rates[brand][code] !== undefined) ? rates[brand][code] : (db.currencies[code] ? db.currencies[code].rate : 850);
+            const multiplier = (rates[brand] && rates[brand][code + "_mult"] !== undefined) ? rates[brand][code + "_mult"] : 100;
+            const payout100 = val * 100 * (multiplier / 100);
+
+            tr.innerHTML = `
+                <td>
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        ${logoHTML}
+                        <div>
+                            <strong style="font-size: 0.9rem; color: var(--text-primary); display: block;">${brand}</strong>
+                            <span style="font-size: 0.72rem; color: var(--text-secondary); font-weight: 600;">${flag} ${code} Region</span>
+                        </div>
+                    </div>
+                </td>
+                <td>
+                    <span class="badge" style="background: rgba(99,102,241,0.15); color: var(--primary); font-weight: 800; font-size: 0.75rem; padding: 4px 10px; border-radius: 6px;">
+                        ${flag} ${code}
+                    </span>
+                </td>
+                <td style="text-align: right;">
+                    <div class="rate-input-wrapper" style="margin-left: auto;">
+                        <span class="rate-input-prefix">₦</span>
+                        <input type="number" class="rate-input" data-brand="${brand}" data-curr="${code}" value="${val}" min="0" step="5" oninput="updateRatePreviewCell(this)">
+                    </div>
+                </td>
+                <td style="text-align: right;">
+                    <div class="rate-input-wrapper" style="margin-left: auto;">
+                        <input type="number" class="rate-multiplier-input" data-brand="${brand}" data-curr="${code}_mult" value="${multiplier}" min="50" max="200" step="1" oninput="updateRatePreviewCell(this)">
+                        <span class="rate-input-suffix">%</span>
+                    </div>
+                </td>
+                <td style="text-align: right;" class="rate-preview-cell">
+                    <span style="color: #10b981; font-weight: 800; font-size: 0.92rem;">₦${payout100.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span> <span style="font-size: 0.72rem; color: var(--text-muted);">/ $100</span>
+                </td>
+                <td style="text-align: center;">
+                    <button type="button" onclick="resetSingleRateRow('${brand}', '${code}')" style="background: rgba(255,255,255,0.05); border: 1px solid var(--border-color); color: var(--text-secondary); padding: 4px 10px; border-radius: 6px; font-size: 0.73rem; font-weight: 700; cursor: pointer;" title="Reset rate to default base currency">
+                        <i class="fas fa-rotate-left"></i> Reset
+                    </button>
+                </td>
+            `;
+
+            tbody.appendChild(tr);
         });
-        
-        tr.innerHTML = colsHTML;
-        tbody.appendChild(tr);
     });
+
+    filterAdminRatesTable();
 }
 
 function saveAdminRates() {
@@ -1442,11 +1539,13 @@ function saveAdminRates() {
     }
     const db = getDB();
     const inputs = document.querySelectorAll(".rate-input");
+    const multInputs = document.querySelectorAll(".rate-multiplier-input");
     
     let isDirty = false;
+
     inputs.forEach(input => {
         const brand = input.getAttribute("data-brand");
-        const curr = input.getAttribute("data-curr"); // "USD", "EUR", or "NGN"
+        const curr = input.getAttribute("data-curr");
         const val = parseFloat(input.value);
         
         if (!isNaN(val) && val >= 0) {
@@ -1478,11 +1577,24 @@ function saveAdminRates() {
                     db.settings.rates[brand]["Italy"] = val;
                     db.settings.rates[brand]["Spain"] = val;
                     db.settings.rates[brand]["Netherlands"] = val;
-                    db.settings.rates[brand]["UK"] = Math.floor(val * 1.10); // derive UK GBP from EUR
+                    db.settings.rates[brand]["UK"] = Math.floor(val * 1.10);
                 } else if (curr === "NGN") {
                     db.settings.rates[brand]["NGN"] = val;
                 }
                 
+                isDirty = true;
+            }
+        }
+    });
+
+    multInputs.forEach(input => {
+        const brand = input.getAttribute("data-brand");
+        const key = input.getAttribute("data-curr"); // e.g. "USD_mult"
+        const val = parseFloat(input.value);
+        if (!isNaN(val)) {
+            if (!db.settings.rates[brand]) db.settings.rates[brand] = {};
+            if (db.settings.rates[brand][key] !== val) {
+                db.settings.rates[brand][key] = val;
                 isDirty = true;
             }
         }
