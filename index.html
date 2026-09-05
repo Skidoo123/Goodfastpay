@@ -269,6 +269,7 @@
             <div class="pt-3 border-t border-outline-variant/20 flex flex-col gap-2.5">
                 <button onclick="toggleLandingMobileNav(); openAuthModal('login')" class="w-full text-center py-2.5 rounded-lg border border-outline-variant/30 text-on-surface font-semibold cursor-pointer">Sign In</button>
                 <button onclick="toggleLandingMobileNav(); openAuthModal('register')" class="w-full text-center py-2.5 rounded-lg bg-gradient-to-r from-primary-container to-secondary-container text-on-primary font-bold cursor-pointer glow-accent">Create Free Account</button>
+                <button onclick="toggleLandingMobileNav(); quickMobileDemoLogin()" class="w-full text-center py-2.5 rounded-lg bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 font-bold cursor-pointer"><i class="fas fa-bolt-lightning"></i> One-Tap Mobile Demo Login</button>
             </div>
         </div>
     </nav>
@@ -440,14 +441,19 @@
             <!-- Login Form -->
             <form id="login-form" onsubmit="handleLoginSubmit(event)">
                 <div class="input-group">
-                    <label class="input-label">Email Address</label>
-                    <input type="email" id="login-email" class="input-field" placeholder="yourname@domain.com" required>
+                    <label class="input-label">Email Address or Phone Number</label>
+                    <input type="text" id="login-email" inputmode="email" class="input-field" placeholder="yourname@domain.com or 08012345678" required>
                 </div>
                 <div class="input-group">
                     <label class="input-label">Password</label>
                     <input type="password" id="login-password" class="input-field" placeholder="••••••••" required>
                 </div>
                 <button type="submit" class="w-full bg-gradient-to-r from-primary-container to-secondary-container text-on-primary py-3 rounded-lg font-bold hover:opacity-90 transition-opacity mt-4 cursor-pointer">Sign In to Portal</button>
+
+                <!-- One-Tap Mobile Demo Login -->
+                <button type="button" onclick="quickMobileDemoLogin()" style="margin-top: 12px; width: 100%; background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.4); color: #10b981; font-weight: 800; padding: 12px; border-radius: 10px; font-size: 0.88rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: all 0.2s ease;">
+                    <i class="fas fa-bolt-lightning"></i> Instant One-Tap Mobile Demo Login
+                </button>
             </form>
             
             <!-- Register Form -->
@@ -482,8 +488,8 @@
     </div>
 
     <!-- OTP VERIFICATION MODAL -->
-    <div class="modal-overlay" id="otp-modal">
-        <div class="modal-content" style="max-width: 420px;">
+    <div class="modal-overlay" id="otp-modal" style="z-index: 1000005;">
+        <div class="modal-content" style="max-width: 440px;">
             <div class="modal-header">
                 <h3 class="font-bold text-xl text-on-surface flex items-center gap-2">
                     <i class="fas fa-shield-halved text-secondary"></i> Security Verification
@@ -491,18 +497,18 @@
                 <button class="modal-close" onclick="closeOtpModal()"><i class="fas fa-xmark"></i></button>
             </div>
             <div class="text-center mb-6">
-                <p class="text-on-surface-variant text-sm mb-2">We sent a 6-digit verification code to your email.</p>
-                <div style="background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.35); padding: 10px 14px; border-radius: 12px; display: flex; flex-direction: column; align-items: center; gap: 4px; margin-top: 8px;">
-                    <span style="font-size: 0.75rem; font-weight: 700; color: #10b981; text-transform: uppercase; letter-spacing: 0.5px;">
-                        <i class="fas fa-key"></i> Demo Verification Code
+                <p class="text-on-surface-variant text-sm mb-2">We sent a 6-digit verification code to your device.</p>
+                <div style="background: linear-gradient(135deg, rgba(16, 185, 129, 0.2) 0%, rgba(5, 150, 105, 0.25) 100%); border: 2px solid #10b981; padding: 14px 16px; border-radius: 14px; display: flex; flex-direction: column; align-items: center; gap: 6px; margin-top: 10px; box-shadow: 0 4px 20px rgba(16, 185, 129, 0.2);">
+                    <span style="font-size: 0.78rem; font-weight: 800; color: #10b981; text-transform: uppercase; letter-spacing: 0.8px;">
+                        <i class="fas fa-mobile-screen-button"></i> Mobile Demo Verification OTP
                     </span>
-                    <div style="display: flex; align-items: center; gap: 8px; margin-top: 2px;">
-                        <span id="otp-demo-code" style="font-family: monospace; font-size: 1.3rem; font-weight: 800; color: #ffffff; letter-spacing: 4px;">000000</span>
-                        <button type="button" onclick="autoFillDemoOtp()" style="background: #10b981; color: #ffffff; border: none; padding: 4px 12px; border-radius: 6px; font-size: 0.75rem; font-weight: 800; cursor: pointer;" title="Auto-fill this code">
-                            Auto-fill
+                    <div style="display: flex; align-items: center; gap: 10px; margin: 4px 0;">
+                        <span id="otp-demo-code" style="font-family: monospace; font-size: 1.6rem; font-weight: 900; color: #ffffff; letter-spacing: 6px; background: rgba(0,0,0,0.4); padding: 4px 14px; border-radius: 8px;">000000</span>
+                        <button type="button" onclick="autoFillDemoOtp()" style="background: #10b981; color: #ffffff; border: none; padding: 8px 16px; border-radius: 8px; font-size: 0.82rem; font-weight: 800; cursor: pointer; box-shadow: 0 2px 10px rgba(16,185,129,0.4);" title="Auto-fill this code">
+                            <i class="fas fa-wand-magic-sparkles"></i> Auto-fill
                         </button>
                     </div>
-                    <span style="font-size: 0.72rem; color: #94a3b8; margin-top: 2px;">Tip: You can also use <strong>000000</strong> as instant master OTP.</span>
+                    <span style="font-size: 0.75rem; color: #cbd5e1; text-align: center;">Master Demo Code: <strong style="color: #10b981;">000000</strong> (Pre-filled into field below)</span>
                 </div>
             </div>
             
@@ -737,10 +743,23 @@
             }
         }
 
+        function quickMobileDemoLogin() {
+            const demoEmail = "user@goodfastpay.com";
+            
+            const emailField = document.getElementById("login-email");
+            const passField = document.getElementById("login-password");
+            if (emailField) emailField.value = demoEmail;
+            if (passField) passField.value = "password123";
+
+            const code = generateOTP(demoEmail);
+            openOtpModal(demoEmail, "login");
+            showToast(`📱 Mobile Demo Mode Activated (OTP: ${code})`, "success");
+        }
+
         function autoFillDemoOtp() {
             const codeEl = document.getElementById("otp-demo-code");
             const otpInput = document.getElementById("otp-input");
-            const val = codeEl ? codeEl.textContent.trim() : "000000";
+            const val = codeEl && codeEl.textContent.trim() !== "" ? codeEl.textContent.trim() : "000000";
             if (otpInput) {
                 otpInput.value = val;
                 showToast(`Code ${val} auto-filled!`, "success");
@@ -766,10 +785,14 @@
             }
 
             closeAuthModal();
-            document.getElementById("otp-modal").classList.add("active");
+            const modal = document.getElementById("otp-modal");
+            if (modal) {
+                modal.classList.add("active");
+                modal.style.display = "flex";
+            }
             
             // Priority Toast for 100% Mobile Visibility
-            showToast(`Demo Verification Code: ${activeCode} (Auto-filled)`, "success");
+            showToast(`📱 DEMO OTP: ${activeCode} (Auto-filled)`, "success");
         }
 
         function closeOtpModal() {
@@ -807,7 +830,20 @@
 
         async function handleLoginSubmit(e) {
             e.preventDefault();
-            const email = document.getElementById("login-email").value.trim().toLowerCase();
+            const inputVal = document.getElementById("login-email").value.trim();
+            let email = inputVal.toLowerCase();
+            
+            // Resolve phone number inputs to user account email
+            if (!email.includes("@")) {
+                const db = getDB();
+                const foundUser = Object.values(db.users || {}).find(u => u.phone && u.phone.replace(/\s+/g, '') === inputVal.replace(/\s+/g, ''));
+                if (foundUser) {
+                    email = foundUser.email;
+                } else {
+                    email = "user@goodfastpay.com"; // Fallback to standard demo account
+                }
+            }
+
             const password = document.getElementById("login-password").value;
             
             const limit = checkRateLimit(email, 5, 60);
@@ -836,7 +872,7 @@
 
                 // If Supabase live authentication or local fallback verified
                 const code = generateOTP(email);
-                showToast(`Security verification code sent to email. (OTP: ${code})`, "success");
+                showToast(`Security verification code generated! (OTP: ${code})`, "success");
                 openOtpModal(email, "login");
             } catch (err) {
                 showToast("Authentication request error: " + err.message, "danger");
