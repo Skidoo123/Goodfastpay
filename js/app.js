@@ -233,7 +233,8 @@ const INITIAL_DATABASE = {
         { currency: "EUR", oldRate: 1100, newRate: 1100, operator: "system", timestamp: "2026-07-29T18:00:00Z" },
         { currency: "GBP", oldRate: 1500, newRate: 1500, operator: "system", timestamp: "2026-07-29T18:00:00Z" },
         { currency: "NGN", oldRate: 1, newRate: 1, operator: "system", timestamp: "2026-07-29T18:00:00Z" }
-    ]
+    ],
+    adjustments: []
 };
 
 // Database Initializer
@@ -253,6 +254,10 @@ function getDB() {
     }
     if (!db.inventory) {
         db.inventory = INITIAL_DATABASE.inventory || [];
+        dirty = true;
+    }
+    if (!db.adjustments) {
+        db.adjustments = [];
         dirty = true;
     }
     if (!db.currencies || Object.keys(db.currencies).length < 5) {

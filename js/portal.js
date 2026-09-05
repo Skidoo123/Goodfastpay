@@ -1528,6 +1528,7 @@ function renderTransactionTable() {
     const userSubs = db.submissions ? db.submissions.filter(s => s.userId === currentUser.email) : [];
     const userWds = db.withdrawals ? db.withdrawals.filter(w => w.userId === currentUser.email) : [];
     const userPurchases = db.inventory ? db.inventory.filter(item => item.status === "SOLD" && item.purchasedBy === currentUser.email) : [];
+    const userAdjustments = db.adjustments ? db.adjustments.filter(a => a.userId === currentUser.email) : [];
     
     // Merge list items
     const list = [];
@@ -1575,6 +1576,54 @@ function renderTransactionTable() {
             icon: "fas fa-cart-shopping"
         });
     });
+
+    userAdjustments.forEach(a => {
+        const isCredit = a.adjustmentType === "CREDIT" || (a.type && a.type.toLowerCase().includes("credit"));
+        list.push({
+            id: a.id,
+            date: new Date(a.createdAt),
+            type: isCredit ? "Admin Credit" : "Admin Deduction",
+            details: a.reason || (isCredit ? "Wallet credited by Admin" : "Wallet deducted by Admin"),
+            amount: a.amount,
+            status: a.status || "COMPLETED",
+            rejection: null,
+            isCredit: isCredit,
+            iconClass: isCredit ? "icon-wallet" : "icon-withdraw",
+            icon: isCredit ? "fas fa-circle-plus" : "fas fa-circle-minus"
+        });
+    });
+
+    // Also parse user logs for any admin wallet adjustments not in db.adjustments
+    const dbUser = db.users ? db.users[currentUser.email] : null;
+    if (dbUser && dbUser.logs && dbUser.logs.length > 0) {
+        dbUser.logs.forEach((log, idx) => {
+            if (log.event && log.event.includes("Admin Wallet Adjustment:")) {
+                const isCredit = log.event.includes("+") || log.event.includes("Credited");
+                let amt = 0;
+                const match = log.event.match(/₦([\d,]+(\.\d+)?)/);
+                if (match) {
+                    amt = parseFloat(match[1].replace(/,/g, ""));
+                }
+                const logDate = new Date(log.timestamp);
+                
+                const exists = list.some(item => Math.abs(item.date - logDate) < 3000 && item.amount === amt);
+                if (!exists && amt > 0) {
+                    list.push({
+                        id: `ADJ-LOG-${idx}`,
+                        date: logDate,
+                        type: isCredit ? "Admin Credit" : "Admin Deduction",
+                        details: isCredit ? "Wallet credited by Admin" : "Wallet deducted by Admin",
+                        amount: amt,
+                        status: "COMPLETED",
+                        rejection: null,
+                        isCredit: isCredit,
+                        iconClass: isCredit ? "icon-wallet" : "icon-withdraw",
+                        icon: isCredit ? "fas fa-circle-plus" : "fas fa-circle-minus"
+                    });
+                }
+            }
+        });
+    }
     
     // Sort descending by date
     list.sort((a,b) => b.date - a.date);
@@ -1614,6 +1663,9 @@ function renderTransactionTable() {
                 amountFormatted = `₦${tx.amount.toLocaleString(undefined, {minimumFractionDigits: 2})} (Est.)`;
                 amountClass = "amount-neutral";
             }
+        } else if (tx.type === "Admin Credit" || tx.isCredit) {
+            amountFormatted = `+₦${tx.amount.toLocaleString(undefined, {minimumFractionDigits: 2})}`;
+            amountClass = "amount-credit";
         } else {
             amountFormatted = `-₦${tx.amount.toLocaleString(undefined, {minimumFractionDigits: 2})}`;
             amountClass = "amount-debit";

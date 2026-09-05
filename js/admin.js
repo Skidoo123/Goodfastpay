@@ -684,6 +684,14 @@ function handleManualWalletAdjust(e) {
     
     const db = getDB();
     const user = db.users[email];
+
+    if (!user) {
+        showToast("User account not found.", "danger");
+        return;
+    }
+    
+    if (!db.adjustments) db.adjustments = [];
+    const adjId = "ADJ-" + Math.floor(100000 + Math.random() * 900000);
     
     if (type === "CREDIT") {
         user.wallet.balance += amount;
@@ -694,12 +702,26 @@ function handleManualWalletAdjust(e) {
             timestamp: new Date().toISOString(),
             ip: "system"
         });
+
+        // Record Adjustment Transaction for Customer Ledger History
+        db.adjustments.unshift({
+            id: adjId,
+            userId: email,
+            type: "Wallet Credit",
+            adjustmentType: "CREDIT",
+            amount: amount,
+            balanceAfter: user.wallet.balance,
+            operator: currentAdmin.email,
+            reason: "Wallet credited by Admin",
+            status: "COMPLETED",
+            createdAt: new Date().toISOString()
+        });
         
         db.users[email] = user;
         saveDB(db);
         
         if (typeof supabaseAdminUpdateUserBalance === "function") {
-            supabaseAdminUpdateUserBalance(email, user.wallet.balance);
+            supabaseAdminUpdateUserBalance(email, user.wallet.balance, amount, 'CREDIT');
         }
         
         writeAuditLog(
@@ -728,12 +750,26 @@ function handleManualWalletAdjust(e) {
             timestamp: new Date().toISOString(),
             ip: "system"
         });
+
+        // Record Adjustment Transaction for Customer Ledger History
+        db.adjustments.unshift({
+            id: adjId,
+            userId: email,
+            type: "Wallet Deduction",
+            adjustmentType: "DEBIT",
+            amount: amount,
+            balanceAfter: user.wallet.balance,
+            operator: currentAdmin.email,
+            reason: "Wallet deducted by Admin",
+            status: "COMPLETED",
+            createdAt: new Date().toISOString()
+        });
         
         db.users[email] = user;
         saveDB(db);
         
         if (typeof supabaseAdminUpdateUserBalance === "function") {
-            supabaseAdminUpdateUserBalance(email, user.wallet.balance);
+            supabaseAdminUpdateUserBalance(email, user.wallet.balance, amount, 'DEBIT');
         }
         
         writeAuditLog(
