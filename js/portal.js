@@ -323,35 +323,9 @@ let isAllBrandsExpanded = false;
 
 // Helper to get FontAwesome Icon & brand color
 function getBrandIconMarkup(brand) {
-    const b = (brand || "").toLowerCase();
-    if (b.includes("steam")) return `<i class="fa-brands fa-steam" style="color: #171a21;"></i>`;
-    if (b.includes("amazon")) return `<i class="fa-brands fa-amazon" style="color: #ff9900;"></i>`;
-    if (b.includes("google play")) return `<i class="fa-brands fa-google-play" style="color: #34a853;"></i>`;
-    if (b.includes("apple") || b.includes("itunes")) return `<i class="fa-brands fa-apple" style="color: #a3a3a3;"></i>`;
-    if (b.includes("razer")) return `<i class="fa-solid fa-gamepad" style="color: #00ff00;"></i>`;
-    if (b.includes("sephora")) return `<i class="fa-solid fa-gem" style="color: #e11d48;"></i>`;
-    if (b.includes("xbox")) return `<i class="fa-brands fa-xbox" style="color: #107c10;"></i>`;
-    if (b.includes("playstation") || b.includes("psn")) return `<i class="fa-brands fa-playstation" style="color: #003791;"></i>`;
-    if (b.includes("nintendo")) return `<i class="fa-solid fa-gamepad" style="color: #e60012;"></i>`;
-    if (b.includes("netflix")) return `<i class="fa-solid fa-film" style="color: #e50914;"></i>`;
-    if (b.includes("spotify")) return `<i class="fa-brands fa-spotify" style="color: #1db954;"></i>`;
-    if (b.includes("walmart")) return `<i class="fa-solid fa-asterisk" style="color: #0071dc;"></i>`;
-    if (b.includes("target")) return `<i class="fa-solid fa-bullseye" style="color: #cc0000;"></i>`;
-    if (b.includes("ebay")) return `<i class="fa-brands fa-ebay" style="color: #e53238;"></i>`;
-    if (b.includes("nike")) return `<i class="fa-solid fa-bolt" style="color: #f97316;"></i>`;
-    if (b.includes("best buy")) return `<i class="fa-solid fa-tag" style="color: #ffe000;"></i>`;
-    if (b.includes("starbucks")) return `<i class="fa-solid fa-mug-hot" style="color: #00704a;"></i>`;
-    if (b.includes("roblox")) return `<i class="fa-solid fa-cube" style="color: #e11d48;"></i>`;
-    if (b.includes("uber")) return `<i class="fa-brands fa-uber" style="color: #ffffff;"></i>`;
-    if (b.includes("airbnb")) return `<i class="fa-brands fa-airbnb" style="color: #ff5a5f;"></i>`;
-    if (b.includes("visa")) return `<i class="fa-brands fa-cc-visa" style="color: #1a1f71;"></i>`;
-    if (b.includes("mastercard")) return `<i class="fa-brands fa-cc-mastercard" style="color: #eb001b;"></i>`;
-    if (b.includes("amex") || b.includes("american express")) return `<i class="fa-brands fa-cc-amex" style="color: #006fcf;"></i>`;
-    if (b.includes("paypal")) return `<i class="fa-brands fa-paypal" style="color: #003087;"></i>`;
-    if (b.includes("discord")) return `<i class="fa-brands fa-discord" style="color: #5865f2;"></i>`;
-    if (b.includes("twitch")) return `<i class="fa-brands fa-twitch" style="color: #9146ff;"></i>`;
-    if (b.includes("h&m") || b.includes("zara") || b.includes("asos")) return `<i class="fa-solid fa-shirt" style="color: #f43f5e;"></i>`;
-    return `<i class="fa-solid fa-gift" style="color: #10b981;"></i>`;
+    const d = getBrandVisualDetails(brand);
+    const iconColor = (d.textColor === "#FFFFFF" || d.textColor === "#ffffff") ? (d.bgColor === "#111111" || d.bgColor === "#000000" ? "#ffffff" : d.bgColor) : d.textColor;
+    return `<i class="${d.iconClass}" style="color: ${iconColor};"></i>`;
 }
 
 // Populate Selling dropdown elements & dynamic visual brand chips
@@ -3090,95 +3064,14 @@ function handleLogout() {
 
 // Helper to render customized circular brand logo badges
 function getBrandLogoHTML(brand) {
-    let iconClass = "fas fa-ticket";
-    let bgColor = "var(--primary)";
-    
-    const brandLower = brand.toLowerCase();
-    
-    // Shopping & Retail
-    if (brandLower.includes("amazon")) { iconClass = "fab fa-amazon"; bgColor = "#FF9900"; }
-    else if (brandLower.includes("walmart")) { iconClass = "fas fa-store"; bgColor = "#0071CE"; }
-    else if (brandLower.includes("best buy")) { iconClass = "fas fa-tag"; bgColor = "#FFF200"; }
-    else if (brandLower.includes("target")) { iconClass = "fas fa-bullseye"; bgColor = "#CC0000"; }
-    else if (brandLower.includes("costco")) { iconClass = "fas fa-warehouse"; bgColor = "#005EA6"; }
-    else if (brandLower.includes("ebay")) { iconClass = "fab fa-ebay"; bgColor = "#0064D2"; }
-    else if (brandLower.includes("macy")) { iconClass = "fas fa-star"; bgColor = "#E21A22"; }
-    else if (brandLower.includes("nordstrom")) { iconClass = "fas fa-bag-shopping"; bgColor = "#111111"; }
-    else if (brandLower.includes("sephora")) { iconClass = "fas fa-wand-magic-sparkles"; bgColor = "#E00034"; }
-    
-    // Gaming
-    else if (brandLower.includes("steam")) { iconClass = "fab fa-steam"; bgColor = "#171a21"; }
-    else if (brandLower.includes("playstation") || brandLower.includes("psn")) { iconClass = "fab fa-playstation"; bgColor = "#0037AE"; }
-    else if (brandLower.includes("xbox")) { iconClass = "fab fa-xbox"; bgColor = "#107C10"; }
-    else if (brandLower.includes("nintendo")) { iconClass = "fas fa-gamepad"; bgColor = "#E60012"; }
-    else if (brandLower.includes("roblox")) { iconClass = "fas fa-cube"; bgColor = "#E31B23"; }
-    else if (brandLower.includes("riot")) { iconClass = "fas fa-fist-raised"; bgColor = "#D12630"; }
-    
-    // Entertainment
-    else if (brandLower.includes("apple") || brandLower.includes("itunes")) { iconClass = "fab fa-apple"; bgColor = "#111111"; }
-    else if (brandLower.includes("google play")) { iconClass = "fab fa-google-play"; bgColor = "#34A853"; }
-    else if (brandLower.includes("netflix")) { iconClass = "fas fa-film"; bgColor = "#E50914"; }
-    else if (brandLower.includes("spotify")) { iconClass = "fab fa-spotify"; bgColor = "#1DB954"; }
-    else if (brandLower.includes("hulu")) { iconClass = "fas fa-tv"; bgColor = "#1CE685"; }
-    else if (brandLower.includes("disney")) { iconClass = "fas fa-video"; bgColor = "#113CCF"; }
-    else if (brandLower.includes("youtube")) { iconClass = "fab fa-youtube"; bgColor = "#FF0000"; }
-    
-    // Food & Restaurants
-    else if (brandLower.includes("starbucks")) { iconClass = "fas fa-mug-hot"; bgColor = "#00704A"; }
-    else if (brandLower.includes("mcdonald")) { iconClass = "fas fa-hamburger"; bgColor = "#FFC72C"; }
-    else if (brandLower.includes("kfc")) { iconClass = "fas fa-drumstick-bite"; bgColor = "#A30000"; }
-    else if (brandLower.includes("burger king")) { iconClass = "fas fa-burger"; bgColor = "#F47321"; }
-    else if (brandLower.includes("uber")) { iconClass = "fab fa-uber"; bgColor = "#090909"; }
-    else if (brandLower.includes("doordash")) { iconClass = "fas fa-motorcycle"; bgColor = "#FF3008"; }
-    
-    // Travel
-    else if (brandLower.includes("airbnb")) { iconClass = "fab fa-airbnb"; bgColor = "#FF5A5F"; }
-    else if (brandLower.includes("booking")) { iconClass = "fas fa-hotel"; bgColor = "#003580"; }
-    
-    // Finance & Crypto
-    else if (brandLower.includes("visa")) { iconClass = "fab fa-cc-visa"; bgColor = "#1A1F71"; }
-    else if (brandLower.includes("mastercard")) { iconClass = "fab fa-cc-mastercard"; bgColor = "#EB001B"; }
-    else if (brandLower.includes("american express") || brandLower.includes("amex")) { iconClass = "fab fa-cc-amex"; bgColor = "#016FD0"; }
-    else if (brandLower.includes("paypal")) { iconClass = "fab fa-paypal"; bgColor = "#003087"; }
-    
-    // Fashion
-    else if (brandLower.includes("nike")) { iconClass = "fas fa-shoe-prints"; bgColor = "#111111"; }
-    else if (brandLower.includes("adidas")) { iconClass = "fas fa-socks"; bgColor = "#0072CE"; }
-    
-    // Digital
-    else if (brandLower.includes("razer")) { iconClass = "fas fa-coins"; bgColor = "#252525"; }
-    else if (brandLower.includes("twitch")) { iconClass = "fab fa-twitch"; bgColor = "#9146FF"; }
-    else if (brandLower.includes("discord")) { iconClass = "fab fa-discord"; bgColor = "#5865F2"; }
-    
-    let textColor = "#ffffff";
-    if (bgColor === "#FFF200" || bgColor === "#FFC72C") textColor = "#111111";
-    
-    return `<div class="brand-logo-container" style="width: 32px; height: 32px; background: ${bgColor}; color: ${textColor}; border-radius: 6px; display: inline-flex; align-items: center; justify-content: center; font-size: 0.95rem;"><i class="${iconClass}"></i></div>`;
+    const d = getBrandVisualDetails(brand);
+    return `<div class="brand-logo-container" style="width: 34px; height: 34px; background: ${d.bgColor}; color: ${d.textColor}; border-radius: 8px; display: inline-flex; align-items: center; justify-content: center; font-size: 1.05rem; box-shadow: 0 2px 6px rgba(0,0,0,0.25);"><i class="${d.iconClass}"></i></div>`;
 }
 
 // Helper to render beautiful brand card gradients
 function getBrandCardGradient(brand) {
-    const brandLower = brand.toLowerCase();
-    
-    if (brandLower.includes("amazon")) return "linear-gradient(135deg, #FF9900 0%, #111111 100%)";
-    if (brandLower.includes("apple") || brandLower.includes("itunes")) return "linear-gradient(135deg, #111111 0%, #444444 100%)";
-    if (brandLower.includes("google play")) return "linear-gradient(135deg, #34A853 0%, #4285F4 100%)";
-    if (brandLower.includes("steam")) return "linear-gradient(135deg, #171a21 0%, #2a475e 100%)";
-    if (brandLower.includes("walmart")) return "linear-gradient(135deg, #0071CE 0%, #FFC220 100%)";
-    if (brandLower.includes("target")) return "linear-gradient(135deg, #CC0000 0%, #FF8888 100%)";
-    if (brandLower.includes("sephora")) return "linear-gradient(135deg, #E00034 0%, #000000 100%)";
-    if (brandLower.includes("playstation") || brandLower.includes("psn")) return "linear-gradient(135deg, #0037AE 0%, #001030 100%)";
-    if (brandLower.includes("xbox")) return "linear-gradient(135deg, #107C10 0%, #052005 100%)";
-    if (brandLower.includes("nintendo")) return "linear-gradient(135deg, #E60012 0%, #8A000A 100%)";
-    if (brandLower.includes("netflix")) return "linear-gradient(135deg, #E50914 0%, #000000 100%)";
-    if (brandLower.includes("spotify")) return "linear-gradient(135deg, #1DB954 0%, #191414 100%)";
-    if (brandLower.includes("hulu")) return "linear-gradient(135deg, #1CE685 0%, #05301B 100%)";
-    if (brandLower.includes("airbnb")) return "linear-gradient(135deg, #FF5A5F 0%, #A52D32 100%)";
-    if (brandLower.includes("uber")) return "linear-gradient(135deg, #090909 0%, #333333 100%)";
-    if (brandLower.includes("twitch")) return "linear-gradient(135deg, #9146FF 0%, #3a0094 100%)";
-    if (brandLower.includes("discord")) return "linear-gradient(135deg, #5865F2 0%, #202773 100%)";
-    
-    return "linear-gradient(135deg, var(--primary) 0%, #1e3a8a 100%)";
+    const d = getBrandVisualDetails(brand);
+    return d.gradient;
 }
 
 // Helper to get country flag emoji

@@ -1674,70 +1674,8 @@ function bulkUpdateUSDRate() {
 
 // Helper to render customized circular brand logo badges
 function getBrandLogoHTML(brand) {
-    let iconClass = "fas fa-ticket";
-    let bgColor = "var(--primary)";
-    
-    const brandLower = brand.toLowerCase();
-    
-    // Shopping & Retail
-    if (brandLower.includes("amazon")) { iconClass = "fab fa-amazon"; bgColor = "#FF9900"; }
-    else if (brandLower.includes("walmart")) { iconClass = "fas fa-store"; bgColor = "#0071CE"; }
-    else if (brandLower.includes("best buy")) { iconClass = "fas fa-tag"; bgColor = "#FFF200"; }
-    else if (brandLower.includes("target")) { iconClass = "fas fa-bullseye"; bgColor = "#CC0000"; }
-    else if (brandLower.includes("costco")) { iconClass = "fas fa-warehouse"; bgColor = "#005EA6"; }
-    else if (brandLower.includes("ebay")) { iconClass = "fab fa-ebay"; bgColor = "#0064D2"; }
-    else if (brandLower.includes("macy")) { iconClass = "fas fa-star"; bgColor = "#E21A22"; }
-    else if (brandLower.includes("nordstrom")) { iconClass = "fas fa-bag-shopping"; bgColor = "#111111"; }
-    else if (brandLower.includes("sephora")) { iconClass = "fas fa-wand-magic-sparkles"; bgColor = "#E00034"; }
-    
-    // Gaming
-    else if (brandLower.includes("steam")) { iconClass = "fab fa-steam"; bgColor = "#171a21"; }
-    else if (brandLower.includes("playstation") || brandLower.includes("psn")) { iconClass = "fab fa-playstation"; bgColor = "#0037AE"; }
-    else if (brandLower.includes("xbox")) { iconClass = "fab fa-xbox"; bgColor = "#107C10"; }
-    else if (brandLower.includes("nintendo")) { iconClass = "fas fa-gamepad"; bgColor = "#E60012"; }
-    else if (brandLower.includes("roblox")) { iconClass = "fas fa-cube"; bgColor = "#E31B23"; }
-    else if (brandLower.includes("riot")) { iconClass = "fas fa-fist-raised"; bgColor = "#D12630"; }
-    
-    // Entertainment
-    else if (brandLower.includes("apple") || brandLower.includes("itunes")) { iconClass = "fab fa-apple"; bgColor = "#111111"; }
-    else if (brandLower.includes("google play")) { iconClass = "fab fa-google-play"; bgColor = "#34A853"; }
-    else if (brandLower.includes("netflix")) { iconClass = "fas fa-film"; bgColor = "#E50914"; }
-    else if (brandLower.includes("spotify")) { iconClass = "fab fa-spotify"; bgColor = "#1DB954"; }
-    else if (brandLower.includes("hulu")) { iconClass = "fas fa-tv"; bgColor = "#1CE685"; }
-    else if (brandLower.includes("disney")) { iconClass = "fas fa-video"; bgColor = "#113CCF"; }
-    else if (brandLower.includes("youtube")) { iconClass = "fab fa-youtube"; bgColor = "#FF0000"; }
-    
-    // Food & Restaurants
-    else if (brandLower.includes("starbucks")) { iconClass = "fas fa-mug-hot"; bgColor = "#00704A"; }
-    else if (brandLower.includes("mcdonald")) { iconClass = "fas fa-hamburger"; bgColor = "#FFC72C"; }
-    else if (brandLower.includes("kfc")) { iconClass = "fas fa-drumstick-bite"; bgColor = "#A30000"; }
-    else if (brandLower.includes("burger king")) { iconClass = "fas fa-burger"; bgColor = "#F47321"; }
-    else if (brandLower.includes("uber")) { iconClass = "fab fa-uber"; bgColor = "#090909"; }
-    else if (brandLower.includes("doordash")) { iconClass = "fas fa-motorcycle"; bgColor = "#FF3008"; }
-    
-    // Travel
-    else if (brandLower.includes("airbnb")) { iconClass = "fab fa-airbnb"; bgColor = "#FF5A5F"; }
-    else if (brandLower.includes("booking")) { iconClass = "fas fa-hotel"; bgColor = "#003580"; }
-    
-    // Finance & Crypto
-    else if (brandLower.includes("visa")) { iconClass = "fab fa-cc-visa"; bgColor = "#1A1F71"; }
-    else if (brandLower.includes("mastercard")) { iconClass = "fab fa-cc-mastercard"; bgColor = "#EB001B"; }
-    else if (brandLower.includes("american express") || brandLower.includes("amex")) { iconClass = "fab fa-cc-amex"; bgColor = "#016FD0"; }
-    else if (brandLower.includes("paypal")) { iconClass = "fab fa-paypal"; bgColor = "#003087"; }
-    
-    // Fashion
-    else if (brandLower.includes("nike")) { iconClass = "fas fa-shoe-prints"; bgColor = "#111111"; }
-    else if (brandLower.includes("adidas")) { iconClass = "fas fa-socks"; bgColor = "#0072CE"; }
-    
-    // Digital
-    else if (brandLower.includes("razer")) { iconClass = "fas fa-coins"; bgColor = "#252525"; }
-    else if (brandLower.includes("twitch")) { iconClass = "fab fa-twitch"; bgColor = "#9146FF"; }
-    else if (brandLower.includes("discord")) { iconClass = "fab fa-discord"; bgColor = "#5865F2"; }
-    
-    let textColor = "#ffffff";
-    if (bgColor === "#FFF200" || bgColor === "#FFC72C") textColor = "#111111";
-    
-    return `<div class="brand-logo-container" style="width: 32px; height: 32px; background: ${bgColor}; color: ${textColor}; border-radius: 6px; display: inline-flex; align-items: center; justify-content: center; margin-right: 12px; font-size: 1rem;"><i class="${iconClass}"></i></div>`;
+    const d = getBrandVisualDetails(brand);
+    return `<div class="brand-logo-container" style="width: 34px; height: 34px; background: ${d.bgColor}; color: ${d.textColor}; border-radius: 8px; display: inline-flex; align-items: center; justify-content: center; font-size: 1.05rem; box-shadow: 0 2px 6px rgba(0,0,0,0.25); margin-right: 8px;"><i class="${d.iconClass}"></i></div>`;
 }
 
 // GENERAL ANNOUNCEMENT BROADCASTING

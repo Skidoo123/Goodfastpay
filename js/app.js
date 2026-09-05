@@ -552,3 +552,196 @@ function verifyOTP(email, enteredOtp) {
     sessionStorage.removeItem("goodfastpay_otp");
     return { success: true };
 }
+
+/**
+ * Universal Brand Visual Details Engine
+ * Provides authentic icons, background colors, text contrast, and gradients for all platform gift cards.
+ */
+function getBrandVisualDetails(brand) {
+    const b = (brand || "").toLowerCase();
+    
+    // Default fallback
+    let details = {
+        iconClass: "fa-solid fa-gift",
+        bgColor: "#6366f1",
+        textColor: "#ffffff",
+        gradient: "linear-gradient(135deg, #6366f1 0%, #1e1b4b 100%)"
+    };
+
+    // 1. Shopping & Retail
+    if (b.includes("amazon")) {
+        details = { iconClass: "fa-brands fa-amazon", bgColor: "#232F3E", textColor: "#FF9900", gradient: "linear-gradient(135deg, #131921 0%, #FF9900 100%)" };
+    } else if (b.includes("walmart")) {
+        details = { iconClass: "fa-solid fa-sparkles", bgColor: "#0071CE", textColor: "#FFC220", gradient: "linear-gradient(135deg, #0071CE 0%, #004F8B 100%)" };
+    } else if (b.includes("target")) {
+        details = { iconClass: "fa-solid fa-bullseye", bgColor: "#CC0000", textColor: "#FFFFFF", gradient: "linear-gradient(135deg, #CC0000 0%, #770000 100%)" };
+    } else if (b.includes("best buy")) {
+        details = { iconClass: "fa-solid fa-tag", bgColor: "#003B64", textColor: "#FFF200", gradient: "linear-gradient(135deg, #003B64 0%, #FFF200 100%)" };
+    } else if (b.includes("costco")) {
+        details = { iconClass: "fa-solid fa-warehouse", bgColor: "#E31837", textColor: "#FFFFFF", gradient: "linear-gradient(135deg, #E31837 0%, #005EA6 100%)" };
+    } else if (b.includes("ebay")) {
+        details = { iconClass: "fa-brands fa-ebay", bgColor: "#0064D2", textColor: "#FFFFFF", gradient: "linear-gradient(135deg, #E53238 0%, #0064D2 100%)" };
+    } else if (b.includes("macy")) {
+        details = { iconClass: "fa-solid fa-star", bgColor: "#E21A22", textColor: "#FFFFFF", gradient: "linear-gradient(135deg, #E21A22 0%, #880000 100%)" };
+    } else if (b.includes("nordstrom")) {
+        details = { iconClass: "fa-solid fa-bag-shopping", bgColor: "#111111", textColor: "#FFFFFF", gradient: "linear-gradient(135deg, #111111 0%, #333333 100%)" };
+    } else if (b.includes("home depot")) {
+        details = { iconClass: "fa-solid fa-hammer", bgColor: "#F96302", textColor: "#FFFFFF", gradient: "linear-gradient(135deg, #F96302 0%, #B84300 100%)" };
+    } else if (b.includes("lowe")) {
+        details = { iconClass: "fa-solid fa-house", bgColor: "#004990", textColor: "#FFFFFF", gradient: "linear-gradient(135deg, #004990 0%, #002244 100%)" };
+    } else if (b.includes("ikea")) {
+        details = { iconClass: "fa-solid fa-box", bgColor: "#0051BA", textColor: "#FFDA1A", gradient: "linear-gradient(135deg, #0051BA 0%, #FFDA1A 100%)" };
+    } else if (b.includes("sephora")) {
+        details = { iconClass: "fa-solid fa-wand-magic-sparkles", bgColor: "#000000", textColor: "#E00034", gradient: "linear-gradient(135deg, #000000 0%, #E00034 100%)" };
+    } else if (b.includes("ulta")) {
+        details = { iconClass: "fa-solid fa-heart", bgColor: "#E35205", textColor: "#FFFFFF", gradient: "linear-gradient(135deg, #E35205 0%, #993000 100%)" };
+    
+    // 2. Gaming
+    } else if (b.includes("steam")) {
+        details = { iconClass: "fa-brands fa-steam", bgColor: "#171A21", textColor: "#66C0F4", gradient: "linear-gradient(135deg, #171A21 0%, #2A475E 100%)" };
+    } else if (b.includes("playstation") || b.includes("psn")) {
+        details = { iconClass: "fa-brands fa-playstation", bgColor: "#0037AE", textColor: "#FFFFFF", gradient: "linear-gradient(135deg, #0037AE 0%, #001030 100%)" };
+    } else if (b.includes("xbox")) {
+        details = { iconClass: "fa-brands fa-xbox", bgColor: "#107C10", textColor: "#FFFFFF", gradient: "linear-gradient(135deg, #107C10 0%, #052005 100%)" };
+    } else if (b.includes("nintendo")) {
+        details = { iconClass: "fa-solid fa-gamepad", bgColor: "#E60012", textColor: "#FFFFFF", gradient: "linear-gradient(135deg, #E60012 0%, #8A000A 100%)" };
+    } else if (b.includes("roblox")) {
+        details = { iconClass: "fa-solid fa-cube", bgColor: "#E31B23", textColor: "#FFFFFF", gradient: "linear-gradient(135deg, #E31B23 0%, #111111 100%)" };
+    } else if (b.includes("riot") || b.includes("league of legends")) {
+        details = { iconClass: "fa-solid fa-fist-raised", bgColor: "#D12630", textColor: "#FFFFFF", gradient: "linear-gradient(135deg, #D12630 0%, #111111 100%)" };
+    } else if (b.includes("blizzard") || b.includes("battle.net")) {
+        details = { iconClass: "fa-solid fa-snowflake", bgColor: "#0099E6", textColor: "#FFFFFF", gradient: "linear-gradient(135deg, #0099E6 0%, #003366 100%)" };
+    } else if (b.includes("pubg")) {
+        details = { iconClass: "fa-solid fa-crosshair", bgColor: "#111111", textColor: "#F3A918", gradient: "linear-gradient(135deg, #111111 0%, #F3A918 100%)" };
+    } else if (b.includes("free fire")) {
+        details = { iconClass: "fa-solid fa-gem", bgColor: "#FF4500", textColor: "#FFFFFF", gradient: "linear-gradient(135deg, #FF4500 0%, #8B0000 100%)" };
+    } else if (b.includes("google play games")) {
+        details = { iconClass: "fa-brands fa-google-play", bgColor: "#00E676", textColor: "#111111", gradient: "linear-gradient(135deg, #00E676 0%, #00897B 100%)" };
+
+    // 3. Entertainment
+    } else if (b.includes("apple") || b.includes("itunes")) {
+        details = { iconClass: "fa-brands fa-apple", bgColor: "#111111", textColor: "#FFFFFF", gradient: "linear-gradient(135deg, #111111 0%, #FA2D48 100%)" };
+    } else if (b.includes("google play")) {
+        details = { iconClass: "fa-brands fa-google-play", bgColor: "#34A853", textColor: "#FFFFFF", gradient: "linear-gradient(135deg, #34A853 0%, #4285F4 100%)" };
+    } else if (b.includes("netflix")) {
+        details = { iconClass: "fa-solid fa-film", bgColor: "#E50914", textColor: "#FFFFFF", gradient: "linear-gradient(135deg, #E50914 0%, #000000 100%)" };
+    } else if (b.includes("spotify")) {
+        details = { iconClass: "fa-brands fa-spotify", bgColor: "#1DB954", textColor: "#191414", gradient: "linear-gradient(135deg, #1DB954 0%, #191414 100%)" };
+    } else if (b.includes("hulu")) {
+        details = { iconClass: "fa-solid fa-tv", bgColor: "#1CE685", textColor: "#05301B", gradient: "linear-gradient(135deg, #1CE685 0%, #05301B 100%)" };
+    } else if (b.includes("disney")) {
+        details = { iconClass: "fa-solid fa-video", bgColor: "#113CCF", textColor: "#FFFFFF", gradient: "linear-gradient(135deg, #113CCF 0%, #020B2D 100%)" };
+    } else if (b.includes("hbo")) {
+        details = { iconClass: "fa-solid fa-clapperboard", bgColor: "#5822B4", textColor: "#FFFFFF", gradient: "linear-gradient(135deg, #5822B4 0%, #1D0649 100%)" };
+    } else if (b.includes("paramount")) {
+        details = { iconClass: "fa-solid fa-mountain", bgColor: "#0064FF", textColor: "#FFFFFF", gradient: "linear-gradient(135deg, #0064FF 0%, #001A4D 100%)" };
+    } else if (b.includes("youtube")) {
+        details = { iconClass: "fa-brands fa-youtube", bgColor: "#FF0000", textColor: "#FFFFFF", gradient: "linear-gradient(135deg, #FF0000 0%, #282828 100%)" };
+    } else if (b.includes("crunchyroll")) {
+        details = { iconClass: "fa-solid fa-circle-play", bgColor: "#FF6600", textColor: "#FFFFFF", gradient: "linear-gradient(135deg, #FF6600 0%, #212121 100%)" };
+
+    // 4. Food & Restaurants
+    } else if (b.includes("starbucks")) {
+        details = { iconClass: "fa-solid fa-mug-hot", bgColor: "#00704A", textColor: "#FFFFFF", gradient: "linear-gradient(135deg, #00704A 0%, #003624 100%)" };
+    } else if (b.includes("mcdonald")) {
+        details = { iconClass: "fa-solid fa-burger", bgColor: "#DA291C", textColor: "#FFC72C", gradient: "linear-gradient(135deg, #DA291C 0%, #FFC72C 100%)" };
+    } else if (b.includes("kfc")) {
+        details = { iconClass: "fa-solid fa-drumstick-bite", bgColor: "#A30000", textColor: "#FFFFFF", gradient: "linear-gradient(135deg, #A30000 0%, #5E0000 100%)" };
+    } else if (b.includes("burger king")) {
+        details = { iconClass: "fa-solid fa-burger", bgColor: "#F47321", textColor: "#FFFFFF", gradient: "linear-gradient(135deg, #F47321 0%, #502314 100%)" };
+    } else if (b.includes("domino")) {
+        details = { iconClass: "fa-solid fa-pizza-slice", bgColor: "#006491", textColor: "#E31837", gradient: "linear-gradient(135deg, #006491 0%, #E31837 100%)" };
+    } else if (b.includes("pizza hut")) {
+        details = { iconClass: "fa-solid fa-pizza-slice", bgColor: "#EE3124", textColor: "#FFFFFF", gradient: "linear-gradient(135deg, #EE3124 0%, #7A1009 100%)" };
+    } else if (b.includes("subway")) {
+        details = { iconClass: "fa-solid fa-utensils", bgColor: "#008C15", textColor: "#FFC220", gradient: "linear-gradient(135deg, #008C15 0%, #FFC220 100%)" };
+    } else if (b.includes("uber")) {
+        details = { iconClass: "fa-brands fa-uber", bgColor: "#000000", textColor: "#FFFFFF", gradient: "linear-gradient(135deg, #000000 0%, #333333 100%)" };
+    } else if (b.includes("doordash")) {
+        details = { iconClass: "fa-solid fa-motorcycle", bgColor: "#FF3008", textColor: "#FFFFFF", gradient: "linear-gradient(135deg, #FF3008 0%, #A81B00 100%)" };
+
+    // 5. Travel
+    } else if (b.includes("airbnb")) {
+        details = { iconClass: "fa-brands fa-airbnb", bgColor: "#FF5A5F", textColor: "#FFFFFF", gradient: "linear-gradient(135deg, #FF5A5F 0%, #A52D32 100%)" };
+    } else if (b.includes("hotels")) {
+        details = { iconClass: "fa-solid fa-hotel", bgColor: "#D32F2F", textColor: "#FFFFFF", gradient: "linear-gradient(135deg, #D32F2F 0%, #7B0000 100%)" };
+    } else if (b.includes("booking")) {
+        details = { iconClass: "fa-solid fa-bed", bgColor: "#003580", textColor: "#FFFFFF", gradient: "linear-gradient(135deg, #003580 0%, #001B44 100%)" };
+    } else if (b.includes("expedia")) {
+        details = { iconClass: "fa-solid fa-plane", bgColor: "#00256C", textColor: "#FFCC00", gradient: "linear-gradient(135deg, #00256C 0%, #FFCC00 100%)" };
+    } else if (b.includes("delta")) {
+        details = { iconClass: "fa-solid fa-plane-departure", bgColor: "#003366", textColor: "#E51937", gradient: "linear-gradient(135deg, #E51937 0%, #003366 100%)" };
+    } else if (b.includes("american airlines")) {
+        details = { iconClass: "fa-solid fa-plane-up", bgColor: "#0078D2", textColor: "#FFFFFF", gradient: "linear-gradient(135deg, #0078D2 0%, #C8102E 100%)" };
+    } else if (b.includes("emirates")) {
+        details = { iconClass: "fa-solid fa-plane", bgColor: "#D71921", textColor: "#FFFFFF", gradient: "linear-gradient(135deg, #D71921 0%, #700B10 100%)" };
+    } else if (b.includes("southwest")) {
+        details = { iconClass: "fa-solid fa-plane", bgColor: "#304CB2", textColor: "#F9B233", gradient: "linear-gradient(135deg, #304CB2 0%, #F9B233 100%)" };
+
+    // 6. Crypto & Finance
+    } else if (b.includes("vanilla visa")) {
+        details = { iconClass: "fa-solid fa-credit-card", bgColor: "#2D3748", textColor: "#D4AF37", gradient: "linear-gradient(135deg, #2D3748 0%, #D4AF37 100%)" };
+    } else if (b.includes("onevanilla")) {
+        details = { iconClass: "fa-solid fa-credit-card", bgColor: "#1A202C", textColor: "#E2E8F0", gradient: "linear-gradient(135deg, #2D3748 0%, #1A202C 100%)" };
+    } else if (b.includes("securespend")) {
+        details = { iconClass: "fa-solid fa-shield-halved", bgColor: "#1A365D", textColor: "#63B3ED", gradient: "linear-gradient(135deg, #1A365D 0%, #2B6CB0 100%)" };
+    } else if (b.includes("visa")) {
+        details = { iconClass: "fa-brands fa-cc-visa", bgColor: "#1A1F71", textColor: "#F7B600", gradient: "linear-gradient(135deg, #1A1F71 0%, #F7B600 100%)" };
+    } else if (b.includes("mastercard")) {
+        details = { iconClass: "fa-brands fa-cc-mastercard", bgColor: "#EB001B", textColor: "#FF5F00", gradient: "linear-gradient(135deg, #EB001B 0%, #FF5F00 100%)" };
+    } else if (b.includes("american express") || b.includes("amex")) {
+        details = { iconClass: "fa-brands fa-cc-amex", bgColor: "#016FD0", textColor: "#FFFFFF", gradient: "linear-gradient(135deg, #016FD0 0%, #002663 100%)" };
+
+    // 7. Fashion
+    } else if (b.includes("nike")) {
+        details = { iconClass: "fa-solid fa-bolt", bgColor: "#000000", textColor: "#FFFFFF", gradient: "linear-gradient(135deg, #000000 0%, #444444 100%)" };
+    } else if (b.includes("adidas")) {
+        details = { iconClass: "fa-solid fa-shoe-prints", bgColor: "#000000", textColor: "#0072CE", gradient: "linear-gradient(135deg, #000000 0%, #0072CE 100%)" };
+    } else if (b.includes("h&m")) {
+        details = { iconClass: "fa-solid fa-shirt", bgColor: "#E50010", textColor: "#FFFFFF", gradient: "linear-gradient(135deg, #E50010 0%, #880000 100%)" };
+    } else if (b.includes("zara")) {
+        details = { iconClass: "fa-solid fa-shirt", bgColor: "#000000", textColor: "#FFFFFF", gradient: "linear-gradient(135deg, #000000 0%, #333333 100%)" };
+    } else if (b.includes("asos")) {
+        details = { iconClass: "fa-solid fa-bag-shopping", bgColor: "#2D2D2D", textColor: "#FFFFFF", gradient: "linear-gradient(135deg, #2D2D2D 0%, #111111 100%)" };
+    } else if (b.includes("foot locker")) {
+        details = { iconClass: "fa-solid fa-shoe-prints", bgColor: "#EB1C24", textColor: "#FFFFFF", gradient: "linear-gradient(135deg, #EB1C24 0%, #000000 100%)" };
+    } else if (b.includes("jd sports")) {
+        details = { iconClass: "fa-solid fa-shoe-prints", bgColor: "#000000", textColor: "#FFD700", gradient: "linear-gradient(135deg, #000000 0%, #FFD700 100%)" };
+
+    // 8. Digital Services
+    } else if (b.includes("paypal")) {
+        details = { iconClass: "fa-brands fa-paypal", bgColor: "#003087", textColor: "#FFFFFF", gradient: "linear-gradient(135deg, #003087 0%, #0079C1 100%)" };
+    } else if (b.includes("razer")) {
+        details = { iconClass: "fa-solid fa-coins", bgColor: "#111111", textColor: "#00FF00", gradient: "linear-gradient(135deg, #111111 0%, #00FF00 100%)" };
+    } else if (b.includes("skrill")) {
+        details = { iconClass: "fa-solid fa-wallet", bgColor: "#811E44", textColor: "#FFFFFF", gradient: "linear-gradient(135deg, #811E44 0%, #400A20 100%)" };
+    } else if (b.includes("paysafe")) {
+        details = { iconClass: "fa-solid fa-lock", bgColor: "#00A3E0", textColor: "#FFFFFF", gradient: "linear-gradient(135deg, #00A3E0 0%, #005B7F 100%)" };
+    } else if (b.includes("twitch")) {
+        details = { iconClass: "fa-brands fa-twitch", bgColor: "#9146FF", textColor: "#FFFFFF", gradient: "linear-gradient(135deg, #9146FF 0%, #3A0094 100%)" };
+    } else if (b.includes("discord")) {
+        details = { iconClass: "fa-brands fa-discord", bgColor: "#5865F2", textColor: "#FFFFFF", gradient: "linear-gradient(135deg, #5865F2 0%, #202773 100%)" };
+    } else if (b.includes("linkedin")) {
+        details = { iconClass: "fa-brands fa-linkedin", bgColor: "#0A66C2", textColor: "#FFFFFF", gradient: "linear-gradient(135deg, #0A66C2 0%, #004182 100%)" };
+
+    // 9. Telecom
+    } else if (b.includes("at&t")) {
+        details = { iconClass: "fa-solid fa-globe", bgColor: "#00A8E0", textColor: "#FFFFFF", gradient: "linear-gradient(135deg, #00A8E0 0%, #005A78 100%)" };
+    } else if (b.includes("verizon")) {
+        details = { iconClass: "fa-solid fa-check", bgColor: "#CD040B", textColor: "#FFFFFF", gradient: "linear-gradient(135deg, #CD040B 0%, #000000 100%)" };
+    } else if (b.includes("t-mobile")) {
+        details = { iconClass: "fa-solid fa-mobile-screen-button", bgColor: "#E20074", textColor: "#FFFFFF", gradient: "linear-gradient(135deg, #E20074 0%, #7A003E 100%)" };
+    } else if (b.includes("vodafone")) {
+        details = { iconClass: "fa-solid fa-circle-notch", bgColor: "#E60000", textColor: "#FFFFFF", gradient: "linear-gradient(135deg, #E60000 0%, #800000 100%)" };
+    } else if (b.includes("mtn")) {
+        details = { iconClass: "fa-solid fa-tower-cell", bgColor: "#FFCC00", textColor: "#000000", gradient: "linear-gradient(135deg, #FFCC00 0%, #CC9900 100%)" };
+    } else if (b.includes("airtel")) {
+        details = { iconClass: "fa-solid fa-signal", bgColor: "#E40000", textColor: "#FFFFFF", gradient: "linear-gradient(135deg, #E40000 0%, #8B0000 100%)" };
+    } else if (b.includes("glo")) {
+        details = { iconClass: "fa-solid fa-globe", bgColor: "#008000", textColor: "#FFFFFF", gradient: "linear-gradient(135deg, #008000 0%, #004D00 100%)" };
+    } else if (b.includes("9mobile")) {
+        details = { iconClass: "fa-solid fa-mobile-button", bgColor: "#005C2B", textColor: "#84B819", gradient: "linear-gradient(135deg, #005C2B 0%, #84B819 100%)" };
+    }
+
+    return details;
+}
