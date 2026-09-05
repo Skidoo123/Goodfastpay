@@ -72,7 +72,6 @@
     </style>
 </head>
 <body>
-    <div class="live-rate-marquee-container"></div>
 
     <div class="dashboard-layout">
         <!-- SIDEBAR BACKDROP OVERLAY FOR MOBILE -->
@@ -440,14 +439,14 @@
                             <h4 style="font-weight: 800; margin-bottom: 16px; font-size: 1rem; display: flex; align-items: center; gap: 8px;">
                                 <i class="fas fa-list-check" style="color: var(--primary);"></i> Submission History
                             </h4>
-                            <div class="table-container" style="border: none; margin: 0; background: transparent; overflow-y: auto; max-height: 380px;">
-                                <table class="data-table submission-history-table compact-table" style="width: 100%;">
+                            <div class="table-container" style="border: none; margin: 0; background: transparent; overflow-x: auto; overflow-y: auto; max-height: 380px; width: 100%;">
+                                <table class="data-table submission-history-table compact-table" style="width: 100%; min-width: 520px;">
                                     <thead>
                                         <tr>
-                                            <th>Card Brand</th>
-                                            <th>Face Value</th>
-                                            <th>Payout</th>
-                                            <th>Status</th>
+                                            <th style="white-space: nowrap;">Card Brand</th>
+                                            <th style="white-space: nowrap;">Face Value</th>
+                                            <th style="white-space: nowrap;">Payout</th>
+                                            <th style="white-space: nowrap; text-align: right; padding-right: 12px;">Action</th>
                                         </tr>
                                     </thead>
                                     <tbody id="sell-history-tbody">
@@ -1442,7 +1441,6 @@
     <script src="js/portal.js?v=2.3"></script>
     <script src="js/ocr-scanner.js?v=2.4"></script>
     <script src="js/payout-tracker.js?v=2.4"></script>
-    <script src="js/rate-ticker.js?v=2.4"></script>
     <script src="js/loyalty.js?v=2.4"></script>
     <script src="js/copilot-ai.js?v=2.4"></script>
 </body>

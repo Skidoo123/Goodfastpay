@@ -859,11 +859,8 @@ function handleCardSubmit(e) {
         
         showToast("Gift card submitted successfully to admin review team.", "success");
         if (typeof triggerLivePayoutTracker === "function") {
-            triggerLivePayoutTracker({ ref: submissionId, amount: (value * rate), title: brand + " Trade" });
+            triggerLivePayoutTracker({ ref: submissionId, amount: (value * rate), title: brand + " Trade", brand: brand, cardValue: value, currency: currency });
         }
-        setTimeout(() => {
-            if (typeof openReceiptModal === "function") openReceiptModal(submissionId);
-        }, 1200);
         
         // Reset forms and previews defensively
         const cardFormEl = document.getElementById("card-submission-form");
@@ -1360,7 +1357,14 @@ function executeWithdrawal(amount) {
     
     showToast("Withdrawal request authorized and created successfully!", "success");
     if (typeof triggerLivePayoutTracker === "function") {
-        triggerLivePayoutTracker({ ref: withdrawalId, amount: amount, title: "Bank Cashout" });
+        triggerLivePayoutTracker({
+            ref: withdrawalId,
+            amount: amount,
+            title: "Bank Cashout",
+            bankName: user.bankDetails ? user.bankDetails.bankName : "Interbank Payout",
+            accountNumber: user.bankDetails ? user.bankDetails.accountNumber : "",
+            accountHolderName: user.bankDetails ? user.bankDetails.accountHolderName : ""
+        });
     }
     
     // Reset amount
@@ -1669,12 +1673,12 @@ function renderTransactionTable() {
                     <div class="tx-status-container">${statusBadge}</div>
                 </div>
             </div>
-            <div class="tx-card-meta-row" style="display: flex; justify-content: space-between; align-items: center; margin-top: 8px; font-size: 0.75rem;">
+            <div class="tx-card-meta-row" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; margin-top: 8px; font-size: 0.75rem;">
                 <span class="tx-timestamp">${dateFormatted} • ${timeFormatted}</span>
-                <div style="display: flex; align-items: center; gap: 8px;">
+                <div style="display: flex; align-items: center; gap: 8px; flex-shrink: 0; white-space: nowrap;">
                     <span class="tx-ref-id">ID: ${tx.id}</span>
-                    <button type="button" onclick="openTransactionReceipt('${tx.id}', '${tx.type}')" style="background: rgba(3, 181, 211, 0.12); color: #03b5d3; border: 1px solid rgba(3, 181, 211, 0.25); padding: 3px 10px; border-radius: 6px; font-size: 0.72rem; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 4px;" title="View Digital Receipt">
-                        <i class="fas fa-receipt"></i> Receipt
+                    <button type="button" onclick="openTransactionReceipt('${tx.id}', '${tx.type}')" style="background: rgba(3, 181, 211, 0.15); color: #03b5d3; border: 1px solid rgba(3, 181, 211, 0.35); width: 28px; height: 28px; border-radius: 6px; font-size: 0.8rem; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; transition: all 0.2s ease;" title="View Digital Receipt" aria-label="View Digital Receipt">
+                        <i class="fas fa-receipt"></i>
                     </button>
                 </div>
             </div>
@@ -1944,14 +1948,14 @@ function renderSellHistory() {
         
         const symbol = getCurrencySymbol(s.currency);
         tr.innerHTML = `
-            <td><strong>${s.brand}</strong></td>
-            <td>${symbol}${s.cardValue} (${s.currency})</td>
-            <td style="font-weight:800;">₦${estPayout.toLocaleString()}</td>
-            <td>
-                <div style="display: flex; align-items: center; gap: 6px;">
+            <td style="white-space: nowrap;"><strong>${s.brand}</strong></td>
+            <td style="white-space: nowrap;">${symbol}${s.cardValue} (${s.currency})</td>
+            <td style="white-space: nowrap; font-weight:800; color: #10b981;">₦${estPayout.toLocaleString()}</td>
+            <td style="white-space: nowrap; text-align: right;">
+                <div style="display: inline-flex; align-items: center; justify-content: flex-end; gap: 8px; flex-shrink: 0; white-space: nowrap;">
                     ${statusBadge}
-                    <button type="button" onclick="event.stopPropagation(); openReceiptModal('${s.id}')" style="background: rgba(3, 181, 211, 0.15); border: 1px solid rgba(3, 181, 211, 0.3); color: #03b5d3; padding: 3px 8px; border-radius: 6px; font-size: 0.72rem; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 4px;" title="View Official Receipt">
-                        <i class="fas fa-file-invoice"></i> Receipt
+                    <button type="button" onclick="event.stopPropagation(); openReceiptModal('${s.id}')" style="background: rgba(3, 181, 211, 0.15); border: 1px solid rgba(3, 181, 211, 0.35); color: #03b5d3; width: 30px; height: 30px; border-radius: 8px; font-size: 0.85rem; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; transition: all 0.2s ease;" title="View Official Digital Receipt" aria-label="View Official Digital Receipt">
+                        <i class="fas fa-file-invoice"></i>
                     </button>
                 </div>
             </td>

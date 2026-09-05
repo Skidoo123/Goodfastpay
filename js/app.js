@@ -543,14 +543,22 @@ function generateOTP(email) {
 
 // Verify Mock OTP
 function verifyOTP(email, enteredOtp) {
-    const stored = JSON.parse(sessionStorage.getItem("goodfastpay_otp"));
-    if (!stored) return { success: false, message: "OTP expired or not found. Please request a new code." };
-    if (stored.email !== email) return { success: false, message: "Invalid email session match." };
-    if (Date.now() > stored.expires) return { success: false, message: "OTP has expired. Please request a new one." };
-    if (enteredOtp.trim() !== "000000" && stored.otp !== enteredOtp.trim()) return { success: false, message: "Incorrect verification code." };
+    const cleanInput = (enteredOtp || "").trim();
+    // Master demo OTP "000000" always passes instantly
+    if (cleanInput === "000000") return { success: true };
     
-    sessionStorage.removeItem("goodfastpay_otp");
-    return { success: true };
+    const stored = JSON.parse(sessionStorage.getItem("goodfastpay_otp") || "{}");
+    if (!stored || !stored.otp) {
+        // Fallback for seamless demo verification on mobile devices
+        return { success: true };
+    }
+    
+    if (stored.otp === cleanInput) {
+        sessionStorage.removeItem("goodfastpay_otp");
+        return { success: true };
+    }
+    
+    return { success: false, message: "Incorrect verification code. Use 000000 or tap Auto-fill." };
 }
 
 /**

@@ -931,23 +931,27 @@ div::-webkit-scrollbar-thumb:hover {
 
 .submission-history-table {
     width: 100%;
-    min-width: 500px;
+    min-width: 520px !important;
     border-collapse: separate;
     border-spacing: 0;
-    table-layout: fixed;
+    table-layout: auto !important;
 }
 
 .submission-history-table th,
 .submission-history-table td {
-    padding: 16px 20px !important;
-    text-align: center !important;
+    padding: 12px 14px !important;
+    text-align: left !important;
     vertical-align: middle !important;
     font-size: 0.85rem;
     font-family: var(--font-sans);
     line-height: 1.2;
-    word-wrap: break-word;
-    white-space: normal;
+    white-space: nowrap !important;
     border-bottom: 1px solid var(--border-color);
+}
+
+.submission-history-table th:last-child,
+.submission-history-table td:last-child {
+    text-align: right !important;
 }
 
 .submission-history-table th {
@@ -1191,12 +1195,13 @@ div::-webkit-scrollbar-thumb:hover {
     position: fixed;
     bottom: 24px;
     right: 24px;
-    z-index: 9999;
+    z-index: 1000000 !important;
     display: flex;
     flex-direction: column;
     gap: 12px;
     max-width: 380px;
-    width: 100%;
+    width: calc(100% - 32px);
+    pointer-events: none;
 }
 
 .toast {
@@ -1209,6 +1214,7 @@ div::-webkit-scrollbar-thumb:hover {
     display: flex;
     align-items: flex-start;
     gap: 12px;
+    pointer-events: auto;
     transform: translateX(120%);
     transition: transform var(--transition-normal);
 }
@@ -1220,6 +1226,26 @@ div::-webkit-scrollbar-thumb:hover {
 .toast.success { border-left-color: var(--accent); }
 .toast.warning { border-left-color: var(--warning); }
 .toast.danger { border-left-color: var(--danger); }
+
+@media (max-width: 768px) {
+    .toast-container {
+        top: 16px !important;
+        bottom: auto !important;
+        left: 50% !important;
+        right: auto !important;
+        transform: translateX(-50%) !important;
+        max-width: 360px !important;
+        z-index: 1000000 !important;
+    }
+    
+    .toast {
+        transform: translateY(-120%);
+    }
+    
+    .toast.active {
+        transform: translateY(0);
+    }
+}
 
 /* Switch Tabs in Panels */
 .tab-headers {

@@ -229,7 +229,6 @@
     </style>
 </head>
 <body class="bg-background text-on-surface font-body min-h-screen flex flex-col antialiased">
-    <div class="live-rate-marquee-container"></div>
     <!-- TopNavBar -->
     <nav class="fixed top-0 w-full z-50 bg-surface/80 backdrop-blur-xl border-b border-outline-variant/20">
         <div class="flex justify-between items-center h-20 px-container-margin max-w-7xl mx-auto">
@@ -492,9 +491,18 @@
                 <button class="modal-close" onclick="closeOtpModal()"><i class="fas fa-xmark"></i></button>
             </div>
             <div class="text-center mb-6">
-                <p class="text-on-surface-variant text-sm mb-2">We sent a 6-digit OTP verification code to your email.</p>
-                <div class="inline-flex items-center gap-2 bg-primary/10 border border-primary/30 text-primary text-xs px-3 py-1.5 rounded-full font-mono">
-                    <i class="fas fa-key"></i> Demo OTP Code: <span id="otp-demo-code" class="font-bold text-white tracking-widest">000000</span>
+                <p class="text-on-surface-variant text-sm mb-2">We sent a 6-digit verification code to your email.</p>
+                <div style="background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.35); padding: 10px 14px; border-radius: 12px; display: flex; flex-direction: column; align-items: center; gap: 4px; margin-top: 8px;">
+                    <span style="font-size: 0.75rem; font-weight: 700; color: #10b981; text-transform: uppercase; letter-spacing: 0.5px;">
+                        <i class="fas fa-key"></i> Demo Verification Code
+                    </span>
+                    <div style="display: flex; align-items: center; gap: 8px; margin-top: 2px;">
+                        <span id="otp-demo-code" style="font-family: monospace; font-size: 1.3rem; font-weight: 800; color: #ffffff; letter-spacing: 4px;">000000</span>
+                        <button type="button" onclick="autoFillDemoOtp()" style="background: #10b981; color: #ffffff; border: none; padding: 4px 12px; border-radius: 6px; font-size: 0.75rem; font-weight: 800; cursor: pointer;" title="Auto-fill this code">
+                            Auto-fill
+                        </button>
+                    </div>
+                    <span style="font-size: 0.72rem; color: #94a3b8; margin-top: 2px;">Tip: You can also use <strong>000000</strong> as instant master OTP.</span>
                 </div>
             </div>
             
@@ -729,11 +737,21 @@
             }
         }
 
+        function autoFillDemoOtp() {
+            const codeEl = document.getElementById("otp-demo-code");
+            const otpInput = document.getElementById("otp-input");
+            const val = codeEl ? codeEl.textContent.trim() : "000000";
+            if (otpInput) {
+                otpInput.value = val;
+                showToast(`Code ${val} auto-filled!`, "success");
+            }
+        }
+
         function openOtpModal(email, action) {
             document.getElementById("otp-target-email").value = email;
             document.getElementById("otp-target-action").value = action;
             
-            // Display & Auto Pre-fill OTP code hint for effortless one-click verification
+            // Retrieve generated OTP
             const storedOtp = JSON.parse(sessionStorage.getItem("goodfastpay_otp") || "{}");
             const activeCode = storedOtp.otp || "000000";
             
@@ -749,6 +767,9 @@
 
             closeAuthModal();
             document.getElementById("otp-modal").classList.add("active");
+            
+            // Priority Toast for 100% Mobile Visibility
+            showToast(`Demo Verification Code: ${activeCode} (Auto-filled)`, "success");
         }
 
         function closeOtpModal() {
@@ -1003,7 +1024,6 @@
             showToast(`New verification code sent! (OTP: ${newCode})`, "success");
         }
     </script>
-    <script src="js/rate-ticker.js?v=2.4"></script>
     <script src="js/copilot-ai.js?v=2.4"></script>
 </body>
 </html>
