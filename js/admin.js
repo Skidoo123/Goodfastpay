@@ -143,9 +143,25 @@ function toggleAdminSidebar() {
     if (overlay) overlay.classList.toggle("active");
 }
 
+// Role Allowed Sections Matrix
+const ROLE_ALLOWED_SECTIONS = {
+    SUPER_ADMIN: ["dashboard", "users", "card-review", "withdrawals", "rates", "inventory", "broadcast", "audit", "support-manager"],
+    SUPPORT_AGENT: ["support-manager", "users", "broadcast"],
+    FINANCE_AUDITOR: ["dashboard", "card-review", "withdrawals", "inventory", "audit"]
+};
+
 // Switch between workspace tabs
 function switchAdminSection(sectionId, element) {
-    
+    const role = activeAdminRole || "SUPER_ADMIN";
+    const allowed = ROLE_ALLOWED_SECTIONS[role] || ROLE_ALLOWED_SECTIONS["SUPER_ADMIN"];
+
+    if (!allowed.includes(sectionId)) {
+        if (typeof showToast === "function") {
+            showToast(`Access to ${sectionId.toUpperCase()} is restricted for ${role.replace('_', ' ')} role.`, "warning");
+        }
+        return;
+    }
+
     // Hide all sections
     const sections = document.querySelectorAll(".admin-section");
     sections.forEach(sec => sec.classList.remove("active"));
@@ -701,6 +717,10 @@ function modalAdjustWallet(email) {
 // Handle Admin Wallet manual adjustment updates
 function handleManualWalletAdjust(e) {
     e.preventDefault();
+    if (activeAdminRole !== "SUPER_ADMIN") {
+        if (typeof showToast === "function") showToast("General Approval authority for wallet balance adjustments is restricted to SUPER_ADMIN.", "danger");
+        return;
+    }
     
     const email = document.getElementById("ins-adjust-email").value;
     const type = document.getElementById("ins-adjust-type").value;
@@ -995,6 +1015,10 @@ function inspectCardSubmission(id) {
 
 // Approve gift card trades payouts
 function approveCardTrade(id) {
+    if (activeAdminRole !== "SUPER_ADMIN") {
+        if (typeof showToast === "function") showToast("General Approval authority is restricted strictly to SUPER_ADMIN.", "danger");
+        return;
+    }
     const payoutAmount = parseFloat(document.getElementById("dec-payout").value);
     
     if (isNaN(payoutAmount) || payoutAmount <= 0) {
@@ -1062,6 +1086,10 @@ function approveCardTrade(id) {
 
 // Reject gift card trades
 function rejectCardTrade(id) {
+    if (activeAdminRole !== "SUPER_ADMIN") {
+        if (typeof showToast === "function") showToast("General Approval authority is restricted strictly to SUPER_ADMIN.", "danger");
+        return;
+    }
     const reason = document.getElementById("dec-reject-reason").value;
     
     const db = getDB();
@@ -1257,6 +1285,10 @@ function inspectWithdrawalRequest(id) {
 
 // Approve manual banking transfers
 function approveWithdrawalPayout(id) {
+    if (activeAdminRole !== "SUPER_ADMIN") {
+        if (typeof showToast === "function") showToast("General Approval authority is restricted strictly to SUPER_ADMIN.", "danger");
+        return;
+    }
     const db = getDB();
     const wdIndex = db.withdrawals.findIndex(w => w.id === id);
     if (wdIndex === -1) return;
@@ -1297,6 +1329,10 @@ function approveWithdrawalPayout(id) {
 
 // Decline manual transfers and refund wallets balance
 function declineWithdrawalPayout(id) {
+    if (activeAdminRole !== "SUPER_ADMIN") {
+        if (typeof showToast === "function") showToast("General Approval authority is restricted strictly to SUPER_ADMIN.", "danger");
+        return;
+    }
     const db = getDB();
     const wdIndex = db.withdrawals.findIndex(w => w.id === id);
     if (wdIndex === -1) return;
@@ -1400,6 +1436,10 @@ function renderRatesConfigurator() {
 }
 
 function saveAdminRates() {
+    if (activeAdminRole !== "SUPER_ADMIN") {
+        if (typeof showToast === "function") showToast("General Approval authority for currency rates is restricted to SUPER_ADMIN.", "danger");
+        return;
+    }
     const db = getDB();
     const inputs = document.querySelectorAll(".rate-input");
     
@@ -1710,6 +1750,10 @@ function exportAdminDB() {
 
 // CONFIRM AND RESET DB SANDBOX FOR TEST REFRESHES
 function confirmResetDB() {
+    if (activeAdminRole !== "SUPER_ADMIN") {
+        if (typeof showToast === "function") showToast("Resetting database sandbox is restricted to SUPER_ADMIN.", "danger");
+        return;
+    }
     if (confirm("WARNING: Are you sure you want to restore the sandbox database to its default factory state? This will delete all user card trade submissions, cashout withdrawals, and linked bank accounts!")) {
         localStorage.removeItem("goodfastpay_db");
         showToast("Database sandbox restored to default credentials successfully! Reloading...", "warning");
@@ -2424,6 +2468,10 @@ function renderCurrencyManager() {
 // HANDLE ADD NEW CURRENCY FORM ACTION
 function handleAddCurrency(e) {
     e.preventDefault();
+    if (activeAdminRole !== "SUPER_ADMIN") {
+        if (typeof showToast === "function") showToast("General Approval authority for currency rates is restricted to SUPER_ADMIN.", "danger");
+        return;
+    }
     const code = document.getElementById("add-curr-code").value.trim().toUpperCase();
     const name = document.getElementById("add-curr-name").value.trim();
     const rate = parseFloat(document.getElementById("add-curr-rate").value);
@@ -3964,10 +4012,34 @@ function applyAdminRolePermissions() {
     const isSupport = activeAdminRole === "SUPPORT_AGENT";
     const isFinance = activeAdminRole === "FINANCE_AUDITOR";
 
+    const allowedSections = ROLE_ALLOWED_SECTIONS[activeAdminRole] || ROLE_ALLOWED_SECTIONS["SUPER_ADMIN"];
+
     // Header badge & title
     const headerName = document.getElementById("admin-header-name");
     if (headerName) {
         headerName.textContent = activeAdminRole === "SUPER_ADMIN" ? "Super Admin" : (activeAdminRole === "SUPPORT_AGENT" ? "Support Desk" : "Finance Auditor");
+    }
+
+    // Sidebar navigation link visibility enforcement
+    const navItems = document.querySelectorAll(".sidebar-menu li");
+    navItems.forEach(item => {
+        const secId = item.dataset.section;
+        if (secId) {
+            if (allowedSections.includes(secId)) {
+                item.style.display = "block";
+            } else {
+                item.style.display = "none";
+            }
+        }
+    });
+
+    // Check currently active section; if not allowed, switch to first allowed section
+    const currentActiveSec = document.querySelector(".admin-section.active");
+    if (currentActiveSec) {
+        const activeSecId = currentActiveSec.id.replace("section-", "");
+        if (!allowedSections.includes(activeSecId)) {
+            switchAdminSection(allowedSections[0]);
+        }
     }
 
     // Disable Reset Sandbox for non-SUPER_ADMIN
@@ -3978,16 +4050,16 @@ function applyAdminRolePermissions() {
         resetBtn.title = isSuper ? "Reset local sandbox dataset" : "Restricted to SUPER_ADMIN role";
     }
 
-    // Bulk buttons restriction for Support Agent
+    // Bulk buttons restriction for non-SUPER_ADMIN
     const bulkApproveBtn = document.getElementById("btn-bulk-approve");
     const bulkRejectBtn = document.getElementById("btn-bulk-reject");
     if (bulkApproveBtn) {
-        bulkApproveBtn.disabled = isSupport;
-        bulkApproveBtn.style.opacity = isSupport ? "0.5" : "1";
+        bulkApproveBtn.disabled = !isSuper;
+        bulkApproveBtn.style.opacity = isSuper ? "1" : "0.5";
     }
     if (bulkRejectBtn) {
-        bulkRejectBtn.disabled = isSupport;
-        bulkRejectBtn.style.opacity = isSupport ? "0.5" : "1";
+        bulkRejectBtn.disabled = !isSuper;
+        bulkRejectBtn.style.opacity = isSuper ? "0.5" : "1";
     }
 
     // Create Admin Staff button restriction for non-SUPER_ADMIN
@@ -3996,6 +4068,12 @@ function applyAdminRolePermissions() {
         createAdminBtn.disabled = !isSuper;
         createAdminBtn.style.opacity = isSuper ? "1" : "0.5";
         createAdminBtn.title = isSuper ? "Create new admin staff" : "Restricted to SUPER_ADMIN role";
+    }
+
+    // Manual balance adjustment tab restriction for non-SUPER_ADMIN
+    const adjustTabBtn = document.getElementById("btn-inspect-adjust");
+    if (adjustTabBtn) {
+        adjustTabBtn.style.display = isSuper ? "block" : "none";
     }
 }
 
