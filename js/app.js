@@ -14,52 +14,24 @@ const GIFT_CARD_CATEGORIES = {
 };
 
 const SUPPORTED_REGIONS = [
-    "USA", "UK", "Canada", "Europe (EUR)", "Australia", 
-    "Germany", "France", "Italy", "Spain", "Netherlands",
-    "Switzerland (CHF)", "Japan (JPY)", "China (CNY)", 
-    "Hong Kong (HKD)", "Singapore (SGD)", "New Zealand (NZD)", 
-    "UAE (AED)", "Saudi Arabia (SAR)", "South Africa (ZAR)", "India (INR)"
+    "USA (USD)", "UK (GBP)", "Europe (EUR)"
 ];
 
-// Central Currency Registry Base Rates (Standard System Defaults)
+// Central Currency Registry Base Rates (Restricted to USD, EUR, GBP, NGN)
 const DEFAULT_SYSTEM_CURRENCIES = {
     "USD": { code: "USD", name: "United States Dollar", rate: 1200, status: "ACTIVE" },
     "EUR": { code: "EUR", name: "Euro", rate: 1100, status: "ACTIVE" },
     "GBP": { code: "GBP", name: "British Pound Sterling", rate: 1500, status: "ACTIVE" },
-    "CAD": { code: "CAD", name: "Canadian Dollar", rate: 900, status: "ACTIVE" },
-    "AUD": { code: "AUD", name: "Australian Dollar", rate: 820, status: "ACTIVE" },
-    "CHF": { code: "CHF", name: "Swiss Franc", rate: 1380, status: "ACTIVE" },
-    "SGD": { code: "SGD", name: "Singapore Dollar", rate: 1000, status: "ACTIVE" },
-    "NZD": { code: "NZD", name: "New Zealand Dollar", rate: 850, status: "ACTIVE" },
-    "AED": { code: "AED", name: "UAE Dirham", rate: 380, status: "ACTIVE" },
-    "SAR": { code: "SAR", name: "Saudi Riyal", rate: 370, status: "ACTIVE" },
-    "ZAR": { code: "ZAR", name: "South African Rand", rate: 80, status: "ACTIVE" },
-    "CNY": { code: "CNY", name: "Chinese Yuan", rate: 190, status: "ACTIVE" },
-    "HKD": { code: "HKD", name: "Hong Kong Dollar", rate: 180, status: "ACTIVE" },
-    "JPY": { code: "JPY", name: "Japanese Yen", rate: 10, status: "ACTIVE" },
-    "INR": { code: "INR", name: "Indian Rupee", rate: 18, status: "ACTIVE" },
     "NGN": { code: "NGN", name: "Nigerian Naira", rate: 1, status: "ACTIVE" }
 };
 
 // Map supported country/region labels to central currency codes
 function getRegionCurrencyCode(region) {
     if (!region) return "USD";
-    if (region === "USA" || region === "USD") return "USD";
-    if (region.includes("Europe") || ["Germany", "France", "Italy", "Spain", "Netherlands", "EUR"].includes(region)) return "EUR";
-    if (region === "UK" || region === "GBP") return "GBP";
-    if (region === "Canada" || region === "CAD") return "CAD";
-    if (region === "Australia" || region === "AUD") return "AUD";
-    if (region.includes("CHF")) return "CHF";
-    if (region.includes("SGD")) return "SGD";
-    if (region.includes("NZD")) return "NZD";
-    if (region.includes("AED")) return "AED";
-    if (region.includes("SAR")) return "SAR";
-    if (region.includes("ZAR")) return "ZAR";
-    if (region.includes("CNY")) return "CNY";
-    if (region.includes("HKD")) return "HKD";
-    if (region.includes("JPY")) return "JPY";
-    if (region.includes("INR")) return "INR";
-    if (region === "NGN") return "NGN";
+    if (region === "USA" || region === "USD" || region === "$") return "USD";
+    if (region.includes("Europe") || region === "EUR" || region === "€") return "EUR";
+    if (region === "UK" || region === "GBP" || region === "£") return "GBP";
+    if (region === "NGN" || region === "₦") return "NGN";
     return "USD";
 }
 
@@ -262,10 +234,9 @@ function getDB() {
         db.adjustments = [];
         dirty = true;
     }
-    if (!db.currencies || Object.keys(db.currencies).length < 5) {
-        db.currencies = DEFAULT_SYSTEM_CURRENCIES;
-        dirty = true;
-    }
+    // Enforce 3 core trading currencies (USD, EUR, GBP) + NGN base payout currency
+    db.currencies = DEFAULT_SYSTEM_CURRENCIES;
+    dirty = true;
     // Auto-migrate transactionPin for demo user if missing in existing localStorage
     if (db.users && db.users["user@goodfastpay.com"] && db.users["user@goodfastpay.com"].transactionPin === undefined) {
         db.users["user@goodfastpay.com"].transactionPin = "1234";

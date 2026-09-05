@@ -2444,29 +2444,10 @@ function populateInventoryCurrencyFilters() {
 
     // Populate inv-currency select dropdown
     let invHtml = "";
-    if (hasUSD) {
-        invHtml += `
-            <option value="USD">USD ($)</option>
-            <option value="CAD">CAD ($)</option>
-            <option value="AUD">AUD ($)</option>
-        `;
-    }
-    if (hasEUR) {
-        invHtml += `
-            <option value="EUR">EUR (€)</option>
-            <option value="GBP">GBP (£)</option>
-        `;
-    }
-    if (hasNGN) {
-        invHtml += `<option value="NGN">NGN (₦)</option>`;
-    }
-    Object.keys(activeCurrencies).forEach(code => {
-        if (!["USD", "EUR", "NGN", "CAD", "AUD", "GBP"].includes(code)) {
-            if (activeCurrencies[code].status === "ACTIVE") {
-                invHtml += `<option value="${code}">${code}</option>`;
-            }
-        }
-    });
+    if (hasUSD) invHtml += `<option value="USD">USD ($)</option>`;
+    if (hasEUR) invHtml += `<option value="EUR">EUR (€)</option>`;
+    if (activeCurrencies["GBP"] ? activeCurrencies["GBP"].status === "ACTIVE" : true) invHtml += `<option value="GBP">GBP (£)</option>`;
+    if (hasNGN) invHtml += `<option value="NGN">NGN (₦)</option>`;
     invCurrency.innerHTML = invHtml;
     if (savedInvCurr && Array.from(invCurrency.options).some(o => o.value === savedInvCurr)) {
         invCurrency.value = savedInvCurr;
@@ -2475,29 +2456,10 @@ function populateInventoryCurrencyFilters() {
     // Populate filter-inv-currency select dropdown
     if (filterCurrency) {
         let filterHtml = `<option value="ALL">All Currencies</option>`;
-        if (hasUSD) {
-            filterHtml += `
-                <option value="USD">USD ($)</option>
-                <option value="CAD">CAD ($)</option>
-                <option value="AUD">AUD ($)</option>
-            `;
-        }
-        if (hasEUR) {
-            filterHtml += `
-                <option value="EUR">EUR (€)</option>
-                <option value="GBP">GBP (£)</option>
-            `;
-        }
-        if (hasNGN) {
-            filterHtml += `<option value="NGN">NGN (₦)</option>`;
-        }
-        Object.keys(activeCurrencies).forEach(code => {
-            if (!["USD", "EUR", "NGN", "CAD", "AUD", "GBP"].includes(code)) {
-                if (activeCurrencies[code].status === "ACTIVE") {
-                    filterHtml += `<option value="${code}">${code}</option>`;
-                }
-            }
-        });
+        if (hasUSD) filterHtml += `<option value="USD">USD ($)</option>`;
+        if (hasEUR) filterHtml += `<option value="EUR">EUR (€)</option>`;
+        if (activeCurrencies["GBP"] ? activeCurrencies["GBP"].status === "ACTIVE" : true) filterHtml += `<option value="GBP">GBP (£)</option>`;
+        if (hasNGN) filterHtml += `<option value="NGN">NGN (₦)</option>`;
         filterCurrency.innerHTML = filterHtml;
         if (savedFilterCurr && Array.from(filterCurrency.options).some(o => o.value === savedFilterCurr)) {
             filterCurrency.value = savedFilterCurr;

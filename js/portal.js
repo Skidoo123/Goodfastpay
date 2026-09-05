@@ -569,36 +569,19 @@ function updateSellCurrencyOptions() {
     const selectedCurr = currencySelect.value;
     currencySelect.innerHTML = "";
     
-    const activeCurrencies = db.currencies || {};
+    // Restrict strictly to 3 core trade currencies (USD, GBP, EUR)
+    const allowedCurrencies = [
+        { code: "USD", label: "USD ($)" },
+        { code: "GBP", label: "GBP (£)" },
+        { code: "EUR", label: "EUR (€)" }
+    ];
     
-    // Look up exact or category-derived supported rates for selected brand
-    let brandRates = rates[selectedBrand];
-    if (!brandRates) {
-        // Fallback default rates for newly selected catalog brand
-        brandRates = DEFAULT_CARD_RATES[selectedBrand] || { USD: 1250, EUR: 1150, NGN: 1900 };
-    }
-    
-    if (brandRates) {
-        Object.keys(brandRates).forEach(curr => {
-            let isAllowed = true;
-            if (curr === "USD" || curr === "USA" || ["Canada", "Australia", "Switzerland (CHF)", "Japan (JPY)", "China (CNY)", "Hong Kong (HKD)", "Singapore (SGD)", "New Zealand (NZD)", "UAE (AED)", "Saudi Arabia (SAR)", "South Africa (ZAR)", "India (INR)"].includes(curr)) {
-                isAllowed = activeCurrencies["USD"] ? activeCurrencies["USD"].status === "ACTIVE" : true;
-            } else if (curr === "EUR" || curr === "Europe (EUR)" || ["Germany", "France", "Italy", "Spain", "Netherlands", "UK"].includes(curr)) {
-                isAllowed = activeCurrencies["EUR"] ? activeCurrencies["EUR"].status === "ACTIVE" : true;
-            } else if (curr === "NGN") {
-                isAllowed = activeCurrencies["NGN"] ? activeCurrencies["NGN"].status === "ACTIVE" : true;
-            } else if (activeCurrencies[curr]) {
-                isAllowed = activeCurrencies[curr].status === "ACTIVE";
-            }
-            
-            if (isAllowed) {
-                const opt = document.createElement("option");
-                opt.value = curr;
-                opt.textContent = curr;
-                currencySelect.appendChild(opt);
-            }
-        });
-    }
+    allowedCurrencies.forEach(item => {
+        const opt = document.createElement("option");
+        opt.value = item.code;
+        opt.textContent = item.label;
+        currencySelect.appendChild(opt);
+    });
     
     // Restore selected currency if still exists in the new list
     if (selectedCurr && Array.from(currencySelect.options).some(o => o.value === selectedCurr)) {
@@ -3252,9 +3235,7 @@ function filterAndRenderBuyStock() {
             const currency = item.currency;
             if (regionVal === "USA") return currency === "USD" || currency === "USA";
             if (regionVal === "UK") return currency === "GBP" || currency === "UK";
-            if (regionVal === "Canada") return currency === "CAD" || currency === "Canada";
-            if (regionVal === "Australia") return currency === "AUD" || currency === "Australia";
-            if (regionVal === "Europe (EUR)") return ["EUR", "Europe (EUR)", "Germany", "France", "Italy", "Spain", "Netherlands"].includes(currency);
+            if (regionVal === "Europe (EUR)") return currency === "EUR" || ["EUR", "Europe (EUR)", "Germany", "France", "Italy", "Spain", "Netherlands"].includes(currency);
             return currency === regionVal;
         });
     }
