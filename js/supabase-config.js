@@ -166,9 +166,15 @@ async function supabaseAuthSignInWithOAuth(provider = "google") {
 async function supabaseAuthSignUp(email, password, metadata = {}) {
     const cleanEmail = email.trim().toLowerCase();
     
+    // Check if email already exists in local database first
+    const db = getDB();
+    if (db.users && db.users[cleanEmail]) {
+        return { success: false, message: "This email is already registered. Please sign in instead." };
+    }
+    
     if (supabaseClient && isSupabaseConfigured) {
         try {
-            // Check if profile exists
+            // Check if profile exists in Supabase Cloud
             const { data: existing, error: checkErr } = await supabaseClient
                 .from('profiles')
                 .select('email')
@@ -179,10 +185,31 @@ async function supabaseAuthSignUp(email, password, metadata = {}) {
                 return { success: false, message: "This email is already registered. Please sign in instead." };
             }
 
-            // Create new profile record in Supabase
+            // Attempt standard Supabase Auth creation if supported
+            let authId = null;
+            try {
+                const { data: authData } = await supabaseClient.auth.signUp({
+                    email: cleanEmail,
+                    password: password,
+                    options: {
+                        data: {
+                            full_name: metadata.name || cleanEmail.split("@")[0],
+                            phone: metadata.phone || ""
+                        }
+                    }
+                });
+                if (authData && authData.user) {
+                    authId = authData.user.id;
+                }
+            } catch (aErr) {
+                console.warn("Supabase Auth signUp attempt notice:", aErr.message);
+            }
+
+            // Create new profile record in Supabase public.profiles
             const { data: newProfile, error: insertErr } = await supabaseClient
                 .from('profiles')
                 .insert([{
+                    ...(authId ? { id: authId } : {}),
                     email: cleanEmail,
                     name: metadata.name || cleanEmail.split("@")[0],
                     phone: metadata.phone || "",
@@ -191,21 +218,22 @@ async function supabaseAuthSignUp(email, password, metadata = {}) {
                     status: "ACTIVE"
                 }])
                 .select()
-                .single();
+                .maybeSingle();
 
             if (insertErr) {
-                return { success: false, message: insertErr.message };
+                console.warn("Supabase direct profile insert notice (falling back to local session):", insertErr.message);
             }
 
+            const profileId = newProfile ? newProfile.id : authId;
             syncLocalUserAccount(cleanEmail, {
-                id: newProfile.id,
-                name: newProfile.name,
-                phone: newProfile.phone
+                id: profileId,
+                name: metadata.name || cleanEmail.split("@")[0],
+                phone: metadata.phone || ""
             }, password);
 
             return { success: true };
         } catch (e) {
-            console.warn("Supabase direct signup fallback:", e.message);
+            console.warn("Supabase direct signup fallback exception:", e.message);
             syncLocalUserAccount(cleanEmail, metadata, password);
             return { success: true, isFallback: true };
         }

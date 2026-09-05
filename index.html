@@ -491,7 +491,10 @@
                 <button class="modal-close" onclick="closeOtpModal()"><i class="fas fa-xmark"></i></button>
             </div>
             <div class="text-center mb-6">
-                <p class="text-on-surface-variant text-sm">We sent a 6-digit OTP verification code to your email.</p>
+                <p class="text-on-surface-variant text-sm mb-2">We sent a 6-digit OTP verification code to your email.</p>
+                <div class="inline-flex items-center gap-2 bg-primary/10 border border-primary/30 text-primary text-xs px-3 py-1.5 rounded-full font-mono">
+                    <i class="fas fa-key"></i> Demo OTP Code: <span id="otp-demo-code" class="font-bold text-white tracking-widest">000000</span>
+                </div>
             </div>
             
             <form onsubmit="handleOtpSubmit(event)">
@@ -730,6 +733,13 @@
             document.getElementById("otp-target-action").value = action;
             document.getElementById("otp-input").value = "";
             
+            // Display OTP code hint for easy verification in demo/local mode
+            const storedOtp = JSON.parse(sessionStorage.getItem("goodfastpay_otp") || "{}");
+            const codeEl = document.getElementById("otp-demo-code");
+            if (codeEl) {
+                codeEl.textContent = storedOtp.otp || "000000";
+            }
+
             closeAuthModal();
             document.getElementById("otp-modal").classList.add("active");
         }
@@ -797,8 +807,8 @@
                 }
 
                 // If Supabase live authentication or local fallback verified
-                generateOTP(email);
-                showToast(`Security verification code sent to email.`, "success");
+                const code = generateOTP(email);
+                showToast(`Security verification code sent to email. (OTP: ${code})`, "success");
                 openOtpModal(email, "login");
             } catch (err) {
                 showToast("Authentication request error: " + err.message, "danger");
@@ -846,12 +856,12 @@
                     return;
                 }
 
-                generateOTP(email);
+                const otpCode = generateOTP(email);
                 sessionStorage.setItem("pending_registration", JSON.stringify({
                     name, email, phone, passwordHash: password
                 }));
                 
-                showToast(`Verification code sent to your email.`, "success");
+                showToast(`Verification code sent! (OTP: ${otpCode})`, "success");
                 openOtpModal(email, "register");
             } catch (err) {
                 showToast("Registration error: " + err.message, "danger");
@@ -979,8 +989,12 @@
 
         function resendOtp() {
             const email = document.getElementById("otp-target-email").value;
-            generateOTP(email);
-            showToast("New simulated OTP code dispatched. Check console log.", "success");
+            const newCode = generateOTP(email);
+            const codeEl = document.getElementById("otp-demo-code");
+            if (codeEl) {
+                codeEl.textContent = newCode;
+            }
+            showToast(`New verification code sent! (OTP: ${newCode})`, "success");
         }
     </script>
 </body>
