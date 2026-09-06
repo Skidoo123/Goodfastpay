@@ -273,7 +273,7 @@ function updateDashboardStats() {
     
     // Available NGN Balance display
     const balanceText = "₦" + user.wallet.balance.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
-    const usdBalanceText = "$" + (user.wallet.usdBalance || 0).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+    const usdBalanceText = "$" + (user.wallet.usdBalance !== undefined ? user.wallet.usdBalance : 250.00).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
     const isHidden = localStorage.getItem("hideBalance") === "true";
     
     const balanceEl = document.getElementById("stat-wallet-balance");
@@ -284,11 +284,8 @@ function updateDashboardStats() {
     if (usdBalanceEl) {
         usdBalanceEl.textContent = isHidden ? "$••••••••" : usdBalanceText;
     }
-    const balanceHeroEl = document.getElementById("stat-wallet-balance-hero");
-    if (balanceHeroEl) {
-        balanceHeroEl.textContent = isHidden ? "₦••••••••" : balanceText;
-    }
     
+    renderHeroBalance();
     updateBalanceIconState(isHidden);
     
     // Pending Balance display
@@ -1051,39 +1048,152 @@ function populateWithdrawConfirmDetails() {
     updateWithdrawalBreakdown();
 }
 
-// Quick "Withdraw All" handler
+// Handle Hero Wallet Currency Switcher (NGN vs USD)
+let activeHeroCurrency = localStorage.getItem("activeHeroCurrency") || "NGN";
+
+function setHeroCurrency(curr) {
+    activeHeroCurrency = curr;
+    localStorage.setItem("activeHeroCurrency", curr);
+    renderHeroBalance();
+}
+
+function renderHeroBalance() {
+    const db = getDB();
+    const user = currentUser ? db.users[currentUser.email] : null;
+    if (!user || !user.wallet) return;
+
+    const isHidden = localStorage.getItem("hideBalance") === "true";
+    const ngnVal = user.wallet.balance || 0;
+    const usdVal = user.wallet.usdBalance !== undefined ? user.wallet.usdBalance : 250.00;
+
+    const ngnText = "₦" + ngnVal.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+    const usdText = "$" + usdVal.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+
+    const balanceHeroEl = document.getElementById("stat-wallet-balance-hero");
+    const labelEl = document.getElementById("hero-balance-label");
+    const swapBtn = document.getElementById("hero-swap-usd-btn");
+    const ngnBtn = document.getElementById("hero-curr-ngn-btn");
+    const usdBtn = document.getElementById("hero-curr-usd-btn");
+
+    const subNgn = document.getElementById("hero-sub-ngn");
+    const subUsd = document.getElementById("hero-sub-usd");
+
+    if (subNgn) subNgn.textContent = isHidden ? "₦••••••••" : ngnText;
+    if (subUsd) subUsd.textContent = isHidden ? "$••••••••" : usdText;
+
+    if (activeHeroCurrency === "USD") {
+        if (balanceHeroEl) balanceHeroEl.textContent = isHidden ? "$••••••••" : usdText;
+        if (labelEl) labelEl.textContent = "USD Global Vault Available Balance";
+        if (swapBtn) swapBtn.style.display = "inline-flex";
+        if (ngnBtn) {
+            ngnBtn.style.background = "transparent";
+            ngnBtn.style.color = "rgba(255,255,255,0.7)";
+        }
+        if (usdBtn) {
+            usdBtn.style.background = "var(--primary)";
+            usdBtn.style.color = "#ffffff";
+        }
+    } else {
+        if (balanceHeroEl) balanceHeroEl.textContent = isHidden ? "₦••••••••" : ngnText;
+        if (labelEl) labelEl.textContent = "Total Available Wallet Balance";
+        if (swapBtn) swapBtn.style.display = "none";
+        if (ngnBtn) {
+            ngnBtn.style.background = "var(--primary)";
+            ngnBtn.style.color = "#ffffff";
+        }
+        if (usdBtn) {
+            usdBtn.style.background = "transparent";
+            usdBtn.style.color = "rgba(255,255,255,0.7)";
+        }
+    }
+}
+
+function onWithdrawSourceWalletChange() {
+    const select = document.getElementById("withdraw-source-wallet");
+    const currency = select ? select.value : "NGN";
+    const db = getDB();
+    const user = currentUser ? db.users[currentUser.email] : null;
+    if (!user || !user.wallet) return;
+
+    const symEl = document.getElementById("withdraw-curr-sym");
+    const numEl = document.getElementById("withdraw-avail-balance-num");
+    const inputPrefix = document.querySelector("#withdrawal-request-form .input-currency-prefix");
+
+    if (currency === "USD") {
+        const usdVal = user.wallet.usdBalance !== undefined ? user.wallet.usdBalance : 250.00;
+        if (symEl) symEl.textContent = "$";
+        if (numEl) numEl.textContent = usdVal.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+        if (inputPrefix) inputPrefix.textContent = "$";
+    } else {
+        const ngnVal = user.wallet.balance || 0;
+        if (symEl) symEl.textContent = "₦";
+        if (numEl) numEl.textContent = ngnVal.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+        if (inputPrefix) inputPrefix.textContent = "₦";
+    }
+    updateWithdrawalBreakdown();
+}
+
 function handleWithdrawAll() {
-    const user = currentUser;
-    if (!user) return;
+    const db = getDB();
+    const user = currentUser ? db.users[currentUser.email] : null;
+    const sourceSelect = document.getElementById("withdraw-source-wallet");
+    const currency = sourceSelect ? sourceSelect.value : "NGN";
     const amountInput = document.getElementById("withdraw-amount");
-    if (amountInput) {
-        amountInput.value = user.wallet.balance;
+
+    if (user && amountInput) {
+        if (currency === "USD") {
+            const usdVal = user.wallet.usdBalance !== undefined ? user.wallet.usdBalance : 250.00;
+            amountInput.value = usdVal;
+        } else {
+            amountInput.value = user.wallet.balance;
+        }
         updateWithdrawalBreakdown();
     }
 }
 
 // Update Withdrawal Breakdown Calculation (Screen 3 Fidelity)
 function updateWithdrawalBreakdown() {
-    const user = currentUser;
+    const db = getDB();
+    const user = currentUser ? db.users[currentUser.email] : null;
     const amountInput = document.getElementById("withdraw-amount");
+    const sourceSelect = document.getElementById("withdraw-source-wallet");
+    const currency = sourceSelect ? sourceSelect.value : "NGN";
     let amount = amountInput ? parseFloat(amountInput.value) : 0;
     if (isNaN(amount) || amount < 0) amount = 0;
 
     const fee = 50.00;
-    const net = Math.max(0, amount - fee);
+    let netNaira = 0;
+    let grossNaira = 0;
 
-    const calcAmountEl = document.getElementById("calc-withdraw-amount");
-    if (calcAmountEl) calcAmountEl.textContent = "₦" + amount.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+    if (currency === "USD") {
+        const usdRate = (db.currencies && db.currencies["USD"] && db.currencies["USD"].rate) ? parseFloat(db.currencies["USD"].rate) : 1200;
+        grossNaira = amount * usdRate;
+        netNaira = Math.max(0, grossNaira - fee);
 
-    const calcNetEl = document.getElementById("calc-net-payout");
-    if (calcNetEl) calcNetEl.textContent = "₦" + net.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+        const calcAmountEl = document.getElementById("calc-withdraw-amount");
+        if (calcAmountEl) calcAmountEl.textContent = `$${amount.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})} (₦${grossNaira.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})})`;
+
+        const calcNetEl = document.getElementById("calc-net-payout");
+        if (calcNetEl) calcNetEl.textContent = "₦" + netNaira.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+    } else {
+        grossNaira = amount;
+        netNaira = Math.max(0, amount - fee);
+
+        const calcAmountEl = document.getElementById("calc-withdraw-amount");
+        if (calcAmountEl) calcAmountEl.textContent = "₦" + amount.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+
+        const calcNetEl = document.getElementById("calc-net-payout");
+        if (calcNetEl) calcNetEl.textContent = "₦" + netNaira.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+    }
 
     // Dynamic Button State Validation
     const submitBtn = document.getElementById("btn-submit-withdraw");
     if (submitBtn) {
         const hasBank = user && user.bankDetails && user.bankDetails.bankName;
-        const hasBalance = user && user.wallet && (amount <= user.wallet.balance);
-        const isValidAmount = amount >= 500;
+        const currentBal = currency === "USD" ? (user && user.wallet ? (user.wallet.usdBalance !== undefined ? user.wallet.usdBalance : 250.00) : 0) : (user && user.wallet ? user.wallet.balance : 0);
+        const hasBalance = amount <= currentBal;
+        const minVal = currency === "USD" ? 5 : 500;
+        const isValidAmount = amount >= minVal;
 
         if (hasBank && hasBalance && isValidAmount) {
             submitBtn.disabled = false;
@@ -1414,24 +1524,45 @@ function openForgotPinFromAuthModal() {
 // WITHDRAWAL LOGIC
 // -------------------------------------------------------------
 
-function executeWithdrawal(amount) {
+function executeWithdrawal(amount, currency = "NGN") {
     const db = getDB();
     const user = db.users[currentUser.email];
-    
-    if (amount > user.wallet.balance) {
-        showToast("Insufficient wallet balance for withdrawal.", "danger");
-        return;
+    const fee = 50.00;
+
+    let netNairaPayout = 0;
+    let amountStr = "";
+
+    if (currency === "USD") {
+        if (user.wallet.usdBalance === undefined) user.wallet.usdBalance = 250.00;
+        if (amount > user.wallet.usdBalance) {
+            showToast("Insufficient USD balance for withdrawal.", "danger");
+            return;
+        }
+        const usdRate = (db.currencies && db.currencies["USD"] && db.currencies["USD"].rate) ? parseFloat(db.currencies["USD"].rate) : 1200;
+        const grossNaira = amount * usdRate;
+        netNairaPayout = Math.max(0, grossNaira - fee);
+
+        user.wallet.usdBalance -= amount;
+        amountStr = `$${amount.toFixed(2)} USD (₦${netNairaPayout.toLocaleString()} NGN Net Payout)`;
+    } else {
+        if (amount > user.wallet.balance) {
+            showToast("Insufficient wallet balance for withdrawal.", "danger");
+            return;
+        }
+        netNairaPayout = Math.max(0, amount - fee);
+        user.wallet.balance -= amount;
+        amountStr = `₦${amount.toLocaleString()}`;
     }
 
-    // Deduct immediately (Pending balance transition)
-    user.wallet.balance -= amount;
     db.users[currentUser.email] = user;
-    
+
     const withdrawalId = "WD-" + Math.floor(1000 + Math.random() * 9000);
     const newRequest = {
         id: withdrawalId,
         userId: currentUser.email,
-        amount: amount,
+        amount: netNairaPayout,
+        currency: currency,
+        sourceAmount: amount,
         bankName: user.bankDetails.bankName,
         accountNumber: user.bankDetails.accountNumber,
         accountHolderName: user.bankDetails.accountHolderName,
@@ -1439,19 +1570,18 @@ function executeWithdrawal(amount) {
         declineReason: null,
         createdAt: new Date().toISOString()
     };
-    
+
     db.withdrawals.unshift(newRequest);
-    
+
     // Log user activity
     db.users[currentUser.email].logs.unshift({
-        event: `Withdrawal Authorized via PIN: ₦${amount.toLocaleString()}`,
+        event: `Withdrawal Authorized via PIN: ${amountStr}`,
         timestamp: new Date().toISOString(),
         ip: "197.34.120.44"
     });
-    
+
     saveDB(db);
-    
-    // Push asynchronously to Supabase Cloud Database
+
     if (typeof supabasePushWithdrawal === "function") {
         supabasePushWithdrawal(newRequest);
     }
@@ -1459,30 +1589,30 @@ function executeWithdrawal(amount) {
         supabaseUpdateProfile({ wallet: user.wallet });
     }
     if (typeof supabasePushSecurityLog === "function") {
-        supabasePushSecurityLog(currentUser.email, `Cash Withdrawal Requested: ₦${amount.toLocaleString()}`, "client_ip", navigator.userAgent, `WD ID: ${newRequest.id} - ₦${amount.toLocaleString()} to ${user.bankDetails.bankName}`);
+        supabasePushSecurityLog(currentUser.email, `Cash Withdrawal Requested: ${amountStr}`, "client_ip", navigator.userAgent, `WD ID: ${newRequest.id} - ${amountStr} to ${user.bankDetails.bankName}`);
     }
     dispatchNotification(
         currentUser.email,
         "Withdrawal Request Authorized",
-        `Your withdrawal of ₦${amount.toLocaleString()} to ${user.bankDetails.bankName} was securely authorized with your Transaction PIN. Pending admin payout approval.`
+        `Your withdrawal of ${amountStr} to ${user.bankDetails.bankName} was securely authorized with your Transaction PIN. Pending admin payout approval.`
     );
-    
+
     showToast("Withdrawal request authorized and created successfully!", "success");
     if (typeof triggerLivePayoutTracker === "function") {
         triggerLivePayoutTracker({
             ref: withdrawalId,
-            amount: amount,
+            amount: netNairaPayout,
             title: "Bank Cashout",
             bankName: user.bankDetails ? user.bankDetails.bankName : "Interbank Payout",
             accountNumber: user.bankDetails ? user.bankDetails.accountNumber : "",
             accountHolderName: user.bankDetails ? user.bankDetails.accountHolderName : ""
         });
     }
-    
+
     // Reset amount
     const amountField = document.getElementById("withdraw-amount");
     if (amountField) amountField.value = "";
-    
+
     loadSession();
 }
 
@@ -1490,29 +1620,33 @@ function executeWithdrawal(amount) {
 function handleWithdrawalSubmit(e) {
     e.preventDefault();
     if (!validateUserStatusActive()) return;
-    
+
+    const sourceSelect = document.getElementById("withdraw-source-wallet");
+    const currency = sourceSelect ? sourceSelect.value : "NGN";
     const amount = parseFloat(document.getElementById("withdraw-amount").value);
-    
-    if (isNaN(amount) || amount < 500) {
-        showToast("Minimum withdrawal limit is ₦500.00.", "danger");
+    const minVal = currency === "USD" ? 5 : 500;
+
+    if (isNaN(amount) || amount < minVal) {
+        showToast(currency === "USD" ? "Minimum withdrawal limit is $5.00 USD." : "Minimum withdrawal limit is ₦500.00.", "danger");
         return;
     }
-    
+
     const db = getDB();
     const user = db.users[currentUser.email];
-    
-    if (amount > user.wallet.balance) {
-        showToast("Insufficient wallet balance to fulfill withdrawal.", "danger");
+    const currentBal = currency === "USD" ? (user.wallet.usdBalance !== undefined ? user.wallet.usdBalance : 250.00) : user.wallet.balance;
+
+    if (amount > currentBal) {
+        showToast(`Insufficient ${currency} wallet balance to fulfill withdrawal.`, "danger");
         return;
     }
-    
+
     if (!user.bankDetails) {
         showToast("Destination bank credentials not found. Link your bank account first.", "danger");
         return;
     }
-    
+
     // Mandatory Transaction PIN Gatekeeper
-    requireTransactionPin("withdraw", { amount: amount }, () => executeWithdrawal(amount));
+    requireTransactionPin("withdraw", { amount: amount, currency: currency }, () => executeWithdrawal(amount, currency));
 }
 
 // Prepopulate bank profiles updates

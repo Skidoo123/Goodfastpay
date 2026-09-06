@@ -212,16 +212,40 @@
 
                 <!-- Wallet Hero Card -->
                 <div class="wallet-hero-card">
-                    <div style="font-size: 0.85rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; opacity: 0.8; display: flex; align-items: center; gap: 8px;">
-                        <span>Total Available Wallet Balance</span>
-                        <button id="toggle-balance-btn" onclick="toggleBalanceVisibility()" style="background: none; border: none; padding: 0; color: inherit; cursor: pointer; display: inline-flex; align-items: center; transition: opacity 0.2s;" title="Hide Balance">
-                            <i class="fas fa-eye" id="toggle-balance-icon" style="font-size: 0.95rem;"></i>
+                    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+                        <div style="font-size: 0.85rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; opacity: 0.8; display: flex; align-items: center; gap: 8px;">
+                            <span id="hero-balance-label">Total Available Wallet Balance</span>
+                            <button id="toggle-balance-btn" onclick="toggleBalanceVisibility()" style="background: none; border: none; padding: 0; color: inherit; cursor: pointer; display: inline-flex; align-items: center; transition: opacity 0.2s;" title="Hide Balance">
+                                <i class="fas fa-eye" id="toggle-balance-icon" style="font-size: 0.95rem;"></i>
+                            </button>
+                        </div>
+                        <!-- Hero Currency Selector Pill -->
+                        <div style="display: flex; background: rgba(255,255,255,0.12); border-radius: 99px; padding: 3px; border: 1px solid rgba(255,255,255,0.18);">
+                            <button type="button" id="hero-curr-ngn-btn" onclick="setHeroCurrency('NGN')" style="background: var(--primary); color: #ffffff; border: none; font-size: 0.75rem; font-weight: 800; padding: 4px 14px; border-radius: 99px; cursor: pointer; transition: all 0.2s;">
+                                🇳🇬 NGN (₦)
+                            </button>
+                            <button type="button" id="hero-curr-usd-btn" onclick="setHeroCurrency('USD')" style="background: transparent; color: rgba(255,255,255,0.7); border: none; font-size: 0.75rem; font-weight: 800; padding: 4px 14px; border-radius: 99px; cursor: pointer; transition: all 0.2s;">
+                                🇺🇸 USD ($)
+                            </button>
+                        </div>
+                    </div>
+
+                    <div style="display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; margin-top: 10px;">
+                        <div class="wallet-hero-balance" id="stat-wallet-balance-hero">₦0.00</div>
+                        <button type="button" id="hero-swap-usd-btn" onclick="openUSDConverterModal()" style="display: none; background: rgba(99, 102, 241, 0.25); border: 1px solid rgba(99, 102, 241, 0.5); color: #a5b4fc; font-size: 0.78rem; font-weight: 800; padding: 6px 14px; border-radius: 8px; cursor: pointer; transition: all 0.2s;">
+                            <i class="fas fa-rotate"></i> Swap USD ➔ NGN
                         </button>
                     </div>
-                    <div class="wallet-hero-balance" id="stat-wallet-balance-hero">₦0.00</div>
+
+                    <!-- Dual Currency Sub-Row showing both balances simultaneously -->
+                    <div style="display: flex; gap: 16px; margin-top: 10px; font-size: 0.82rem; opacity: 0.9; flex-wrap: wrap;">
+                        <span>🇳🇬 Main Wallet: <strong id="hero-sub-ngn">₦0.00</strong></span>
+                        <span style="opacity: 0.4;">|</span>
+                        <span>🇺🇸 Global Vault: <strong id="hero-sub-usd">$0.00</strong></span>
+                    </div>
                     
                     <!-- Wallet actions grid (Clean 2x2 on mobile / 4-col on desktop) -->
-                    <div class="wallet-actions-grid">
+                    <div class="wallet-actions-grid" style="margin-top: 20px;">
                         <div class="wallet-action-btn" onclick="switchSection('buy', document.querySelector('[onclick*=\'buy\']'))">
                             <i class="fas fa-cart-shopping"></i>
                             <span>Buy Cards</span>
@@ -494,9 +518,20 @@
                     <div>
                         <!-- Available Balance Dark Card (Screen 3 Fidelity) -->
                         <div class="available-balance-card">
-                            <div class="balance-caption">AVAILABLE BALANCE</div>
-                            <div class="balance-number" id="withdraw-avail-balance-display">
-                                <span class="balance-curr-sym">₦</span><span id="withdraw-avail-balance-num">0.00</span>
+                            <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; flex-wrap: wrap; gap: 12px;">
+                                <div>
+                                    <div class="balance-caption">AVAILABLE BALANCE</div>
+                                    <div class="balance-number" id="withdraw-avail-balance-display">
+                                        <span class="balance-curr-sym" id="withdraw-curr-sym">₦</span><span id="withdraw-avail-balance-num">0.00</span>
+                                    </div>
+                                </div>
+                                <div style="display: flex; flex-direction: column; gap: 4px;">
+                                    <label style="font-size: 0.72rem; font-weight: 700; color: var(--text-secondary); text-transform: uppercase;">Source Wallet</label>
+                                    <select id="withdraw-source-wallet" class="input-field" onchange="onWithdrawSourceWalletChange()" style="height: 38px; padding: 0 12px; font-size: 0.82rem; background: rgba(255,255,255,0.08); border-color: var(--border-color); font-weight: 700; color: var(--text-primary); border-radius: 8px;">
+                                        <option value="NGN">🇳🇬 NGN Main Wallet (₦)</option>
+                                        <option value="USD">🇺🇸 USD Global Vault ($)</option>
+                                    </select>
+                                </div>
                             </div>
                         </div>
 
