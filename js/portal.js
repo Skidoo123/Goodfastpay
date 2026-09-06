@@ -271,13 +271,18 @@ function updateDashboardStats() {
     db.users[user.email] = user;
     saveDB(db);
     
-    // Available Balance display
+    // Available NGN Balance display
     const balanceText = "₦" + user.wallet.balance.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+    const usdBalanceText = "$" + (user.wallet.usdBalance || 0).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
     const isHidden = localStorage.getItem("hideBalance") === "true";
     
     const balanceEl = document.getElementById("stat-wallet-balance");
     if (balanceEl) {
         balanceEl.textContent = isHidden ? "₦••••••••" : balanceText;
+    }
+    const usdBalanceEl = document.getElementById("stat-usd-wallet-balance");
+    if (usdBalanceEl) {
+        usdBalanceEl.textContent = isHidden ? "$••••••••" : usdBalanceText;
     }
     const balanceHeroEl = document.getElementById("stat-wallet-balance-hero");
     if (balanceHeroEl) {
@@ -298,6 +303,113 @@ function updateDashboardStats() {
     if (statWithdrawalsEl) {
         statWithdrawalsEl.textContent = userWithdrawals.length;
     }
+}
+
+// -------------------------------------------------------------
+// USD TO NAIRA INSTANT CONVERTER FUNCTIONS
+// -------------------------------------------------------------
+
+function openUSDConverterModal() {
+    const db = getDB();
+    const user = db.users[currentUser.email];
+    const rate = (db.currencies && db.currencies["USD"] && db.currencies["USD"].rate) ? parseFloat(db.currencies["USD"].rate) : 1200;
+
+    const rateDisplay = document.getElementById("usd-swap-rate-display");
+    if (rateDisplay) rateDisplay.textContent = `$1.00 USD = ₦${rate.toLocaleString(undefined, {minimumFractionDigits:2})} NGN`;
+
+    const usdVal = user.wallet ? (user.wallet.usdBalance || 0) : 0;
+    const maxAvail = document.getElementById("usd-swap-max-avail");
+    if (maxAvail) maxAvail.textContent = `$${usdVal.toLocaleString(undefined, {minimumFractionDigits:2})}`;
+
+    const input = document.getElementById("usd-swap-amount");
+    if (input) input.value = "";
+
+    const output = document.getElementById("usd-swap-calc-output");
+    if (output) output.textContent = "₦0.00";
+
+    const modal = document.getElementById("usd-converter-modal");
+    if (modal) modal.classList.add("active");
+}
+
+function closeUSDConverterModal() {
+    const modal = document.getElementById("usd-converter-modal");
+    if (modal) modal.classList.remove("active");
+}
+
+function calculateUSDToNGNSwapPreview() {
+    const db = getDB();
+    const rate = (db.currencies && db.currencies["USD"] && db.currencies["USD"].rate) ? parseFloat(db.currencies["USD"].rate) : 1200;
+    const input = document.getElementById("usd-swap-amount");
+    const amountStr = input ? input.value : "0";
+    const amount = parseFloat(amountStr) || 0;
+
+    const output = document.getElementById("usd-swap-calc-output");
+    if (output) {
+        const totalNGN = amount * rate;
+        output.textContent = "₦" + totalNGN.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+    }
+}
+
+function maxUSDConverterInput() {
+    const db = getDB();
+    const user = db.users[currentUser.email];
+    const usdVal = user.wallet ? (user.wallet.usdBalance || 0) : 0;
+    const input = document.getElementById("usd-swap-amount");
+    if (input) {
+        input.value = usdVal;
+        calculateUSDToNGNSwapPreview();
+    }
+}
+
+function handleUSDToNGNSwapSubmit(e) {
+    e.preventDefault();
+    const db = getDB();
+    const user = db.users[currentUser.email];
+    const rate = (db.currencies && db.currencies["USD"] && db.currencies["USD"].rate) ? parseFloat(db.currencies["USD"].rate) : 1200;
+    const amount = parseFloat(document.getElementById("usd-swap-amount").value);
+
+    if (isNaN(amount) || amount <= 0) {
+        showToast("Please enter a valid positive USD amount to convert.", "danger");
+        return;
+    }
+
+    if (amount > (user.wallet.usdBalance || 0)) {
+        showToast("Insufficient USD balance in Global Vault.", "danger");
+        return;
+    }
+
+    const ngnCredit = amount * rate;
+
+    // Deduct USD & Credit NGN
+    user.wallet.usdBalance -= amount;
+    user.wallet.balance += ngnCredit;
+
+    // Log Activity
+    user.logs.unshift({
+        event: `Instant USD ➔ NGN Swap: -$${amount.toFixed(2)} USD converted to +₦${ngnCredit.toLocaleString()} NGN (Rate: ₦${rate}/$)`,
+        timestamp: new Date().toISOString(),
+        ip: "197.34.120.44"
+    });
+
+    db.users[currentUser.email] = user;
+    saveDB(db);
+
+    // Push updates to Supabase
+    if (typeof supabaseUpdateProfile === "function") {
+        supabaseUpdateProfile({ wallet: user.wallet });
+    }
+
+    dispatchNotification(
+        currentUser.email,
+        "USD ➔ NGN Swap Completed",
+        `Successfully converted $${amount.toFixed(2)} USD to ₦${ngnCredit.toLocaleString()} NGN at exchange rate ₦${rate}/$.`
+    );
+
+    showToast(`Successfully converted $${amount.toFixed(2)} USD to ₦${ngnCredit.toLocaleString()}!`, "success");
+
+    closeUSDConverterModal();
+    loadSession();
+}
     
     // Total Purchases Counter
     const userPurchases = db.inventory ? db.inventory.filter(item => item.status === "SOLD" && item.purchasedBy === user.email) : [];

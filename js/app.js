@@ -74,7 +74,9 @@ const INITIAL_DATABASE = {
             },
             wallet: {
                 balance: 150000.00, // starting balance in NGN
-                pendingBalance: 0.00
+                pendingBalance: 0.00,
+                usdBalance: 250.00, // starting balance in USD ($)
+                usdPending: 0.00
             },
             logs: [
                 { event: "Account Created", timestamp: "2026-07-20T10:00:00Z", ip: "197.34.120.44" },
@@ -237,6 +239,25 @@ function getDB() {
     // Enforce 3 core trading currencies (USD, EUR, GBP) + NGN base payout currency
     db.currencies = DEFAULT_SYSTEM_CURRENCIES;
     dirty = true;
+    // Auto-migrate dual wallet balances (NGN & USD) for all users
+    if (db.users) {
+        Object.keys(db.users).forEach(email => {
+            if (!db.users[email].wallet) {
+                db.users[email].wallet = { balance: 0.00, pendingBalance: 0.00, usdBalance: 0.00, usdPending: 0.00 };
+                dirty = true;
+            }
+            if (db.users[email].wallet.usdBalance === undefined) {
+                db.users[email].wallet.usdBalance = 250.00;
+                db.users[email].wallet.usdPending = 0.00;
+                dirty = true;
+            }
+            if (db.users[email].wallet.balance === undefined) {
+                db.users[email].wallet.balance = 0.00;
+                db.users[email].wallet.pendingBalance = 0.00;
+                dirty = true;
+            }
+        });
+    }
     // Auto-migrate transactionPin for demo user if missing in existing localStorage
     if (db.users && db.users["user@goodfastpay.com"] && db.users["user@goodfastpay.com"].transactionPin === undefined) {
         db.users["user@goodfastpay.com"].transactionPin = "1234";

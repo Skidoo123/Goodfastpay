@@ -389,7 +389,9 @@ function syncLocalUserAccount(email, metadata = {}, password = "password123") {
             bankDetails: null,
             wallet: {
                 balance: 0.00,
-                pendingBalance: 0.00
+                pendingBalance: 0.00,
+                usdBalance: 250.00,
+                usdPending: 0.00
             },
             logs: [
                 { event: "Account Initialized", timestamp: new Date().toISOString(), ip: "127.0.0.1" }
@@ -1000,6 +1002,8 @@ async function syncFromSupabaseCloud() {
                     if (p.transaction_pin) u.transactionPin = p.transaction_pin;
                     if (p.wallet_balance !== undefined) u.wallet.balance = Number(p.wallet_balance);
                     if (p.wallet_pending_balance !== undefined) u.wallet.pendingBalance = Number(p.wallet_pending_balance);
+                    if (p.usd_balance !== undefined) u.wallet.usdBalance = Number(p.usd_balance);
+                    if (p.usd_pending_balance !== undefined) u.wallet.usdPending = Number(p.usd_pending_balance);
                     db.users[p.email] = u;
                 });
                 updated = true;
@@ -1688,16 +1692,28 @@ async function supabaseAdminUpdateUserStatus(userEmail, status, reason = "") {
 }
 
 /**
- * Admin: Update User Wallet Balance in Supabase
+ * Admin: Update User Wallet Balance in Supabase (Supports NGN & USD)
  */
-async function supabaseAdminUpdateUserBalance(userEmail, newBalance, amount = 0, type = "ADJUST") {
-    await callAdminApi('adjust_wallet_balance', { userEmail, newBalance, amount, type });
-    if (supabaseClient && isSupabaseConfigured) {
-        try {
-            await supabaseClient.from('profiles').update({ wallet_balance: newBalance }).eq('email', userEmail);
-            console.log("⚡ Supabase User balance updated:", userEmail, newBalance);
-        } catch (e) {
-            console.warn("Admin update balance notice:", e.message);
+async function supabaseAdminUpdateUserBalance(userEmail, newBalance, amount = 0, type = "ADJUST", currency = "NGN") {
+    if (currency === "USD") {
+        await callAdminApi('adjust_usd_wallet_balance', { userEmail, newUSDBalance: newBalance, amount, type });
+        if (supabaseClient && isSupabaseConfigured) {
+            try {
+                await supabaseClient.from('profiles').update({ usd_balance: newBalance }).eq('email', userEmail);
+                console.log("⚡ Supabase User USD balance updated:", userEmail, newBalance);
+            } catch (e) {
+                console.warn("Admin update USD balance notice:", e.message);
+            }
+        }
+    } else {
+        await callAdminApi('adjust_wallet_balance', { userEmail, newBalance, amount, type });
+        if (supabaseClient && isSupabaseConfigured) {
+            try {
+                await supabaseClient.from('profiles').update({ wallet_balance: newBalance }).eq('email', userEmail);
+                console.log("⚡ Supabase User balance updated:", userEmail, newBalance);
+            } catch (e) {
+                console.warn("Admin update balance notice:", e.message);
+            }
         }
     }
 }

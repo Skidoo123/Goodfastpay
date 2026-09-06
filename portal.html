@@ -244,15 +244,32 @@
                 <!-- VIP Loyalty Tier Status Widget -->
                 <div id="vip-loyalty-widget-container"></div>
 
-                <!-- Summary Cards grid -->
+                <!-- Summary Cards grid (Dual NGN & USD Wallets) -->
                 <div class="dash-grid stats-summary-grid" style="margin-bottom: 24px;">
-                    <div class="card stats-card" style="margin-bottom: 0; padding: 18px 16px;">
-                        <div class="stats-icon icon-wallet" style="width: 38px; height: 38px; font-size: 1.1rem;"><i class="fas fa-wallet"></i></div>
+                    <!-- NGN Wallet Card -->
+                    <div class="card stats-card" style="margin-bottom: 0; padding: 18px 16px; border-left: 4px solid #10b981;">
+                        <div class="stats-icon icon-wallet" style="width: 38px; height: 38px; font-size: 1.1rem; background: rgba(16, 185, 129, 0.15); color: #10b981;"><i class="fas fa-wallet"></i></div>
                         <div>
-                            <span style="font-size: 0.72rem; color: var(--text-secondary); font-weight: 700; letter-spacing: 0.5px;">WALLET BALANCE</span>
-                            <h4 style="font-size: 1.25rem; font-weight: 800; margin-top: 2px;" id="stat-wallet-balance">₦0.00</h4>
+                            <span style="font-size: 0.72rem; color: var(--text-secondary); font-weight: 700; letter-spacing: 0.5px;">NAIRA MAIN WALLET (NGN)</span>
+                            <h4 style="font-size: 1.25rem; font-weight: 800; margin-top: 2px; color: #10b981;" id="stat-wallet-balance">₦0.00</h4>
                         </div>
                     </div>
+
+                    <!-- USD Global Vault Card -->
+                    <div class="card stats-card" style="margin-bottom: 0; padding: 18px 16px; border-left: 4px solid #6366f1;">
+                        <div class="stats-icon icon-wallet" style="width: 38px; height: 38px; font-size: 1.1rem; background: rgba(99, 102, 241, 0.15); color: #6366f1;"><i class="fas fa-globe"></i></div>
+                        <div style="flex-grow: 1;">
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <span style="font-size: 0.72rem; color: var(--text-secondary); font-weight: 700; letter-spacing: 0.5px;">USD GLOBAL VAULT (USD)</span>
+                                <button type="button" onclick="openUSDConverterModal()" style="background: rgba(99, 102, 241, 0.2); border: 1px solid rgba(99, 102, 241, 0.4); color: #818cf8; font-size: 0.68rem; font-weight: 800; padding: 2px 8px; border-radius: 6px; cursor: pointer;" title="Convert USD balance to NGN">
+                                    <i class="fas fa-rotate"></i> Swap ➔ ₦
+                                </button>
+                            </div>
+                            <h4 style="font-size: 1.25rem; font-weight: 800; margin-top: 2px; color: #818cf8;" id="stat-usd-wallet-balance">$0.00</h4>
+                        </div>
+                    </div>
+
+                    <!-- Pending Orders -->
                     <div class="card stats-card" style="margin-bottom: 0; padding: 18px 16px;">
                         <div class="stats-icon icon-pending" style="width: 38px; height: 38px; font-size: 1.1rem;"><i class="fas fa-hourglass-half"></i></div>
                         <div>
@@ -260,18 +277,13 @@
                             <h4 style="font-size: 1.25rem; font-weight: 800; margin-top: 2px;" id="stat-pending-balance">₦0.00</h4>
                         </div>
                     </div>
+
+                    <!-- Total Card Sales -->
                     <div class="card stats-card" style="margin-bottom: 0; padding: 18px 16px;">
                         <div class="stats-icon icon-cards" style="width: 38px; height: 38px; font-size: 1.1rem;"><i class="fas fa-ticket"></i></div>
                         <div>
                             <span style="font-size: 0.72rem; color: var(--text-secondary); font-weight: 700; letter-spacing: 0.5px;">TOTAL CARD SALES</span>
                             <h4 style="font-size: 1.25rem; font-weight: 800; margin-top: 2px;" id="stat-card-trades">0</h4>
-                        </div>
-                    </div>
-                    <div class="card stats-card" style="margin-bottom: 0; padding: 18px 16px;">
-                        <div class="stats-icon icon-withdraw" style="width: 38px; height: 38px; font-size: 1.1rem;"><i class="fas fa-circle-down"></i></div>
-                        <div>
-                            <span style="font-size: 0.72rem; color: var(--text-secondary); font-weight: 700; letter-spacing: 0.5px;">TOTAL PURCHASES</span>
-                            <h4 style="font-size: 1.25rem; font-weight: 800; margin-top: 2px;" id="stat-purchases">0</h4>
                         </div>
                     </div>
                 </div>
@@ -1425,6 +1437,46 @@
                 <button type="button" onclick="downloadTransactionReceiptPDF()" class="btn-dark-navy" style="width: 100%; border-radius: 12px; font-weight: 700; padding: 12px; font-size: 0.95rem;">
                     <i class="fas fa-file-pdf" style="margin-right: 6px; color: #03b5d3;"></i> Download Official PDF Receipt
                 </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- USD TO NAIRA INSTANT SWAP CONVERTER MODAL -->
+    <div class="modal-overlay" id="usd-converter-modal">
+        <div class="modal-content" style="max-width: 440px;">
+            <div class="modal-header">
+                <h3 class="font-bold text-xl text-on-surface flex items-center gap-2" style="font-size: 1.15rem; font-weight: 800;">
+                    <i class="fas fa-rotate text-indigo-400"></i> USD ➔ NGN Instant Swap
+                </h3>
+                <button class="modal-close" onclick="closeUSDConverterModal()"><i class="fas fa-xmark"></i></button>
+            </div>
+            
+            <div style="padding: 10px 0;">
+                <!-- Live Rate Banner -->
+                <div style="background: rgba(99, 102, 241, 0.12); border: 1px solid rgba(99, 102, 241, 0.3); border-radius: 12px; padding: 12px; margin-bottom: 20px; text-align: center;">
+                    <span style="font-size: 0.72rem; color: #94a3b8; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">ADMIN DOLLAR EXCHANGE RATE</span>
+                    <div style="font-size: 1.3rem; font-weight: 900; color: #818cf8; margin-top: 2px;" id="usd-swap-rate-display">$1.00 USD = ₦1,200.00 NGN</div>
+                </div>
+
+                <form onsubmit="handleUSDToNGNSwapSubmit(event)">
+                    <div class="input-group">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                            <label class="input-label" style="margin-bottom: 0;">USD Amount to Convert ($)</label>
+                            <span style="font-size: 0.75rem; color: #818cf8; cursor: pointer; font-weight: 700;" onclick="maxUSDConverterInput()">Max: <span id="usd-swap-max-avail">$0.00</span></span>
+                        </div>
+                        <input type="number" id="usd-swap-amount" class="input-field" placeholder="e.g. 50.00" min="1" step="0.01" required oninput="calculateUSDToNGNSwapPreview()">
+                    </div>
+
+                    <!-- Calculated Output Preview -->
+                    <div style="background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.25); border-radius: 12px; padding: 14px; margin-bottom: 20px; text-align: center;">
+                        <span style="font-size: 0.72rem; color: #94a3b8; font-weight: 700; text-transform: uppercase;">YOU WILL RECEIVE IN NAIRA WALLET</span>
+                        <div style="font-size: 1.8rem; font-weight: 900; color: #10b981; margin-top: 2px;" id="usd-swap-calc-output">₦0.00</div>
+                    </div>
+
+                    <button type="submit" style="width: 100%; background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%); border: none; color: #fff; font-weight: 800; padding: 14px; border-radius: 12px; font-size: 0.95rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                        <i class="fas fa-bolt-lightning"></i> Confirm Instant Swap to Naira
+                    </button>
+                </form>
             </div>
         </div>
     </div>
