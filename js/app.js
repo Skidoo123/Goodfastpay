@@ -74,7 +74,9 @@ const INITIAL_DATABASE = {
             },
             wallet: {
                 balance: 150000.00, // starting balance in NGN
-                pendingBalance: 0.00
+                pendingBalance: 0.00,
+                usdBalance: 250.00, // starting balance in USD ($)
+                usdPending: 0.00
             },
             logs: [
                 { event: "Account Created", timestamp: "2026-07-20T10:00:00Z", ip: "197.34.120.44" },
@@ -211,13 +213,31 @@ const INITIAL_DATABASE = {
     adjustments: []
 };
 
+// Database In-Memory Cache for Maximum Performance & Zero-Lag Operations
+let cachedDB = null;
+
+function invalidateDBCache() {
+    cachedDB = null;
+}
+
+if (typeof window !== "undefined") {
+    window.addEventListener('storage', (e) => {
+        if (e.key === 'goodfastpay_db') {
+            invalidateDBCache();
+        }
+    });
+}
+
 // Database Initializer
 function getDB() {
+    if (cachedDB) return cachedDB;
+
     if (!localStorage.getItem("goodfastpay_db")) {
         localStorage.setItem("goodfastpay_db", JSON.stringify(INITIAL_DATABASE));
     }
     let db = JSON.parse(localStorage.getItem("goodfastpay_db"));
     let dirty = false;
+
     if (!db.submissions) {
         db.submissions = INITIAL_DATABASE.submissions || [];
         dirty = true;
@@ -234,9 +254,29 @@ function getDB() {
         db.adjustments = [];
         dirty = true;
     }
-    // Enforce 3 core trading currencies (USD, EUR, GBP) + NGN base payout currency
-    db.currencies = DEFAULT_SYSTEM_CURRENCIES;
-    dirty = true;
+    if (!db.currencies) {
+        db.currencies = DEFAULT_SYSTEM_CURRENCIES;
+        dirty = true;
+    }
+    // Auto-migrate dual wallet balances (NGN & USD) for all users
+    if (db.users) {
+        Object.keys(db.users).forEach(email => {
+            if (!db.users[email].wallet) {
+                db.users[email].wallet = { balance: 0.00, pendingBalance: 0.00, usdBalance: 0.00, usdPending: 0.00 };
+                dirty = true;
+            }
+            if (db.users[email].wallet.usdBalance === undefined) {
+                db.users[email].wallet.usdBalance = 250.00;
+                db.users[email].wallet.usdPending = 0.00;
+                dirty = true;
+            }
+            if (db.users[email].wallet.balance === undefined) {
+                db.users[email].wallet.balance = 0.00;
+                db.users[email].wallet.pendingBalance = 0.00;
+                dirty = true;
+            }
+        });
+    }
     // Auto-migrate transactionPin for demo user if missing in existing localStorage
     if (db.users && db.users["user@goodfastpay.com"] && db.users["user@goodfastpay.com"].transactionPin === undefined) {
         db.users["user@goodfastpay.com"].transactionPin = "1234";
@@ -331,10 +371,12 @@ function getDB() {
     if (dirty) {
         localStorage.setItem("goodfastpay_db", JSON.stringify(db));
     }
-    return db;
+    cachedDB = db;
+    return cachedDB;
 }
 
 function saveDB(db) {
+    cachedDB = db;
     try {
         localStorage.setItem("goodfastpay_db", JSON.stringify(db));
     } catch (e) {
@@ -368,19 +410,43 @@ function saveDB(db) {
 
 // Session Helpers
 function getSessionUser() {
-    const sessionEmail = sessionStorage.getItem("goodfastpay_user");
+    const sessionEmail = sessionStorage.getItem("goodfastpay_user") || localStorage.getItem("goodfastpay_user");
     if (!sessionEmail) return null;
     const db = getDB();
+    if (!db.users[sessionEmail]) {
+        if (typeof syncLocalUserAccount === "function") {
+            syncLocalUserAccount(sessionEmail, { email: sessionEmail });
+        } else {
+            db.users[sessionEmail] = {
+                id: null,
+                name: sessionEmail.split("@")[0],
+                email: sessionEmail,
+                passwordHash: "password123",
+                phone: "",
+                role: sessionEmail === "admin@goodfastpay.com" ? "ADMIN" : "USER",
+                status: "ACTIVE",
+                createdAt: new Date().toISOString(),
+                bankDetails: null,
+                wallet: { balance: 0.00, pendingBalance: 0.00, usdBalance: 250.00, usdPending: 0.00 },
+                logs: [],
+                notifications: []
+            };
+            saveDB(db);
+        }
+    }
     return db.users[sessionEmail] || null;
 }
 
 function setSessionUser(email) {
+    if (!email) return;
     sessionStorage.setItem("goodfastpay_user", email);
+    localStorage.setItem("goodfastpay_user", email);
 }
 
 function clearSession() {
     sessionStorage.removeItem("goodfastpay_user");
     sessionStorage.removeItem("goodfastpay_otp");
+    localStorage.removeItem("goodfastpay_user");
 }
 
 // Rate Limiting Simulator

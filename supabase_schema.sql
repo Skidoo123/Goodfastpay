@@ -23,6 +23,9 @@ BEGIN
     -- Make user_id nullable and add user_email if tables already exist
     IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'profiles') THEN
         ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS password TEXT DEFAULT NULL;
+        ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS usd_balance NUMERIC(15, 2) NOT NULL DEFAULT 0.00 CHECK (usd_balance >= 0);
+        ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS usd_pending_balance NUMERIC(15, 2) NOT NULL DEFAULT 0.00 CHECK (usd_pending_balance >= 0);
+        ALTER TABLE public.profiles ALTER COLUMN id SET DEFAULT gen_random_uuid();
     END IF;
 
     IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'submissions') THEN
@@ -75,6 +78,8 @@ CREATE TABLE IF NOT EXISTS public.profiles (
     phone_verified BOOLEAN DEFAULT FALSE,
     wallet_balance NUMERIC(15, 2) NOT NULL DEFAULT 0.00 CHECK (wallet_balance >= 0),
     wallet_pending_balance NUMERIC(15, 2) NOT NULL DEFAULT 0.00 CHECK (wallet_pending_balance >= 0),
+    usd_balance NUMERIC(15, 2) NOT NULL DEFAULT 0.00 CHECK (usd_balance >= 0),
+    usd_pending_balance NUMERIC(15, 2) NOT NULL DEFAULT 0.00 CHECK (usd_pending_balance >= 0),
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
@@ -306,9 +311,9 @@ CREATE POLICY "Security logs all" ON public.security_logs FOR ALL USING (true);
 -- ==============================================================================
 
 -- 6.1 Seed Initial Profiles
-INSERT INTO public.profiles (email, name, role, status, wallet_balance, transaction_pin, password) VALUES
-    ('admin@goodfastpay.com', 'System Administrator', 'ADMIN', 'ACTIVE', 5000000.00, '1234', 'password123'),
-    ('user@goodfastpay.com', 'Demo Customer', 'USER', 'ACTIVE', 25400.00, '0000', 'password123')
+INSERT INTO public.profiles (id, email, name, role, status, wallet_balance, transaction_pin, password) VALUES
+    (gen_random_uuid(), 'admin@goodfastpay.com', 'System Administrator', 'ADMIN', 'ACTIVE', 5000000.00, '1234', 'password123'),
+    (gen_random_uuid(), 'user@goodfastpay.com', 'Demo Customer', 'USER', 'ACTIVE', 25400.00, '0000', 'password123')
 ON CONFLICT (email) DO UPDATE SET 
     role = EXCLUDED.role,
     status = EXCLUDED.status,

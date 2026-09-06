@@ -346,8 +346,10 @@ function inspectUserProfile(email) {
         </div>
         
         <div class="detail-item"><span>Phone Number:</span> <strong>${user.phone || '-'}</strong></div>
-        <div class="detail-item"><span>Wallet Balance:</span> <strong style="color:var(--accent);">₦${user.wallet.balance.toLocaleString(undefined, {minimumFractionDigits: 2})}</strong></div>
-        <div class="detail-item"><span>Wallet Pending:</span> <strong style="color:var(--warning);">₦${user.wallet.pendingBalance.toLocaleString(undefined, {minimumFractionDigits: 2})}</strong></div>
+        <div class="detail-item"><span>Naira Main Wallet:</span> <strong style="color:var(--accent);">₦${(user.wallet.balance || 0).toLocaleString(undefined, {minimumFractionDigits: 2})}</strong></div>
+        <div class="detail-item"><span>Naira Pending:</span> <strong style="color:var(--warning);">₦${(user.wallet.pendingBalance || 0).toLocaleString(undefined, {minimumFractionDigits: 2})}</strong></div>
+        <div class="detail-item"><span>USD Global Vault:</span> <strong style="color:#10b981;">$${(user.wallet.usdBalance !== undefined ? user.wallet.usdBalance : 250.00).toLocaleString(undefined, {minimumFractionDigits: 2})}</strong></div>
+        <div class="detail-item"><span>USD Pending:</span> <strong style="color:var(--warning);">$${(user.wallet.usdPending || 0).toLocaleString(undefined, {minimumFractionDigits: 2})}</strong></div>
 
         <!-- Premium Operations Action Bar -->
         <div style="border-top: 1px solid var(--border-color); padding-top: 16px; margin-top: 16px;">
@@ -723,6 +725,8 @@ function handleManualWalletAdjust(e) {
     }
     
     const email = document.getElementById("ins-adjust-email").value;
+    const currencyElem = document.getElementById("ins-adjust-currency");
+    const currency = currencyElem ? currencyElem.value : "NGN";
     const type = document.getElementById("ins-adjust-type").value;
     const amount = parseFloat(document.getElementById("ins-adjust-amount").value);
     
@@ -741,13 +745,21 @@ function handleManualWalletAdjust(e) {
     
     if (!db.adjustments) db.adjustments = [];
     const adjId = "ADJ-" + Math.floor(100000 + Math.random() * 900000);
+    const currSymbol = currency === "USD" ? "$" : "₦";
     
     if (type === "CREDIT") {
-        user.wallet.balance += amount;
+        if (currency === "USD") {
+            if (user.wallet.usdBalance === undefined) user.wallet.usdBalance = 250.00;
+            user.wallet.usdBalance += amount;
+        } else {
+            user.wallet.balance += amount;
+        }
         
+        const newBal = currency === "USD" ? user.wallet.usdBalance : user.wallet.balance;
+
         // Log user log
         user.logs.unshift({
-            event: `Admin Wallet Adjustment: +₦${amount.toLocaleString()} Credited`,
+            event: `Admin Wallet Adjustment: +${currSymbol}${amount.toLocaleString()} Credited (${currency})`,
             timestamp: new Date().toISOString(),
             ip: "system"
         });
@@ -756,12 +768,13 @@ function handleManualWalletAdjust(e) {
         db.adjustments.unshift({
             id: adjId,
             userId: email,
-            type: "Wallet Credit",
+            currency: currency,
+            type: `${currency} Wallet Credit`,
             adjustmentType: "CREDIT",
             amount: amount,
-            balanceAfter: user.wallet.balance,
+            balanceAfter: newBal,
             operator: currentAdmin.email,
-            reason: "Wallet credited by Admin",
+            reason: `${currency} Wallet credited by Admin`,
             status: "COMPLETED",
             createdAt: new Date().toISOString()
         });
@@ -770,32 +783,40 @@ function handleManualWalletAdjust(e) {
         saveDB(db);
         
         if (typeof supabaseAdminUpdateUserBalance === "function") {
-            supabaseAdminUpdateUserBalance(email, user.wallet.balance, amount, 'CREDIT');
+            supabaseAdminUpdateUserBalance(email, newBal, amount, 'CREDIT', currency);
         }
         
         writeAuditLog(
             currentAdmin.email,
             "Wallet Manually Credited",
-            `Credited ₦${amount.toLocaleString()} to ${email}`
+            `Credited ${currSymbol}${amount.toLocaleString()} (${currency}) to ${email}`
         );
         
         dispatchNotification(
             email,
-            "Wallet Balance Credited",
-            `Your wallet available balance has been manually credited with ₦${amount.toLocaleString()} by the administrator.`
+            `${currency} Wallet Balance Credited`,
+            `Your ${currency} wallet available balance has been manually credited with ${currSymbol}${amount.toLocaleString()} by the administrator.`
         );
         
-        showToast(`Wallet credited successfully.`, "success");
+        showToast(`${currency} wallet credited successfully.`, "success");
     } else {
-        if (amount > user.wallet.balance) {
-            showToast("Adjustment deduction amount exceeds user available balance.", "danger");
+        const currentBal = currency === "USD" ? (user.wallet.usdBalance !== undefined ? user.wallet.usdBalance : 250.00) : user.wallet.balance;
+        if (amount > currentBal) {
+            showToast(`Adjustment deduction amount exceeds user available ${currency} balance.`, "danger");
             return;
         }
-        user.wallet.balance -= amount;
+        if (currency === "USD") {
+            if (user.wallet.usdBalance === undefined) user.wallet.usdBalance = 250.00;
+            user.wallet.usdBalance -= amount;
+        } else {
+            user.wallet.balance -= amount;
+        }
+
+        const newBal = currency === "USD" ? user.wallet.usdBalance : user.wallet.balance;
         
         // Log user log
         user.logs.unshift({
-            event: `Admin Wallet Adjustment: -₦${amount.toLocaleString()} Deducted`,
+            event: `Admin Wallet Adjustment: -${currSymbol}${amount.toLocaleString()} Deducted (${currency})`,
             timestamp: new Date().toISOString(),
             ip: "system"
         });
@@ -804,12 +825,13 @@ function handleManualWalletAdjust(e) {
         db.adjustments.unshift({
             id: adjId,
             userId: email,
-            type: "Wallet Deduction",
+            currency: currency,
+            type: `${currency} Wallet Deduction`,
             adjustmentType: "DEBIT",
             amount: amount,
-            balanceAfter: user.wallet.balance,
+            balanceAfter: newBal,
             operator: currentAdmin.email,
-            reason: "Wallet deducted by Admin",
+            reason: `${currency} Wallet deducted by Admin`,
             status: "COMPLETED",
             createdAt: new Date().toISOString()
         });
@@ -818,22 +840,22 @@ function handleManualWalletAdjust(e) {
         saveDB(db);
         
         if (typeof supabaseAdminUpdateUserBalance === "function") {
-            supabaseAdminUpdateUserBalance(email, user.wallet.balance, amount, 'DEBIT');
+            supabaseAdminUpdateUserBalance(email, newBal, amount, 'DEBIT', currency);
         }
         
         writeAuditLog(
             currentAdmin.email,
             "Wallet Manually Deducted",
-            `Deducted ₦${amount.toLocaleString()} from ${email}`
+            `Deducted ${currSymbol}${amount.toLocaleString()} (${currency}) from ${email}`
         );
         
         dispatchNotification(
             email,
-            "Wallet Balance Deducted",
-            `Your wallet available balance has been manually adjusted: ₦${amount.toLocaleString()} was deducted.`
+            `${currency} Wallet Balance Deducted`,
+            `Your ${currency} wallet available balance has been manually adjusted: ${currSymbol}${amount.toLocaleString()} was deducted.`
         );
         
-        showToast(`Wallet balance deducted successfully.`, "success");
+        showToast(`${currency} wallet balance deducted successfully.`, "success");
     }
     
     inspectUserProfile(email); // reload details
@@ -3929,9 +3951,9 @@ function setupAdminSupportRealTimeCheck() {
         syncAdminActiveChat();
     });
     
-    // Start loop interval
+    // Start loop interval (every 3 seconds when active)
     setInterval(() => {
-        if (!currentAdmin) return;
+        if (document.hidden || !currentAdmin) return;
         
         const db = getDB();
         const currentTickets = db.tickets || [];
@@ -3952,7 +3974,7 @@ function setupAdminSupportRealTimeCheck() {
         }
         
         syncAdminActiveChat();
-    }, 1500);
+    }, 3000);
 }
 
 // Sync active chat feed message updates, user typing states, and metadata in real-time
