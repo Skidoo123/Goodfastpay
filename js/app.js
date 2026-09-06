@@ -410,19 +410,43 @@ function saveDB(db) {
 
 // Session Helpers
 function getSessionUser() {
-    const sessionEmail = sessionStorage.getItem("goodfastpay_user");
+    const sessionEmail = sessionStorage.getItem("goodfastpay_user") || localStorage.getItem("goodfastpay_user");
     if (!sessionEmail) return null;
     const db = getDB();
+    if (!db.users[sessionEmail]) {
+        if (typeof syncLocalUserAccount === "function") {
+            syncLocalUserAccount(sessionEmail, { email: sessionEmail });
+        } else {
+            db.users[sessionEmail] = {
+                id: null,
+                name: sessionEmail.split("@")[0],
+                email: sessionEmail,
+                passwordHash: "password123",
+                phone: "",
+                role: sessionEmail === "admin@goodfastpay.com" ? "ADMIN" : "USER",
+                status: "ACTIVE",
+                createdAt: new Date().toISOString(),
+                bankDetails: null,
+                wallet: { balance: 0.00, pendingBalance: 0.00, usdBalance: 250.00, usdPending: 0.00 },
+                logs: [],
+                notifications: []
+            };
+            saveDB(db);
+        }
+    }
     return db.users[sessionEmail] || null;
 }
 
 function setSessionUser(email) {
+    if (!email) return;
     sessionStorage.setItem("goodfastpay_user", email);
+    localStorage.setItem("goodfastpay_user", email);
 }
 
 function clearSession() {
     sessionStorage.removeItem("goodfastpay_user");
     sessionStorage.removeItem("goodfastpay_otp");
+    localStorage.removeItem("goodfastpay_user");
 }
 
 // Rate Limiting Simulator

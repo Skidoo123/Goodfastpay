@@ -836,7 +836,12 @@
             // Resolve phone number inputs to user account email
             if (!email.includes("@")) {
                 const db = getDB();
-                const foundUser = Object.values(db.users || {}).find(u => u.phone && u.phone.replace(/\s+/g, '') === inputVal.replace(/\s+/g, ''));
+                const cleanInputDigits = inputVal.replace(/\D/g, '');
+                const foundUser = Object.values(db.users || {}).find(u => {
+                    if (!u.phone) return false;
+                    const uDigits = u.phone.replace(/\D/g, '');
+                    return uDigits === cleanInputDigits || (cleanInputDigits.length >= 7 && uDigits.endsWith(cleanInputDigits.slice(-10)));
+                });
                 if (foundUser) {
                     email = foundUser.email;
                 } else {
