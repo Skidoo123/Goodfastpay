@@ -871,6 +871,7 @@ function renderCardsQueue() {
     list.forEach(s => {
         const div = document.createElement("div");
         div.className = `ticket-row ${activeCardInspectId === s.id ? 'active' : ''}`;
+        div.dataset.id = s.id;
         div.onclick = () => inspectCardSubmission(s.id);
         
         let badge = "";
@@ -906,14 +907,12 @@ function renderCardsQueue() {
 function highlightActiveCardItem() {
     const rows = document.querySelectorAll("#admin-cards-list .ticket-row");
     rows.forEach(row => {
-        row.classList.remove("active");
+        if (row.dataset.id === activeCardInspectId) {
+            row.classList.add("active");
+        } else {
+            row.classList.remove("active");
+        }
     });
-    // Find item
-    const db = getDB();
-    const index = db.submissions.findIndex(s => s.id === activeCardInspectId && (currentCardsFilter === "ALL" || s.status === currentCardsFilter));
-    if (index !== -1 && rows[index]) {
-        rows[index].classList.add("active");
-    }
 }
 
 // Inspect details of card submission
@@ -1191,6 +1190,7 @@ function renderWithdrawalsQueue() {
     list.forEach(w => {
         const div = document.createElement("div");
         div.className = `ticket-row ${activeWithdrawalInspectId === w.id ? 'active' : ''}`;
+        div.dataset.id = w.id;
         div.onclick = () => inspectWithdrawalRequest(w.id);
         
         let badge = "";
@@ -3583,12 +3583,12 @@ function handleAdminChatInputResize() {
     handleAdminTyping();
     
     // Reset height to calculate scrollHeight accurately
-    textarea.style.height = "120px";
+    textarea.style.height = "52px";
     
-    // Expand height if needed up to 160px
+    // Expand height if needed up to 140px
     const scrollHeight = textarea.scrollHeight;
-    if (scrollHeight > 120) {
-        textarea.style.height = Math.min(scrollHeight, 160) + "px";
+    if (scrollHeight > 52) {
+        textarea.style.height = Math.min(scrollHeight, 140) + "px";
     }
 }
 
@@ -3653,7 +3653,7 @@ function handleAdminChatReply(e) {
         }
         
         replyInput.value = "";
-        replyInput.style.height = "120px"; // Reset height
+        replyInput.style.height = "52px"; // Reset height
         fileInput.value = "";
         filenameEl.textContent = "";
         adminChatFilename = "";
@@ -4106,7 +4106,7 @@ function applyAdminRolePermissions() {
     }
     if (bulkRejectBtn) {
         bulkRejectBtn.disabled = !isSuper;
-        bulkRejectBtn.style.opacity = isSuper ? "0.5" : "1";
+        bulkRejectBtn.style.opacity = isSuper ? "1" : "0.5";
     }
 
     // Create Admin Staff button restriction for non-SUPER_ADMIN

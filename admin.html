@@ -104,6 +104,13 @@
             width: 100% !important;
             outline: none !important;
             text-align: right;
+            -webkit-appearance: none;
+            -moz-appearance: textfield;
+        }
+        .rate-input-wrapper input::-webkit-outer-spin-button,
+        .rate-input-wrapper input::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
         }
     </style>
 </head>
@@ -187,7 +194,7 @@
             <header class="admin-header">
                 <div style="display: flex; align-items: center; gap: 12px;">
                     <button class="sidebar-toggle" onclick="toggleAdminSidebar()" aria-label="Toggle Menu"><i class="fas fa-bars"></i></button>
-                    <div class="mobile-header-logo" style="display: none; align-items: center; gap: 6px; font-weight: 800; font-size: 1.1rem;">
+                    <div class="mobile-header-logo" style="align-items: center; gap: 6px; font-weight: 800; font-size: 1.1rem;">
                         <img src="images/logo.png" alt="Goodfastpay Logo" style="height: 24px; width: 24px; background: rgba(255,255,255,0.08); border-radius: 4px; padding: 2px; object-fit: contain;">
                         <span>Good<span class="gradient-text">fast</span>pay</span>
                     </div>
