@@ -2451,6 +2451,267 @@ function playNotificationSound() {
     }
 }
 
+// ==========================================================================
+// CENTRAL CURRENCY MANAGER & RATE REGISTRY ENGINE
+// ==========================================================================
+
+// RENDER CURRENCY REGISTRY LIST
+function renderCurrencyManager() {
+    const db = getDB();
+    const tbody = document.getElementById("admin-currencies-tbody");
+    if (!tbody) return;
+    tbody.innerHTML = "";
+    
+    const currencies = db.currencies || {};
+    
+    Object.keys(currencies).forEach(code => {
+        const c = currencies[code];
+        const tr = document.createElement("tr");
+        
+        tr.style.borderBottom = "1px solid var(--border-color)";
+        tr.style.height = "46px";
+        
+        const flagHTML = typeof getCountryFlagEmoji === "function" ? getCountryFlagEmoji(code) : "🌐 " + code;
+        const flagEmoji = flagHTML.split(" ")[0] || "🌐";
+        
+        const statusBadge = c.status === "ACTIVE" 
+            ? `<span class="currency-pill-badge currency-pill-badge-active" onclick="toggleCurrencyStatus('${code}')">Active</span>`
+            : `<span class="currency-pill-badge currency-pill-badge-disabled" onclick="toggleCurrencyStatus('${code}')">Disabled</span>`;
+            
+        tr.innerHTML = `
+            <td style="width: 20%; text-align: left; vertical-align: middle; padding: 10px 12px; white-space: nowrap;">
+                <span style="font-size: 1.05rem; margin-right: 6px; vertical-align: middle;">${flagEmoji}</span>
+                <strong style="font-family: monospace; font-size: 0.88rem; vertical-align: middle; color: var(--text-primary);">${c.code}</strong>
+            </td>
+            <td style="width: 30%; text-align: left; vertical-align: middle; padding: 10px 12px; font-weight: 500; color: var(--text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${c.name}">
+                ${c.name}
+            </td>
+            <td style="width: 20%; text-align: right; vertical-align: middle; padding: 10px 12px; font-weight: 700; font-family: monospace; color: var(--text-primary); white-space: nowrap;">
+                ₦${(c.rate || 0).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}
+            </td>
+            <td style="width: 15%; text-align: center; vertical-align: middle; padding: 10px 12px; white-space: nowrap;">
+                ${statusBadge}
+            </td>
+            <td style="width: 15%; text-align: center; vertical-align: middle; padding: 10px 12px; white-space: nowrap;">
+                <div style="display: flex; gap: 6px; justify-content: center; align-items: center; white-space: nowrap;">
+                    <button class="currency-action-btn" onclick="openCurrencyEditModal('${code}')" title="Edit Currency"><i class="fas fa-pen" style="font-size: 0.7rem;"></i></button>
+                    <button class="currency-action-btn btn-delete" onclick="deleteCurrency('${code}')" title="Delete Currency"><i class="fas fa-trash-can" style="font-size: 0.7rem;"></i></button>
+                </div>
+            </td>
+        `;
+        tbody.appendChild(tr);
+    });
+}
+
+// HANDLE ADD NEW CURRENCY FORM ACTION
+function handleAddCurrency(e) {
+    e.preventDefault();
+    if (activeAdminRole !== "SUPER_ADMIN") {
+        if (typeof showToast === "function") showToast("Adding currencies is restricted to SUPER_ADMIN.", "danger");
+        return;
+    }
+    const code = document.getElementById("add-curr-code").value.trim().toUpperCase();
+    const name = document.getElementById("add-curr-name").value.trim();
+    const rate = parseFloat(document.getElementById("add-curr-rate").value);
+    const status = document.getElementById("add-curr-status").value;
+    
+    if (code.length !== 3) {
+        if (typeof showToast === "function") showToast("Currency Code must be exactly 3 characters.", "danger");
+        return;
+    }
+    if (isNaN(rate) || rate <= 0) {
+        if (typeof showToast === "function") showToast("Base Exchange Rate must be a positive non-zero number.", "danger");
+        return;
+    }
+    
+    const db = getDB();
+    if (!db.currencies) db.currencies = {};
+    if (db.currencies[code]) {
+        if (typeof showToast === "function") showToast(`Currency code ${code} already exists.`, "danger");
+        return;
+    }
+    
+    db.currencies[code] = { code, name, rate, status, displayOrder: Object.keys(db.currencies).length + 1 };
+    
+    if (typeof writeAuditLog === "function") {
+        writeAuditLog(
+            currentAdmin ? currentAdmin.email : "Admin",
+            "Currency Created",
+            `Created Currency: ${code} (${name}) with rate ₦${rate.toLocaleString()} and status ${status}`
+        );
+    }
+    
+    if (!db.currencyHistory) db.currencyHistory = [];
+    db.currencyHistory.unshift({
+        currency: code,
+        oldRate: rate,
+        newRate: rate,
+        operator: currentAdmin ? currentAdmin.email : "Admin",
+        timestamp: new Date().toISOString()
+    });
+    
+    if (!db.settings) db.settings = { rates: {} };
+    if (!db.settings.rates) db.settings.rates = {};
+    Object.keys(db.settings.rates).forEach(brand => {
+        db.settings.rates[brand][code] = rate;
+    });
+    
+    saveDB(db);
+    if (typeof showToast === "function") showToast(`Currency ${code} added successfully!`, "success");
+    
+    const form = document.getElementById("admin-add-currency-form");
+    if (form) form.reset();
+    
+    loadAdminSession();
+}
+
+// TOGGLE CURRENCY ENABLE/DISABLE STATUS
+function toggleCurrencyStatus(code) {
+    const db = getDB();
+    if (!db.currencies || !db.currencies[code]) return;
+    
+    const currentStatus = db.currencies[code].status;
+    const newStatus = currentStatus === "ACTIVE" ? "DISABLED" : "ACTIVE";
+    db.currencies[code].status = newStatus;
+    
+    if (typeof writeAuditLog === "function") {
+        writeAuditLog(
+            currentAdmin ? currentAdmin.email : "Admin",
+            "Currency Status Toggled",
+            `Currency: ${code} status changed from ${currentStatus} to ${newStatus}`
+        );
+    }
+    
+    saveDB(db);
+    if (typeof showToast === "function") showToast(`Currency ${code} is now ${newStatus.toLowerCase()}.`, "success");
+    loadAdminSession();
+}
+
+// OPEN CURRENCY EDIT MODAL
+function openCurrencyEditModal(code) {
+    const db = getDB();
+    if (!db.currencies || !db.currencies[code]) return;
+    
+    const c = db.currencies[code];
+    const origCodeInput = document.getElementById("edit-curr-orig-code");
+    const codeInput = document.getElementById("edit-curr-code");
+    const nameInput = document.getElementById("edit-curr-name");
+    const rateInput = document.getElementById("edit-curr-rate");
+    const orderInput = document.getElementById("edit-curr-order");
+    const statusInput = document.getElementById("edit-curr-status");
+
+    if (origCodeInput) origCodeInput.value = code;
+    if (codeInput) codeInput.value = code;
+    if (nameInput) nameInput.value = c.name || "";
+    if (rateInput) rateInput.value = c.rate || 0;
+    if (orderInput) orderInput.value = c.displayOrder || 1;
+    if (statusInput) statusInput.value = c.status || "ACTIVE";
+
+    const modal = document.getElementById("currency-edit-modal");
+    if (modal) {
+        modal.classList.add("active");
+        modal.style.display = "flex";
+    }
+}
+
+function closeCurrencyEditModal() {
+    const modal = document.getElementById("currency-edit-modal");
+    if (modal) {
+        modal.classList.remove("active");
+        modal.style.display = "none";
+    }
+}
+
+// SUBMIT CURRENCY EDIT MODAL FORM
+function handleEditCurrencySubmit(e) {
+    e.preventDefault();
+    if (activeAdminRole !== "SUPER_ADMIN") {
+        if (typeof showToast === "function") showToast("Editing currencies is restricted to SUPER_ADMIN.", "danger");
+        return;
+    }
+    const code = document.getElementById("edit-curr-orig-code").value;
+    const name = document.getElementById("edit-curr-name").value.trim();
+    const rate = parseFloat(document.getElementById("edit-curr-rate").value);
+    const displayOrder = parseInt(document.getElementById("edit-curr-order").value) || 1;
+    const status = document.getElementById("edit-curr-status").value;
+
+    if (!name || isNaN(rate) || rate <= 0) {
+        if (typeof showToast === "function") showToast("Please fill in a valid currency name and positive rate.", "warning");
+        return;
+    }
+
+    const db = getDB();
+    if (!db.currencies || !db.currencies[code]) return;
+
+    const oldRate = db.currencies[code].rate;
+    db.currencies[code].name = name;
+    db.currencies[code].rate = rate;
+    db.currencies[code].displayOrder = displayOrder;
+    db.currencies[code].status = status;
+
+    // Scale card preset rates
+    if (db.settings && db.settings.rates) {
+        Object.keys(db.settings.rates).forEach(brand => {
+            if (!db.settings.rates[brand]) db.settings.rates[brand] = {};
+            db.settings.rates[brand][code] = rate;
+        });
+    }
+
+    // Record rate history
+    if (!db.currencyHistory) db.currencyHistory = [];
+    if (oldRate !== rate) {
+        db.currencyHistory.unshift({
+            currency: code,
+            oldRate: oldRate,
+            newRate: rate,
+            operator: currentAdmin ? currentAdmin.email : "Admin",
+            timestamp: new Date().toISOString()
+        });
+    }
+
+    saveDB(db);
+    closeCurrencyEditModal();
+    if (typeof showToast === "function") showToast(`Currency ${code} updated successfully!`, "success");
+    loadAdminSession();
+}
+
+// DELETE CURRENCY
+function deleteCurrency(code) {
+    if (code === "USD" || code === "EUR" || code === "NGN") {
+        if (typeof showToast === "function") showToast(`Base system currency ${code} cannot be deleted.`, "danger");
+        return;
+    }
+    
+    if (!confirm(`Are you sure you want to delete the currency ${code}? This will remove it from calculator options.`)) {
+        return;
+    }
+    
+    const db = getDB();
+    if (!db.currencies || !db.currencies[code]) return;
+    
+    delete db.currencies[code];
+    
+    if (db.settings && db.settings.rates) {
+        Object.keys(db.settings.rates).forEach(brand => {
+            if (db.settings.rates[brand]) {
+                delete db.settings.rates[brand][code];
+            }
+        });
+    }
+    
+    if (typeof writeAuditLog === "function") {
+        writeAuditLog(
+            currentAdmin ? currentAdmin.email : "Admin",
+            "Currency Deleted",
+            `Deleted Currency: ${code}`
+        );
+    }
+    
+    saveDB(db);
+    if (typeof showToast === "function") showToast(`Currency ${code} deleted successfully.`, "success");
+    loadAdminSession();
+}
+
 // RENDER CURRENCY REGISTRY LIST
 function renderCurrencyManager() {
     const db = getDB();
@@ -4582,16 +4843,40 @@ function renderAdminStaffTable() {
 
         const tr = document.createElement("tr");
         tr.innerHTML = `
-            <td><strong>${user.name}</strong> ${user.email === currentAdmin.email ? '<span style="font-size:0.7rem; color:var(--primary); font-weight:700;">(You)</span>' : ''}</td>
+            <td><strong>${user.name}</strong> ${currentAdmin && user.email === currentAdmin.email ? '<span style="font-size:0.7rem; color:var(--primary); font-weight:700;">(You)</span>' : ''}</td>
             <td><code>${user.email}</code></td>
             <td class="text-center">${roleBadge}</td>
             <td class="text-center"><span class="badge badge-success" style="font-size:0.7rem;"><i class="fas fa-lock"></i> 6-Digit PIN Configured</span></td>
             <td class="text-center">
-                <button class="btn btn-secondary btn-sm" onclick="openResetAdminPinModal('${user.email}')" title="Reset PIN" style="font-size:0.75rem;"><i class="fas fa-key"></i> Reset PIN</button>
+                <div style="display: flex; gap: 6px; justify-content: center; align-items: center;">
+                    <button class="btn btn-secondary btn-sm" onclick="openResetAdminPinModal('${user.email}')" title="Reset PIN" style="font-size:0.75rem;"><i class="fas fa-key"></i> Reset PIN</button>
+                    ${currentAdmin && user.email !== currentAdmin.email ? `<button class="btn btn-danger btn-sm" onclick="deleteAdminStaffAccount('${user.email}')" title="Delete Staff Account" style="font-size:0.75rem;"><i class="fas fa-trash-can"></i> Delete</button>` : ''}
+                </div>
             </td>
         `;
         tbody.appendChild(tr);
     });
+}
+
+function deleteAdminStaffAccount(email) {
+    if (activeAdminRole !== "SUPER_ADMIN") {
+        if (typeof showToast === "function") showToast("Deleting staff accounts requires SUPER_ADMIN role.", "danger");
+        return;
+    }
+    if (currentAdmin && email === currentAdmin.email) {
+        if (typeof showToast === "function") showToast("You cannot delete your own admin account while logged in.", "danger");
+        return;
+    }
+    if (!confirm(`Are you sure you want to remove admin staff account ${email}?`)) {
+        return;
+    }
+    const db = getDB();
+    if (db.users && db.users[email]) {
+        delete db.users[email];
+        saveDB(db);
+        if (typeof showToast === "function") showToast(`Admin staff account ${email} removed.`, "success");
+        loadAdminSession();
+    }
 }
 
 function openCreateAdminModal() {
