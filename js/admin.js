@@ -3951,9 +3951,9 @@ function setupAdminSupportRealTimeCheck() {
         syncAdminActiveChat();
     });
     
-    // Start loop interval
+    // Start loop interval (every 3 seconds when active)
     setInterval(() => {
-        if (!currentAdmin) return;
+        if (document.hidden || !currentAdmin) return;
         
         const db = getDB();
         const currentTickets = db.tickets || [];
@@ -3974,7 +3974,7 @@ function setupAdminSupportRealTimeCheck() {
         }
         
         syncAdminActiveChat();
-    }, 1500);
+    }, 3000);
 }
 
 // Sync active chat feed message updates, user typing states, and metadata in real-time

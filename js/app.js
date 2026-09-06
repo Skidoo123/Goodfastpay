@@ -213,13 +213,31 @@ const INITIAL_DATABASE = {
     adjustments: []
 };
 
+// Database In-Memory Cache for Maximum Performance & Zero-Lag Operations
+let cachedDB = null;
+
+function invalidateDBCache() {
+    cachedDB = null;
+}
+
+if (typeof window !== "undefined") {
+    window.addEventListener('storage', (e) => {
+        if (e.key === 'goodfastpay_db') {
+            invalidateDBCache();
+        }
+    });
+}
+
 // Database Initializer
 function getDB() {
+    if (cachedDB) return cachedDB;
+
     if (!localStorage.getItem("goodfastpay_db")) {
         localStorage.setItem("goodfastpay_db", JSON.stringify(INITIAL_DATABASE));
     }
     let db = JSON.parse(localStorage.getItem("goodfastpay_db"));
     let dirty = false;
+
     if (!db.submissions) {
         db.submissions = INITIAL_DATABASE.submissions || [];
         dirty = true;
@@ -236,9 +254,10 @@ function getDB() {
         db.adjustments = [];
         dirty = true;
     }
-    // Enforce 3 core trading currencies (USD, EUR, GBP) + NGN base payout currency
-    db.currencies = DEFAULT_SYSTEM_CURRENCIES;
-    dirty = true;
+    if (!db.currencies) {
+        db.currencies = DEFAULT_SYSTEM_CURRENCIES;
+        dirty = true;
+    }
     // Auto-migrate dual wallet balances (NGN & USD) for all users
     if (db.users) {
         Object.keys(db.users).forEach(email => {
@@ -352,10 +371,12 @@ function getDB() {
     if (dirty) {
         localStorage.setItem("goodfastpay_db", JSON.stringify(db));
     }
-    return db;
+    cachedDB = db;
+    return cachedDB;
 }
 
 function saveDB(db) {
+    cachedDB = db;
     try {
         localStorage.setItem("goodfastpay_db", JSON.stringify(db));
     } catch (e) {

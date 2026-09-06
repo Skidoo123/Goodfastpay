@@ -5284,11 +5284,12 @@ function setupUserSupportRealTimeCheck() {
         syncUserActiveChat();
     });
     
-    // Poll loop checks (every 1.5 seconds)
+    // Poll loop checks (every 3 seconds when tab is active)
     setInterval(() => {
+        if (document.hidden) return;
         syncUserActiveChat();
         updateUserSupportBadge();
-    }, 1500);
+    }, 3000);
 }
 
 // Synchronize active chat messages and typing indicator status in real-time
