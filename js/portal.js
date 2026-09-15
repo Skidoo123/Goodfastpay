@@ -273,7 +273,7 @@ function updateDashboardStats() {
     
     // Available NGN Balance display
     const balanceText = "₦" + user.wallet.balance.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
-    const usdBalanceText = "$" + (user.wallet.usdBalance !== undefined ? user.wallet.usdBalance : 250.00).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+    const usdBalanceText = "$" + (user.wallet.usdBalance !== undefined ? user.wallet.usdBalance : 0.00).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
     const isHidden = localStorage.getItem("hideBalance") === "true";
     
     const balanceEl = document.getElementById("stat-wallet-balance");
@@ -407,24 +407,35 @@ function handleUSDToNGNSwapSubmit(e) {
     closeUSDConverterModal();
     loadSession();
 }
-    
-    // Total Purchases Counter
-    const userPurchases = db.inventory ? db.inventory.filter(item => item.status === "SOLD" && item.purchasedBy === user.email) : [];
-    const statPurchasesEl = document.getElementById("stat-purchases");
-    if (statPurchasesEl) {
-        statPurchasesEl.textContent = userPurchases.length;
-    }
-    
-    // Update notifications count badge in sidebar
-    const unreadCount = user.notifications.filter(n => !n.read).length;
-    const countBadge = document.getElementById("nav-notif-count");
-    if (unreadCount > 0) {
-        countBadge.textContent = unreadCount;
-        countBadge.style.display = "inline-flex";
-    } else {
-        countBadge.style.display = "none";
-    }
+
+// Standalone counters (BUG-02: this block was orphaned outside any function,
+// referencing undeclared `db`/`user` and breaking the whole file).
+function refreshPortalCounters() {
+    try {
+        const db = getDB();
+        const sessionUser = (typeof getSessionUser === 'function') ? getSessionUser() : null;
+        if (!sessionUser || !db.users) return;
+        const user = db.users[sessionUser.email];
+        if (!user) return;
+        // Total Purchases Counter
+        const userPurchases = db.inventory ? db.inventory.filter(item => item.status === "SOLD" && item.purchasedBy === user.email) : [];
+        const statPurchasesEl = document.getElementById("stat-purchases");
+        if (statPurchasesEl) {
+            statPurchasesEl.textContent = String(userPurchases.length);
+        }
+        // Update notifications count badge in sidebar
+        const unreadCount = (user.notifications || []).filter(n => !n.read).length;
+        const countBadge = document.getElementById("nav-notif-count");
+        if (!countBadge) return;
+        if (unreadCount > 0) {
+            countBadge.textContent = String(unreadCount);
+            countBadge.style.display = "inline-flex";
+        } else {
+            countBadge.style.display = "none";
+        }
+    } catch (e) { console.warn('counters:', e.message); }
 }
+document.addEventListener("DOMContentLoaded", () => { setTimeout(refreshPortalCounters, 800); });
 
 // Supported Popular & Extended Brand Catalog definitions
 const POPULAR_BRANDS = ["Steam", "Amazon", "Google Play", "Apple/iTunes", "Razer Gold", "Sephora"];
@@ -883,6 +894,14 @@ function handleCardSubmit(e) {
         return;
     }
 
+    // Resolve the server-synced rate BEFORE use (BUG-04: `rate` was undeclared).
+    const rateMap = (getDB().settings && getDB().settings.rates && getDB().settings.rates[brand]) || {};
+    const rate = parseFloat(rateMap[currency]);
+    if (!isFinite(rate) || rate <= 0) {
+        showToast("Rate unavailable for this card. Please try again after rates sync.", "danger");
+        return;
+    }
+
     if (!hasCode && !hasImage) {
         showToast("Please enter the card PIN code OR upload card front/back images.", "danger");
         return;
@@ -1064,7 +1083,7 @@ function renderHeroBalance() {
 
     const isHidden = localStorage.getItem("hideBalance") === "true";
     const ngnVal = user.wallet.balance || 0;
-    const usdVal = user.wallet.usdBalance !== undefined ? user.wallet.usdBalance : 250.00;
+    const usdVal = user.wallet.usdBalance !== undefined ? user.wallet.usdBalance : 0.00;
 
     const ngnText = "₦" + ngnVal.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
     const usdText = "$" + usdVal.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
@@ -1120,7 +1139,7 @@ function onWithdrawSourceWalletChange() {
     const inputPrefix = document.querySelector("#withdrawal-request-form .input-currency-prefix");
 
     if (currency === "USD") {
-        const usdVal = user.wallet.usdBalance !== undefined ? user.wallet.usdBalance : 250.00;
+        const usdVal = user.wallet.usdBalance !== undefined ? user.wallet.usdBalance : 0.00;
         if (symEl) symEl.textContent = "$";
         if (numEl) numEl.textContent = usdVal.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
         if (inputPrefix) inputPrefix.textContent = "$";
@@ -1142,7 +1161,7 @@ function handleWithdrawAll() {
 
     if (user && amountInput) {
         if (currency === "USD") {
-            const usdVal = user.wallet.usdBalance !== undefined ? user.wallet.usdBalance : 250.00;
+            const usdVal = user.wallet.usdBalance !== undefined ? user.wallet.usdBalance : 0.00;
             amountInput.value = usdVal;
         } else {
             amountInput.value = user.wallet.balance;
@@ -1190,7 +1209,7 @@ function updateWithdrawalBreakdown() {
     const submitBtn = document.getElementById("btn-submit-withdraw");
     if (submitBtn) {
         const hasBank = user && user.bankDetails && user.bankDetails.bankName;
-        const currentBal = currency === "USD" ? (user && user.wallet ? (user.wallet.usdBalance !== undefined ? user.wallet.usdBalance : 250.00) : 0) : (user && user.wallet ? user.wallet.balance : 0);
+        const currentBal = currency === "USD" ? (user && user.wallet ? (user.wallet.usdBalance !== undefined ? user.wallet.usdBalance : 0.00) : 0) : (user && user.wallet ? user.wallet.balance : 0);
         const hasBalance = amount <= currentBal;
         const minVal = currency === "USD" ? 5 : 500;
         const isValidAmount = amount >= minVal;
@@ -1533,7 +1552,7 @@ function executeWithdrawal(amount, currency = "NGN") {
     let amountStr = "";
 
     if (currency === "USD") {
-        if (user.wallet.usdBalance === undefined) user.wallet.usdBalance = 250.00;
+        if (user.wallet.usdBalance === undefined) user.wallet.usdBalance = 0.00;
         if (amount > user.wallet.usdBalance) {
             showToast("Insufficient USD balance for withdrawal.", "danger");
             return;
@@ -1633,7 +1652,7 @@ function handleWithdrawalSubmit(e) {
 
     const db = getDB();
     const user = db.users[currentUser.email];
-    const currentBal = currency === "USD" ? (user.wallet.usdBalance !== undefined ? user.wallet.usdBalance : 250.00) : user.wallet.balance;
+    const currentBal = currency === "USD" ? (user.wallet.usdBalance !== undefined ? user.wallet.usdBalance : 0.00) : user.wallet.balance;
 
     if (amount > currentBal) {
         showToast(`Insufficient ${currency} wallet balance to fulfill withdrawal.`, "danger");
@@ -1703,10 +1722,25 @@ function prepopulateBankForm() {
 function handleBankUpdate(e) {
     e.preventDefault();
     if (!validateUserStatusActive()) return;
-    
-    const bankName = document.getElementById("bank-name").value;
-    const number = document.getElementById("bank-account-number").value.trim();
-    const holder = document.getElementById("bank-account-holder").value.trim();
+
+    // bank-name select was replaced by modal-bank-name/custom dropdown;
+    // resolve in priority order and fail with a toast, never a TypeError.
+    const bankEl = document.getElementById("modal-bank-name")
+        || document.getElementById("bank-name");
+    const numEl = document.getElementById("bank-account-number");
+    const holderEl = document.getElementById("bank-account-holder");
+    if (!bankEl || !numEl || !holderEl) {
+        showToast("Bank form is not ready. Please reload and try again.", "danger");
+        return;
+    }
+    const bankName = (bankEl.value || "").trim();
+    const number = numEl.value.trim();
+    const holder = holderEl.value.trim();
+
+    if (!bankName) {
+        showToast("Please select your bank.", "danger");
+        return;
+    }
     
     if (!/^\d{10}$/.test(number)) {
         showToast("Bank account number must be exactly 10 digits.", "danger");

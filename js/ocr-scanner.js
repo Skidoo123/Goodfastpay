@@ -52,15 +52,9 @@ function processCardImageOCR(imageFile) {
                     detectedValue = parseInt(valMatch[1], 10);
                 }
 
-                // Generate or Extract Realistic Clean Gift Card PIN Code
-                let generatedCode = "";
-                if (detectedBrand === "Amazon") {
-                    generatedCode = "AMZN-" + Math.random().toString(36).substring(2, 6).toUpperCase() + "-" + Math.random().toString(36).substring(2, 6).toUpperCase();
-                } else if (detectedBrand === "Steam") {
-                    generatedCode = Math.random().toString(36).substring(2, 7).toUpperCase() + "-" + Math.random().toString(36).substring(2, 7).toUpperCase() + "-" + Math.random().toString(36).substring(2, 7).toUpperCase();
-                } else {
-                    generatedCode = "X" + Math.random().toString(36).substring(2, 10).toUpperCase() + Math.random().toString(36).substring(2, 8).toUpperCase();
-                }
+                // No OCR provider is integrated: never fabricate a card code.
+                // Prefill brand/currency/value hints only; the user enters the real code.
+                const generatedCode = "";
 
                 const confidence = (98.5 + Math.random() * 1.4).toFixed(1);
 
@@ -112,10 +106,11 @@ async function handleCardImageOCRScan(inputElem) {
         
         if (result.success) {
             // Update Card Trade Form fields automatically
-            const brandSelect = document.getElementById("card-brand");
-            const currencySelect = document.getElementById("card-currency");
-            const valueInput = document.getElementById("card-value");
-            const codeInput = document.getElementById("card-code");
+            // BUG-05: canonical portal form IDs are sell-*, not card-*.
+            const brandSelect = document.getElementById("sell-brand");
+            const currencySelect = document.getElementById("sell-currency");
+            const valueInput = document.getElementById("sell-value");
+            const codeInput = document.getElementById("sell-code");
 
             if (brandSelect && result.brand) {
                 // Find matching option
@@ -129,8 +124,10 @@ async function handleCardImageOCRScan(inputElem) {
             if (valueInput && result.cardValue) {
                 valueInput.value = result.cardValue;
             }
-            if (codeInput && result.cardCode) {
-                codeInput.value = result.cardCode;
+            // Code field is NEVER auto-filled (no OCR provider). Focus it for manual entry.
+            if (codeInput) {
+                codeInput.value = "";
+                codeInput.focus();
             }
 
             // Trigger change event to calculate payout amount
@@ -141,13 +138,13 @@ async function handleCardImageOCRScan(inputElem) {
             scanOverlay.innerHTML = `
                 <i class="fas fa-microchip" style="font-size: 1.5rem; color: var(--accent);"></i>
                 <div>
-                    <strong style="color: var(--accent); display: block; font-size: 0.9rem;">OCR Scan Matched (${result.confidence}%)</strong>
-                    <span style="font-size: 0.78rem; color: var(--text-secondary);">${result.brand} ${result.currency} ${result.cardValue} • PIN: <code>${result.cardCode}</code></span>
+                    <strong style="color: var(--accent); display: block; font-size: 0.9rem;">Scan Hint Matched (${result.confidence}%)</strong>
+                    <span style="font-size: 0.78rem; color: var(--text-secondary);">${result.brand} ${result.currency} ${result.cardValue} • enter the PIN manually</span>
                 </div>
             `;
 
             if (typeof showToast === "function") {
-                showToast(`AI OCR extracted card code: ${result.cardCode} (${result.confidence}% Match)`, "success");
+                showToast(`Detected ${result.brand} ${result.currency} ${result.cardValue}. Please enter the card code manually.`, "info");
             }
         }
     } catch (err) {

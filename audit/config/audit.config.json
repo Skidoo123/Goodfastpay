@@ -1,0 +1,39 @@
+{
+  "thresholds": {
+    "reconciliation_drift_max": 0,
+    "stuck_withdrawal_minutes": 60,
+    "unbacked_credit_max": 0,
+    "duplicate_idempotency_max": 0
+  },
+  "allowlists": {
+    "tables_without_write_policies": [
+      "ledger_entries",
+      "admin_audit_log",
+      "user_pins"
+    ],
+    "tables_with_public_read": [
+      "inventory",
+      "currencies",
+      "brand_rates"
+    ],
+    "files_allowed_innerHTML": [
+      "js/safe-dom.js"
+    ],
+    "legacy_warn_patterns": [
+      "admin string in UI-only gates + fixtures (see AUDIT_LOG.md)",
+      "anon JWT consts in js/supabase-config.js (public by design)"
+    ]
+  },
+  "server_actions": {
+    "client": [
+      "create_submission", "submit_card", "request_withdrawal",
+      "update_profile", "save_bank", "delete_bank", "log_security_event"
+    ],
+    "admin": [
+      "approve_submission", "reject_submission", "approve_withdrawal",
+      "decline_withdrawal", "adjust_wallet_balance", "update_user_status",
+      "add_inventory", "delete_inventory", "dispatch_broadcast",
+      "sync_currencies_and_rates"
+    ]
+  }
+}

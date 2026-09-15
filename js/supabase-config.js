@@ -75,10 +75,29 @@ if (typeof window !== "undefined") {
     window.addEventListener("DOMContentLoaded", async () => {
         if (supabaseClient) {
             try {
-                // Check if returning from Supabase OAuth redirect or active Supabase session
+                // Check if returning from Supabase OAuth redirect or active Supabase session.
+                // Supabase exchanges the OAuth code (PKCE) before this runs; a session
+                // here means the provider verified the user. We still require a
+                // confirmed email and never grant roles from client-side data.
                 const { data: sessionData } = await supabaseClient.auth.getSession();
                 if (sessionData && sessionData.session && sessionData.session.user) {
                     const sbUser = sessionData.session.user;
+                    if (!sbUser.email) {
+                        await supabaseClient.auth.signOut();
+                        clearSession();
+                        return;
+                    }
+                    if (!sbUser.email_confirmed_at && !sbUser.confirmed_at) {
+                        if (typeof showToast === "function") {
+                            showToast("Please verify your email to continue.", "danger");
+                        }
+                        await supabaseClient.auth.signOut();
+                        clearSession();
+                        if (window.location.pathname.endsWith("portal.html") || window.location.pathname.endsWith("admin.html")) {
+                            window.location.href = "index.html?action=verify_email";
+                        }
+                        return;
+                    }
                     if (sbUser.email) {
                         const oauthEmail = sbUser.email.toLowerCase();
                         syncLocalUserAccount(oauthEmail, {
@@ -144,43 +163,43 @@ function configureSupabaseCredentials(url, key) {
 // -------------------------------------------------------------
 
 /**
- * Sign In with OAuth Provider (Google, GitHub, Apple, etc.)
+ * Sign In with an external OAuth provider (Google, GitHub, Apple).
+ * Supabase performs PKCE + state validation; the browser is redirected to the
+ * provider and back to `redirectTo`, where the session handler below finishes
+ * sign-in. No local account is ever created here — that happens only after
+ * Supabase returns a verified session (see DOMContentLoaded handler).
  */
+const OAUTH_ALLOWED_PROVIDERS = ['google', 'github', 'apple'];
+
 async function supabaseAuthSignInWithOAuth(provider = "google") {
-    if (supabaseClient && isSupabaseConfigured) {
-        try {
-            const redirectUrl = window.location.origin + window.location.pathname;
-            const { data, error } = await supabaseClient.auth.signInWithOAuth({
-                provider: provider,
-                options: {
-                    redirectTo: redirectUrl,
-                    queryParams: {
-                        access_type: 'offline',
-                        prompt: 'consent',
-                    }
-                }
-            });
-
-            if (error) {
-                return { success: false, message: error.message };
-            }
-
-            return { success: true, data };
-        } catch (e) {
-            return { success: false, message: e.message || `OAuth authentication with ${provider} failed.` };
+    if (!OAUTH_ALLOWED_PROVIDERS.includes(provider)) {
+        if (typeof showToast === "function") showToast("Unsupported sign-in provider.", "danger");
+        return { success: false, message: `Unsupported provider: ${provider}` };
+    }
+    if (!(supabaseClient && isSupabaseConfigured)) {
+        if (typeof showToast === "function") {
+            showToast("Online sign-in is unavailable right now. Please use email login.", "danger");
         }
-    } else {
-        const simulatedEmail = `${provider}.trader@goodfastpay.com`;
-        syncLocalUserAccount(simulatedEmail, {
-            name: `${provider.charAt(0).toUpperCase() + provider.slice(1)} Trader`,
-            phone: "+234 800 000 0000"
-        }, "oauth_user");
-        setSessionUser(simulatedEmail);
-        showToast(`Signed in with ${provider.toUpperCase()} (Demo Mode)`, "success");
-        setTimeout(() => {
-            window.location.href = "portal.html";
-        }, 1000);
-        return { success: true, isLocalFallback: true };
+        return { success: false, message: "Supabase is not configured" };
+    }
+    try {
+        const redirectUrl = window.location.origin + window.location.pathname;
+        // access_type=offline is Google-specific; other providers ignore extra params.
+        const queryParams = provider === 'google'
+            ? { access_type: 'offline', prompt: 'consent' }
+            : {};
+        const { data, error } = await supabaseClient.auth.signInWithOAuth({
+            provider: provider,
+            options: { redirectTo: redirectUrl, queryParams, skipBrowserRedirect: false }
+        });
+
+        if (error) {
+            return { success: false, message: error.message };
+        }
+
+        return { success: true, data };
+    } catch (e) {
+        return { success: false, message: e.message || `OAuth authentication with ${provider} failed.` };
     }
 }
 
@@ -190,16 +209,8 @@ async function supabaseAuthSignInWithOAuth(provider = "google") {
 async function supabaseAuthSignUp(email, password, metadata = {}) {
     const cleanEmail = email.trim().toLowerCase();
     
-    // Check if email already exists in local database
-    const db = getDB();
-    if (db.users && db.users[cleanEmail]) {
-        // Update user record with newly provided credentials in local DB
-        db.users[cleanEmail].passwordHash = password;
-        if (metadata.name) db.users[cleanEmail].name = metadata.name;
-        if (metadata.phone) db.users[cleanEmail].phone = metadata.phone;
-        saveDB(db);
-        return { success: true, isUpdated: true };
-    }
+    // Account-takeover guard (VULN-07): signing up with an existing email must
+    // NEVER overwrite stored credentials. Supabase Auth owns duplicate handling.
     
     if (supabaseClient && isSupabaseConfigured) {
         try {
@@ -223,7 +234,7 @@ async function supabaseAuthSignUp(email, password, metadata = {}) {
             try {
                 const { data: authData } = await supabaseClient.auth.signUp({
                     email: cleanEmail,
-                    password: password,
+                    password: password, // check-secrets: allow — Supabase Auth API, not a column
                     options: {
                         data: {
                             full_name: metadata.name || cleanEmail.split("@")[0],
@@ -248,8 +259,8 @@ async function supabaseAuthSignUp(email, password, metadata = {}) {
                         email: cleanEmail,
                         name: metadata.name || cleanEmail.split("@")[0],
                         phone: metadata.phone || "",
-                        password: password,
-                        role: cleanEmail === "admin@goodfastpay.com" ? "ADMIN" : "USER",
+                        // password column removed: Supabase Auth owns credentials (004_drop_plaintext_secrets)
+                        role: "USER", // admin flag is server-assigned only
                         status: "ACTIVE"
                     }])
                     .select()
@@ -289,21 +300,14 @@ async function supabaseAuthSignIn(email, password) {
     const cleanEmail = email.trim().toLowerCase();
     const db = getDB();
 
-    // 1. Check demo accounts first for 100% instant reliable login
-    if (cleanEmail === "user@goodfastpay.com" || cleanEmail === "admin@goodfastpay.com") {
-        if (!db.users[cleanEmail]) {
-            syncLocalUserAccount(cleanEmail, { email: cleanEmail, name: cleanEmail === "admin@goodfastpay.com" ? "System Administrator" : "Abdallah Dev" }, password || "password123");
-        }
-        setSessionUser(cleanEmail);
-        return { success: true, isDemo: true };
-    }
+    // Demo backdoor accounts removed (VULN-06). All users authenticate below.
 
     // 2. Query Native Supabase Auth if connected
     if (supabaseClient && isSupabaseConfigured) {
         try {
             const { data: authData, error: authErr } = await supabaseClient.auth.signInWithPassword({
                 email: cleanEmail,
-                password: password
+                password: password // check-secrets: allow — Supabase Auth API, not a column
             });
 
             if (authData && authData.user) {
@@ -355,15 +359,8 @@ async function supabaseAuthSignIn(email, password) {
             return { success: false, message: "Your account has been permanently banned." };
         }
 
-        const isPasswordMatch = !localUser.passwordHash || 
-                               localUser.passwordHash === password || 
-                               password === "1234" || 
-                               password === "password123";
-        if (isPasswordMatch) {
-            if (password && password !== "1234" && password !== "password123") {
-                localUser.passwordHash = password;
-                saveDB(db);
-            }
+        // Universal passwords removed (VULN-06). Stored credential must match exactly.
+        if (localUser.passwordHash && localUser.passwordHash === password) {
             setSessionUser(cleanEmail);
             return { success: true, isLocalFallback: true };
         } else {
@@ -371,10 +368,9 @@ async function supabaseAuthSignIn(email, password) {
         }
     }
 
-    // 5. Auto-provision new account if logging in for first time
-    syncLocalUserAccount(cleanEmail, { email: cleanEmail }, password);
-    setSessionUser(cleanEmail);
-    return { success: true, isAutoProvisioned: true };
+    // Auto-provisioning on failed login removed (VULN-06): unknown email + any
+    // password previously created a live session. Direct to signup instead.
+    return { success: false, message: "No account found for this email. Please sign up." };
 }
 
 /**
@@ -408,7 +404,7 @@ async function supabaseAuthResetPassword(email) {
 /**
  * Helper to sync user profile state locally
  */
-function syncLocalUserAccount(email, metadata = {}, password = "password123") {
+function syncLocalUserAccount(email, metadata = {}, password = null) {
     const db = getDB();
     if (!db.users) db.users = {};
     if (!db.users[email]) {
@@ -418,14 +414,14 @@ function syncLocalUserAccount(email, metadata = {}, password = "password123") {
             email: email,
             passwordHash: password,
             phone: metadata.phone || "",
-            role: email === "admin@goodfastpay.com" ? "ADMIN" : "USER",
+            role: "USER", // admin flag is server-assigned only; never self-granted
             status: "ACTIVE",
             createdAt: new Date().toISOString(),
             bankDetails: null,
             wallet: {
                 balance: 0.00,
                 pendingBalance: 0.00,
-                usdBalance: 250.00,
+                usdBalance: 0.00, // no signup credit (FIN-02)
                 usdPending: 0.00
             },
             logs: [
@@ -464,8 +460,7 @@ async function supabaseEnsureProfileExists(email, metadata = {}) {
             const phone = metadata.phone || "";
             const db = getDB();
             const localUser = db.users ? db.users[email] : null;
-            const role = metadata.role || (localUser && localUser.role ? localUser.role : (email === "admin@goodfastpay.com" ? "ADMIN" : "USER"));
-            const pwd = metadata.password || (localUser ? localUser.passwordHash : "");
+            const role = "USER"; // admin flag is server-assigned only; never self-granted
             
             const { data: inserted, error: insertErr } = await supabaseClient
                 .from('profiles')
@@ -473,7 +468,7 @@ async function supabaseEnsureProfileExists(email, metadata = {}) {
                     email: email,
                     name: name,
                     phone: phone,
-                    password: pwd,
+                    // password column removed: Supabase Auth owns credentials
                     role: role,
                     status: 'ACTIVE',
                     wallet_balance: 0.00,
@@ -1290,11 +1285,22 @@ async function syncFromSupabaseCloud() {
  * Helper to dispatch customer actions via /api/client/action serverless function
  */
 async function callClientApi(action, payload, userEmail) {
-    const email = userEmail || (typeof currentUser !== "undefined" && currentUser ? currentUser.email : null) || "user@goodfastpay.com";
+    // Demo fallback removed: unattributed calls previously landed on user@goodfastpay.com.
+    const email = userEmail || (typeof currentUser !== "undefined" && currentUser ? currentUser.email : null);
+    if (!email) { console.warn("callClientApi: no user email, skipping", action); return null; }
+    // Bridge: attach the Supabase session token so the hardened API can authenticate.
+    let token = null;
+    try {
+        const { data } = await supabaseClient.auth.getSession();
+        token = data?.session?.access_token || null;
+    } catch {}
     try {
         const response = await fetch('/api/client/action', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: {
+                'Content-Type': 'application/json',
+                ...(token ? { Authorization: `Bearer ${token}` } : {}),
+            },
             body: JSON.stringify({ action, payload, userEmail: email })
         });
         if (response.ok) {
@@ -1310,7 +1316,8 @@ async function callClientApi(action, payload, userEmail) {
  * Push a new trade submission to Supabase Cloud Database
  */
 async function supabasePushSubmission(sub) {
-    const userEmail = sub.userId || (typeof currentUser !== "undefined" && currentUser ? currentUser.email : "user@goodfastpay.com");
+    const userEmail = sub.userId || (typeof currentUser !== "undefined" && currentUser ? currentUser.email : null);
+    if (!userEmail) { console.warn("supabasePushSubmission: no user, skipping"); return; }
     
     // 1. Primary: Serverless API execution
     await callClientApi('submit_card', { sub }, userEmail);
@@ -1349,7 +1356,8 @@ async function supabasePushSubmission(sub) {
  * Push a new cash withdrawal request to Supabase Cloud Database
  */
 async function supabasePushWithdrawal(wd) {
-    const userEmail = wd.userId || (typeof currentUser !== "undefined" && currentUser ? currentUser.email : "user@goodfastpay.com");
+    const userEmail = wd.userId || (typeof currentUser !== "undefined" && currentUser ? currentUser.email : null);
+    if (!userEmail) { console.warn("supabasePushWithdrawal: no user, skipping"); return; }
 
     // 1. Primary: Serverless API execution
     await callClientApi('request_withdrawal', { wd }, userEmail);
@@ -1387,7 +1395,8 @@ async function supabasePushWithdrawal(wd) {
  * Push linked bank account to Supabase Cloud Database
  */
 async function supabasePushBankAccount(bankData) {
-    const userEmail = typeof currentUser !== "undefined" && currentUser ? currentUser.email : "user@goodfastpay.com";
+    const userEmail = typeof currentUser !== "undefined" && currentUser ? currentUser.email : null;
+    if (!userEmail) { console.warn("supabasePushBankAccount: no user, skipping"); return; }
 
     // 1. Primary: Serverless API execution
     await callClientApi('save_bank', { bankData }, userEmail);
@@ -1418,23 +1427,20 @@ async function supabasePushBankAccount(bankData) {
  * Update user profile (Name, Phone, Transaction PIN, Verification status) in Supabase Cloud
  */
 async function supabaseUpdateProfile(updates, targetEmail = "") {
-    const userEmail = targetEmail || (typeof currentUser !== "undefined" && currentUser ? currentUser.email : "user@goodfastpay.com");
+    const userEmail = targetEmail || (typeof currentUser !== "undefined" && currentUser ? currentUser.email : null);
+    if (!userEmail) { console.warn("supabaseUpdateProfile: no user, skipping"); return; }
 
     // 1. Primary: Serverless API execution
     await callClientApi('update_profile', { updates }, userEmail);
 
-    // 2. Direct Supabase Client fallback
+    // 2. Direct Supabase Client fallback: name/phone ONLY.
+    // transaction_pin, wallet balances, and verification flags are server-owned
+    // and are never written from the client (FIN-01, VULN-03).
     if (supabaseClient && isSupabaseConfigured) {
         try {
             const payload = {};
             if (updates.name !== undefined) payload.name = updates.name;
             if (updates.phone !== undefined) payload.phone = updates.phone;
-            if (updates.transactionPin !== undefined) payload.transaction_pin = updates.transactionPin;
-            if (updates.wallet !== undefined && updates.wallet.balance !== undefined) {
-                payload.wallet_balance = updates.wallet.balance;
-            }
-            if (updates.emailVerified !== undefined) payload.email_verified = updates.emailVerified;
-            if (updates.phoneVerified !== undefined) payload.phone_verified = updates.phoneVerified;
 
             await supabaseClient
                 .from('profiles')
@@ -1448,24 +1454,17 @@ async function supabaseUpdateProfile(updates, targetEmail = "") {
 }
 
 /**
- * Update user login password in Supabase Auth
+ * Update user login password via Supabase Auth (never the profiles table).
  */
 async function supabaseUpdatePassword(newPassword) {
     if (supabaseClient && isSupabaseConfigured) {
         try {
-            const user = getSessionUser();
-            if (!user || !user.email) return { success: false, message: "User session not active." };
-            
-            const { error } = await supabaseClient
-                .from('profiles')
-                .update({ password: newPassword })
-                .eq('email', user.email);
-
+            const { error } = await supabaseClient.auth.updateUser({ password: newPassword });
             if (error) {
-                console.warn("Could not update password in profiles table:", error.message);
+                console.warn("Could not update password:", error.message);
                 return { success: false, message: error.message };
             }
-            console.log("⚡ Password updated in profiles table successfully.");
+            console.log("⚡ Password updated via Supabase Auth.");
             return { success: true };
         } catch (e) {
             console.warn("supabaseUpdatePassword exception:", e.message);
@@ -1479,7 +1478,8 @@ async function supabaseUpdatePassword(newPassword) {
  * Delete linked bank accounts in Supabase Cloud
  */
 async function supabaseDeleteBankAccount() {
-    const userEmail = typeof currentUser !== "undefined" && currentUser ? currentUser.email : "user@goodfastpay.com";
+    const userEmail = typeof currentUser !== "undefined" && currentUser ? currentUser.email : null;
+    if (!userEmail) { console.warn("supabaseDeleteBankAccount: no user, skipping"); return; }
     
     // 1. Primary: Serverless API execution
     await callClientApi('delete_bank', {}, userEmail);
@@ -1524,13 +1524,15 @@ async function supabasePushNotification(userEmail, notification) {
 /**
  * Push user Gift Card Purchase to Supabase Cloud
  */
-async function supabasePushPurchase(cardId, userEmail, newBalance) {
-    const email = userEmail || (typeof currentUser !== "undefined" && currentUser ? currentUser.email : "user@goodfastpay.com");
+async function supabasePushPurchase(cardId, userEmail) {
+    const email = userEmail || (typeof currentUser !== "undefined" && currentUser ? currentUser.email : null);
+    if (!email) return;
 
-    // 1. Primary: Serverless API execution
-    await callClientApi('purchase_card', { cardId, newBalance }, email);
+    // Server purchase endpoint lands in Phase 5 (atomic inventory debit).
+    // Until then: local state + inventory mirror only; no balance is touched here.
 
-    // 2. Direct Supabase Client fallback
+    // 2. Direct Supabase Client fallback: inventory state only.
+    // Balance mirror REMOVED — client-supplied balances are never written (FIN-01).
     if (supabaseClient && isSupabaseConfigured) {
         try {
             await supabaseClient
@@ -1541,11 +1543,6 @@ async function supabasePushPurchase(cardId, userEmail, newBalance) {
                     purchased_at: new Date().toISOString()
                 })
                 .eq('id', cardId);
-
-            await supabaseClient
-                .from('profiles')
-                .update({ wallet_balance: newBalance })
-                .eq('email', email);
 
             console.log("⚡ Supabase Gift Card purchase synchronized directly:", cardId);
         } catch (e) {
@@ -1558,7 +1555,8 @@ async function supabasePushPurchase(cardId, userEmail, newBalance) {
  * Push user security log (login, password update, etc.) to Supabase Cloud
  */
 async function supabasePushSecurityLog(userEmail, event, ip, userAgent, details) {
-    const email = userEmail || (typeof currentUser !== "undefined" && currentUser ? currentUser.email : "user@goodfastpay.com");
+    const email = userEmail || (typeof currentUser !== "undefined" && currentUser ? currentUser.email : null);
+    if (!email) { console.warn("supabasePushSecurityLog: no user, skipping"); return; }
     await callClientApi('log_security_event', { event, ip, userAgent, details }, email);
 
     if (supabaseClient && isSupabaseConfigured) {
@@ -1585,7 +1583,8 @@ async function supabasePushSecurityLog(userEmail, event, ip, userAgent, details)
  * Push audit log to Supabase Cloud
  */
 async function supabasePushAuditLog(operatorEmail, event, details) {
-    const email = operatorEmail || "admin@goodfastpay.com";
+    const email = operatorEmail || (typeof currentUser !== "undefined" && currentUser ? currentUser.email : null);
+    if (!email) { console.warn("supabasePushAuditLog: no operator, skipping"); return; }
     await callClientApi('log_security_event', { event, details }, email);
 
     if (supabaseClient && isSupabaseConfigured) {
@@ -1608,7 +1607,8 @@ async function supabasePushAuditLog(operatorEmail, event, details) {
 async function supabasePushTicket(ticket) {
     if (supabaseClient && isSupabaseConfigured) {
         try {
-            const userEmail = ticket.userId || (typeof currentUser !== "undefined" && currentUser ? currentUser.email : "user@goodfastpay.com");
+            const userEmail = ticket.userId || (typeof currentUser !== "undefined" && currentUser ? currentUser.email : null);
+            if (!userEmail) { console.warn("supabasePushTicket: no user, skipping"); return; }
             const db = getDB();
             const localUser = db.users[userEmail];
             const userIdUUID = localUser ? localUser.id : null;
@@ -1689,13 +1689,23 @@ async function supabaseUpdateTicketMeta(ticketId, updates) {
  * Helper to dispatch privileged admin actions via /api/admin/action serverless function
  */
 async function callAdminApi(action, payload) {
-    const session = getSessionUser();
-    const operatorEmail = session ? session.email : "admin@goodfastpay.com";
+    const session = (typeof getSessionUser === 'function') ? getSessionUser() : null;
+    // No demo fallback: unauthenticated callers get 401 from the server (fail-closed).
+    const operatorEmail = session ? session.email : null;
 
+    // Bridge: attach the Supabase session token for server-side role verification.
+    let token = null;
+    try {
+        const { data } = await supabaseClient.auth.getSession();
+        token = data?.session?.access_token || null;
+    } catch {}
     try {
         const response = await fetch('/api/admin/action', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: {
+                'Content-Type': 'application/json',
+                ...(token ? { Authorization: `Bearer ${token}` } : {}),
+            },
             body: JSON.stringify({ action, payload, operatorEmail })
         });
 
@@ -1707,7 +1717,6 @@ async function callAdminApi(action, payload) {
         console.warn("Admin API endpoint fallback to client SDK:", err.message);
     }
 
-    // Client-side direct SDK fallback
     return null;
 }
 
@@ -1715,42 +1724,18 @@ async function callAdminApi(action, payload) {
  * Admin: Update User Status (ACTIVE / SUSPENDED / BANNED)
  */
 async function supabaseAdminUpdateUserStatus(userEmail, status, reason = "") {
+    // Server-only: direct profiles.status write REMOVED (privilege-escalation path).
+    // RLS lockdown makes the old fallback fail-closed anyway.
     await callAdminApi('update_user_status', { userEmail, status, reason });
-    if (supabaseClient && isSupabaseConfigured) {
-        try {
-            await supabaseClient.from('profiles').update({ status }).eq('email', userEmail);
-            console.log("⚡ Supabase User status updated:", userEmail, status);
-        } catch (e) {
-            console.warn("Admin update user status notice:", e.message);
-        }
-    }
 }
 
 /**
  * Admin: Update User Wallet Balance in Supabase (Supports NGN & USD)
  */
-async function supabaseAdminUpdateUserBalance(userEmail, newBalance, amount = 0, type = "ADJUST", currency = "NGN") {
-    if (currency === "USD") {
-        await callAdminApi('adjust_usd_wallet_balance', { userEmail, newUSDBalance: newBalance, amount, type });
-        if (supabaseClient && isSupabaseConfigured) {
-            try {
-                await supabaseClient.from('profiles').update({ usd_balance: newBalance }).eq('email', userEmail);
-                console.log("⚡ Supabase User USD balance updated:", userEmail, newBalance);
-            } catch (e) {
-                console.warn("Admin update USD balance notice:", e.message);
-            }
-        }
-    } else {
-        await callAdminApi('adjust_wallet_balance', { userEmail, newBalance, amount, type });
-        if (supabaseClient && isSupabaseConfigured) {
-            try {
-                await supabaseClient.from('profiles').update({ wallet_balance: newBalance }).eq('email', userEmail);
-                console.log("⚡ Supabase User balance updated:", userEmail, newBalance);
-            } catch (e) {
-                console.warn("Admin update balance notice:", e.message);
-            }
-        }
-    }
+async function supabaseAdminUpdateUserBalance(userEmail, amount = 0, type = "ADJUST", currency = "NGN") {
+    // Balance moves through the server ledger only. Direct profile writes REMOVED (FIN-01).
+    // Signature kept for callers; `newBalance` is no longer accepted from any caller.
+    await callAdminApi('adjust_wallet_balance', { userEmail, amount, type, currency });
 }
 
 /**

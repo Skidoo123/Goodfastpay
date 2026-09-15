@@ -1,0 +1,16 @@
+# CODEOWNERS — who must review what
+# Replace @org/tech-lead etc. with real handles before enforcing.
+
+*                              @org/tech-lead
+/api/                          @org/tech-lead @org/backend
+/supabase/                     @org/tech-lead @org/backend
+/audit/                        @org/tech-lead @org/backend
+/scripts/                      @org/tech-lead @org/backend
+/js/portal.js                  @org/tech-lead @org/frontend
+/js/admin.js                   @org/tech-lead @org/frontend
+/js/supabase-config.js         @org/tech-lead @org/frontend
+*.sql                          @org/tech-lead @org/backend
+.github/                       @org/tech-lead @org/devops
+vercel.json                    @org/tech-lead @org/devops
+package.json                   @org/tech-lead
+README.md DECISIONS.md CHANGELOG.md SECURITY.md CONTRIBUTING.md  @org/tech-lead

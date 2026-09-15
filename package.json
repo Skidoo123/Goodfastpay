@@ -6,7 +6,12 @@
   "description": "Goodfastpay Digital Gift Card & Currency Exchange Platform",
   "scripts": {
     "dev": "npx serve .",
-    "start": "npx serve ."
+    "start": "npx serve .",
+    "serve:local": "node scripts/dev-server.mjs",
+    "test": "node --test --import ./tests/helpers/stub-register.mjs \"tests/**/*.test.js\"",
+    "lint:syntax": "node scripts/scan-syntax.mjs",
+    "lint:secrets": "node scripts/check-secrets.mjs",
+    "verify": "npm run lint:syntax && npm run lint:secrets"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.48.1"

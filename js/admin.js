@@ -348,7 +348,7 @@ function inspectUserProfile(email) {
         <div class="detail-item"><span>Phone Number:</span> <strong>${user.phone || '-'}</strong></div>
         <div class="detail-item"><span>Naira Main Wallet:</span> <strong style="color:var(--accent);">₦${(user.wallet.balance || 0).toLocaleString(undefined, {minimumFractionDigits: 2})}</strong></div>
         <div class="detail-item"><span>Naira Pending:</span> <strong style="color:var(--warning);">₦${(user.wallet.pendingBalance || 0).toLocaleString(undefined, {minimumFractionDigits: 2})}</strong></div>
-        <div class="detail-item"><span>USD Global Vault:</span> <strong style="color:#10b981;">$${(user.wallet.usdBalance !== undefined ? user.wallet.usdBalance : 250.00).toLocaleString(undefined, {minimumFractionDigits: 2})}</strong></div>
+        <div class="detail-item"><span>USD Global Vault:</span> <strong style="color:#10b981;">$${(user.wallet.usdBalance !== undefined ? user.wallet.usdBalance : 0.00).toLocaleString(undefined, {minimumFractionDigits: 2})}</strong></div>
         <div class="detail-item"><span>USD Pending:</span> <strong style="color:var(--warning);">$${(user.wallet.usdPending || 0).toLocaleString(undefined, {minimumFractionDigits: 2})}</strong></div>
 
         <!-- Premium Operations Action Bar -->
@@ -573,7 +573,7 @@ function modalResetTransactionPin(email) {
     const user = db.users[email];
     if (!user) return;
 
-    const action = prompt(`Manage Transaction PIN for ${user.name}:\n\nEnter 'RESET' to clear PIN (prompts user to set new PIN),\nor enter a new 4-digit PIN (e.g. 1234):`, "1234");
+    const action = prompt(`Manage Transaction PIN for ${user.name}:\n\nEnter 'RESET' to clear PIN (prompts user to set new PIN),\nor enter a new 4-digit PIN:`, "");
     if (action === null) return; // cancel
 
     const trimmed = action.trim();
@@ -749,7 +749,7 @@ function handleManualWalletAdjust(e) {
     
     if (type === "CREDIT") {
         if (currency === "USD") {
-            if (user.wallet.usdBalance === undefined) user.wallet.usdBalance = 250.00;
+            if (user.wallet.usdBalance === undefined) user.wallet.usdBalance = 0.00;
             user.wallet.usdBalance += amount;
         } else {
             user.wallet.balance += amount;
@@ -800,13 +800,13 @@ function handleManualWalletAdjust(e) {
         
         showToast(`${currency} wallet credited successfully.`, "success");
     } else {
-        const currentBal = currency === "USD" ? (user.wallet.usdBalance !== undefined ? user.wallet.usdBalance : 250.00) : user.wallet.balance;
+        const currentBal = currency === "USD" ? (user.wallet.usdBalance !== undefined ? user.wallet.usdBalance : 0.00) : user.wallet.balance;
         if (amount > currentBal) {
             showToast(`Adjustment deduction amount exceeds user available ${currency} balance.`, "danger");
             return;
         }
         if (currency === "USD") {
-            if (user.wallet.usdBalance === undefined) user.wallet.usdBalance = 250.00;
+            if (user.wallet.usdBalance === undefined) user.wallet.usdBalance = 0.00;
             user.wallet.usdBalance -= amount;
         } else {
             user.wallet.balance -= amount;
@@ -2712,134 +2712,10 @@ function deleteCurrency(code) {
     loadAdminSession();
 }
 
-// RENDER CURRENCY REGISTRY LIST
-function renderCurrencyManager() {
-    const db = getDB();
-    const tbody = document.getElementById("admin-currencies-tbody");
-    if (!tbody) return;
-    tbody.innerHTML = "";
-    
-    const currencies = db.currencies || {};
-    
-    Object.keys(currencies).forEach(code => {
-        const c = currencies[code];
-        const tr = document.createElement("tr");
-        
-        tr.style.borderBottom = "1px solid var(--border-color)";
-        tr.style.height = "46px";
-        
-        const flagHTML = getCountryFlagEmoji(code);
-        const flagEmoji = flagHTML.split(" ")[0] || "🌐";
-        
-        const statusBadge = c.status === "ACTIVE" 
-            ? `<span class="currency-pill-badge currency-pill-badge-active" onclick="toggleCurrencyStatus('${code}')">Active</span>`
-            : `<span class="currency-pill-badge currency-pill-badge-disabled" onclick="toggleCurrencyStatus('${code}')">Disabled</span>`;
-            
-        tr.innerHTML = `
-            <td style="width: 20%; text-align: left; vertical-align: middle; padding: 10px 12px; white-space: nowrap;">
-                <span style="font-size: 1.05rem; margin-right: 6px; vertical-align: middle;">${flagEmoji}</span>
-                <strong style="font-family: monospace; font-size: 0.88rem; vertical-align: middle; color: var(--text-primary);">${c.code}</strong>
-            </td>
-            <td style="width: 30%; text-align: left; vertical-align: middle; padding: 10px 12px; font-weight: 500; color: var(--text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${c.name}">
-                ${c.name}
-            </td>
-            <td style="width: 20%; text-align: right; vertical-align: middle; padding: 10px 12px; font-weight: 700; font-family: monospace; color: var(--text-primary); white-space: nowrap;">
-                ₦${c.rate.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}
-            </td>
-            <td style="width: 15%; text-align: center; vertical-align: middle; padding: 10px 12px; white-space: nowrap;">
-                ${statusBadge}
-            </td>
-            <td style="width: 15%; text-align: center; vertical-align: middle; padding: 10px 12px; white-space: nowrap;">
-                <div style="display: flex; gap: 6px; justify-content: center; align-items: center; white-space: nowrap;">
-                    <button class="currency-action-btn" onclick="editCurrencyRate('${code}')" title="Edit Currency"><i class="fas fa-pen" style="font-size: 0.7rem;"></i></button>
-                    <button class="currency-action-btn btn-delete" onclick="deleteCurrency('${code}')" title="Delete Currency"><i class="fas fa-trash-can" style="font-size: 0.7rem;"></i></button>
-                </div>
-            </td>
-        `;
-        tbody.appendChild(tr);
-    });
-}
-
-// HANDLE ADD NEW CURRENCY FORM ACTION
-function handleAddCurrency(e) {
-    e.preventDefault();
-    if (activeAdminRole !== "SUPER_ADMIN") {
-        if (typeof showToast === "function") showToast("General Approval authority for currency rates is restricted to SUPER_ADMIN.", "danger");
-        return;
-    }
-    const code = document.getElementById("add-curr-code").value.trim().toUpperCase();
-    const name = document.getElementById("add-curr-name").value.trim();
-    const rate = parseFloat(document.getElementById("add-curr-rate").value);
-    const status = document.getElementById("add-curr-status").value;
-    
-    if (code.length !== 3) {
-        showToast("Currency Code must be exactly 3 characters.", "danger");
-        return;
-    }
-    if (isNaN(rate) || rate <= 0) {
-        showToast("Base Exchange Rate must be a positive non-zero number.", "danger");
-        return;
-    }
-    
-    const db = getDB();
-    if (db.currencies && db.currencies[code]) {
-        showToast(`Currency code ${code} already exists.`, "danger");
-        return;
-    }
-    
-    db.currencies[code] = { code, name, rate, status };
-    
-    // Log audit trail
-    writeAuditLog(
-        currentAdmin.email,
-        "Currency Created",
-        `Created Currency: ${code} (${name}) with rate ₦${rate.toLocaleString()} and status ${status}`
-    );
-    
-    // Record in rate history
-    if (!db.currencyHistory) db.currencyHistory = [];
-    db.currencyHistory.unshift({
-        currency: code,
-        oldRate: rate,
-        newRate: rate,
-        operator: currentAdmin.email,
-        timestamp: new Date().toISOString()
-    });
-    
-    // Initialize default brand rates for this currency
-    Object.keys(db.settings.rates).forEach(brand => {
-        db.settings.rates[brand][code] = rate; // Default card rate matches base rate
-    });
-    
-    saveDB(db);
-    showToast(`Currency ${code} added successfully!`, "success");
-    
-    // Reset form
-    document.getElementById("admin-add-currency-form").reset();
-    
-    // Refresh views
-    loadAdminSession();
-}
-
-// TOGGLE CURRENCY ENABLE/DISABLE STATUS
-function toggleCurrencyStatus(code) {
-    const db = getDB();
-    if (!db.currencies || !db.currencies[code]) return;
-    
-    const currentStatus = db.currencies[code].status;
-    const newStatus = currentStatus === "ACTIVE" ? "DISABLED" : "ACTIVE";
-    db.currencies[code].status = newStatus;
-    
-    writeAuditLog(
-        currentAdmin.email,
-        "Currency Status Toggled",
-        `Currency: ${code} status changed from ${currentStatus} to ${newStatus}`
-    );
-    
-    saveDB(db);
-    showToast(`Currency ${code} is now ${newStatus.toLowerCase()}.`, "success");
-    loadAdminSession();
-}
+// NOTE (BUG-01): a duplicate renderCurrencyManager() lived here and broke
+// parsing of this entire file. Removed; the fuller implementation above wins.
+// NOTE (BUG-01b): duplicate handleAddCurrency/toggleCurrencyStatus/deleteCurrency
+// copies removed below; the first implementations above are canonical.
 
 // EDIT BASE EXCHANGE RATE & NAME
 function editCurrencyRate(code) {
@@ -2933,40 +2809,6 @@ function editCurrencyRate(code) {
     
     saveDB(db);
     showToast(`Base rate for ${code} updated to ₦${newRate.toLocaleString()} successfully!`, "success");
-    loadAdminSession();
-}
-
-// DELETE CURRENCY
-function deleteCurrency(code) {
-    if (code === "USD" || code === "EUR" || code === "NGN") {
-        showToast(`Base system currency ${code} cannot be deleted.`, "danger");
-        return;
-    }
-    
-    if (!confirm(`Are you sure you want to delete the currency ${code}? This will remove it from all calculator options.`)) {
-        return;
-    }
-    
-    const db = getDB();
-    if (!db.currencies || !db.currencies[code]) return;
-    
-    delete db.currencies[code];
-    
-    // Clean up settings rates
-    Object.keys(db.settings.rates).forEach(brand => {
-        if (db.settings.rates[brand]) {
-            delete db.settings.rates[brand][code];
-        }
-    });
-    
-    writeAuditLog(
-        currentAdmin.email,
-        "Currency Deleted",
-        `Deleted Currency: ${code}`
-    );
-    
-    saveDB(db);
-    showToast(`Currency ${code} deleted successfully.`, "success");
     loadAdminSession();
 }
 
@@ -3547,69 +3389,73 @@ function btnPrintTicket() {
     const db = getDB();
     const t = db.tickets.find(tk => tk.id === activeAdminTicketId);
     if (!t) return;
+    // VULN-08: document.write removed. Print document is built with textContent
+    // so ticket/user content can never execute as HTML.
     const printWindow = window.open("", "_blank");
-    const messagesHtml = t.messages.map(m => {
-        const date = new Date(m.timestamp).toLocaleString();
-        let senderLabel = m.sender;
+    if (!printWindow) return;
+    const doc = printWindow.document;
+    doc.title = `Print Ticket - ${t.id}`;
+    const style = doc.createElement("style");
+    style.textContent = "body { font-family: sans-serif; background: #0f172a; color: #ffffff; padding: 40px; }"
+        + "h1 { margin-bottom: 4px; } hr { border: 1px solid #334155; margin: 20px 0; }"
+        + ".msg { margin-bottom: 12px; padding: 8px; }";
+    doc.head.appendChild(style);
+    const h1 = doc.createElement("h1");
+    h1.textContent = `Ticket Transcript: ${t.id}`;
+    doc.body.appendChild(h1);
+    const meta = doc.createElement("div");
+    const lines = [
+        `Title: ${t.title}`,
+        `Customer: ${t.userId}`,
+        `Category: ${t.category} | Priority: ${t.priority} | Status: ${t.status}`,
+        `Created: ${new Date(t.createdAt).toLocaleString()}`,
+    ];
+    lines.forEach(text => {
+        const p = doc.createElement("p");
+        p.textContent = text;
+        meta.appendChild(p);
+    });
+    doc.body.appendChild(meta);
+    doc.body.appendChild(doc.createElement("hr"));
+    (t.messages || []).forEach(m => {
+        let senderLabel = String(m.sender || "UNKNOWN");
         let color = "#fff";
-        if (m.sender === "USER") {
-            senderLabel = "Customer";
-            color = "#10b981";
-        } else if (m.sender === "ADMIN") {
-            senderLabel = "Support Agent";
-            color = "#3b82f6";
-        } else if (m.sender === "SYSTEM") {
-            senderLabel = "SYSTEM EVENT";
-            color = "#f59e0b";
-        } else if (m.sender === "INTERNAL_NOTE") {
-            senderLabel = `INTERNAL NOTE (by ${m.senderEmail})`;
-            color = "#c084fc";
-        }
-        return `<div style="margin-bottom: 12px; padding: 8px; border-left: 3px solid ${color};">
-            <span style="font-size: 0.8rem; font-weight: 700; color: ${color};">${senderLabel}</span>
-            <span style="font-size: 0.72rem; color: #94a3b8; margin-left: 8px;">${date}</span>
-            <p style="margin: 4px 0 0 0; font-size: 0.9rem; line-height: 1.5;">${m.text}</p>
-        </div>`;
-    }).join("");
-    
-    printWindow.document.write(`
-        <html>
-        <head>
-            <title>Print Ticket - ${t.id}</title>
-            <style>
-                body { font-family: sans-serif; background: #0f172a; color: #ffffff; padding: 40px; }
-                h1 { margin-bottom: 4px; }
-                hr { border: 1px solid #334155; margin: 20px 0; }
-            </style>
-        </head>
-        <body>
-            <h1>Ticket Transcript: ${t.id}</h1>
-            <p><strong>Title:</strong> ${t.title}</p>
-            <p><strong>Customer:</strong> ${t.userId}</p>
-            <p><strong>Category:</strong> ${t.category} | <strong>Priority:</strong> ${t.priority} | <strong>Status:</strong> ${t.status}</p>
-            <p><strong>Created:</strong> ${new Date(t.createdAt).toLocaleString()}</p>
-            <hr>
-            ${messagesHtml}
-            <script>
-                window.onload = function() { window.print(); window.close(); }
-            </script>
-        </body>
-        </html>
-    `);
-    printWindow.document.close();
+        if (m.sender === "USER") { senderLabel = "Customer"; color = "#10b981"; }
+        else if (m.sender === "ADMIN") { senderLabel = "Support Agent"; color = "#3b82f6"; }
+        else if (m.sender === "SYSTEM") { senderLabel = "SYSTEM EVENT"; color = "#f59e0b"; }
+        else if (m.sender === "INTERNAL_NOTE") { senderLabel = `INTERNAL NOTE (by ${m.senderEmail || "staff"})`; color = "#c084fc"; }
+        const box = doc.createElement("div");
+        box.className = "msg";
+        box.style.borderLeft = `3px solid ${color}`;
+        const head = doc.createElement("div");
+        const who = doc.createElement("strong");
+        who.style.color = color;
+        who.textContent = senderLabel;
+        const when = doc.createElement("span");
+        when.textContent = `  ${new Date(m.timestamp).toLocaleString()}`;
+        head.append(who, when);
+        const body = doc.createElement("p");
+        body.textContent = m.text ?? "";
+        box.append(head, body);
+        doc.body.appendChild(box);
+    });
+    printWindow.focus();
+    printWindow.print();
 }
 
 // Collapsible User Context drawer toggle
 function toggleAdminUserContextDrawer() {
     const drawer = document.getElementById("admin-user-context-drawer");
     const arrow = document.getElementById("admin-context-arrow");
-    
+    if (!drawer) return;
+    const arrowEl = arrow || null;
+
     if (drawer.style.display === "none") {
         drawer.style.display = "block";
-        arrow.style.transform = "rotate(180deg)";
+        if (arrowEl) arrowEl.style.transform = "rotate(180deg)";
     } else {
         drawer.style.display = "none";
-        arrow.style.transform = "rotate(0deg)";
+        if (arrowEl) arrowEl.style.transform = "rotate(0deg)";
     }
 }
 
@@ -4968,9 +4814,9 @@ function handleCreateAdminSubmit(e) {
 
     saveDB(db);
 
-    // Sync to Supabase Cloud if connected
+    // Sync to Supabase Cloud if connected (no credential fields — server owns auth)
     if (typeof supabaseEnsureProfileExists === "function") {
-        supabaseEnsureProfileExists(email, { name, role: "ADMIN", staffRole: role, password: password });
+        supabaseEnsureProfileExists(email, { name, role: "ADMIN", staffRole: role });
     }
 
     closeCreateAdminModal();

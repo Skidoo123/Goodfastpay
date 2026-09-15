@@ -1,0 +1,45 @@
+name: Nightly Audit
+
+on:
+  schedule:
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+
+jobs:
+  repo-audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm ci --omit=dev || npm install --omit=dev
+      - run: npm test
+      - run: npm run verify
+      - name: Repo audit
+        run: bash audit/scripts/repo-audit.sh
+
+  runtime-audit:
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install psql client
+        run: sudo apt-get update && sudo apt-get install -y postgresql-client
+      - name: Ledger audit (prod replica)
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL_REPLICA }}
+        run: |
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f audit/scripts/ledger-audit.sql 2>&1 | tee ledger-audit.out
+      - name: RLS audit (prod replica)
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL_REPLICA }}
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f audit/scripts/rls-audit.sql
+      - name: Alert on failure
+        if: failure()
+        run: |
+          curl -X POST "${{ secrets.SLACK_WEBHOOK }}" \
+            -H 'Content-Type: application/json' \
+            -d '{"text":"🚨 Nightly audit FAILED — see GitHub Actions"}'

@@ -1,3 +1,10 @@
+-- ═══════════════════════════════════════════════════════════════════════════
+-- GUARD: DO NOT APPLY THIS FILE DIRECTLY TO A LIVE DATABASE.
+-- This is the legacy base schema (table shapes only, sections 3–4). The RLS
+-- policies (section 5, open USING(true)) and seed rows (plaintext credentials)
+-- are SUPERSEDED and UNSAFE. Correct path: base tables first, then apply
+-- supabase/migrations/001–004 in order. See audit/AUDIT_LOG.md.
+-- ═══════════════════════════════════════════════════════════════════════════
 -- ==============================================================================
 -- GOODFASTPAY PLATFORM - COMPLETE SUPABASE POSTGRESQL SCHEMA & RLS POLICIES
 -- ==============================================================================
@@ -311,13 +318,16 @@ CREATE POLICY "Security logs all" ON public.security_logs FOR ALL USING (true);
 -- ==============================================================================
 
 -- 6.1 Seed Initial Profiles
+-- Credentials are NULL by design: Supabase Auth owns passwords (see
+-- supabase/migrations/004_drop_plaintext_secrets.sql). Balances start at zero.
+-- Bootstrap the first admin with a MANUAL, audited SQL update — never by email match.
 INSERT INTO public.profiles (id, email, name, role, status, wallet_balance, transaction_pin, password) VALUES
-    (gen_random_uuid(), 'admin@goodfastpay.com', 'System Administrator', 'ADMIN', 'ACTIVE', 5000000.00, '1234', 'password123'),
-    (gen_random_uuid(), 'user@goodfastpay.com', 'Demo Customer', 'USER', 'ACTIVE', 25400.00, '0000', 'password123')
-ON CONFLICT (email) DO UPDATE SET 
-    role = EXCLUDED.role,
-    status = EXCLUDED.status,
-    password = COALESCE(profiles.password, EXCLUDED.password);
+    (gen_random_uuid(), 'admin@goodfastpay.com', 'System Administrator', 'USER', 'ACTIVE', 0.00, NULL, NULL),
+    (gen_random_uuid(), 'user@goodfastpay.com', 'Demo Customer', 'USER', 'ACTIVE', 0.00, NULL, NULL)
+ON CONFLICT (email) DO UPDATE SET
+    status = EXCLUDED.status;
+-- To grant the first admin (run manually, then revoke your own access to this log):
+--   update public.profiles set role = 'ADMIN' where email = 'you@goodfastpay.com';
 
 -- 6.2 Seed Base Currencies
 INSERT INTO public.currencies (code, name, rate, status) VALUES
@@ -424,14 +434,16 @@ BEGIN
         NEW.id,
         NEW.email,
         COALESCE(NEW.raw_user_meta_data->>'full_name', NEW.raw_user_meta_data->>'name', split_part(NEW.email, '@', 1)),
-        CASE WHEN NEW.email = 'admin@goodfastpay.com' THEN 'ADMIN' ELSE COALESCE(NEW.raw_user_meta_data->>'role', 'USER') END,
+        -- Never self-grant ADMIN by email match (was: admin@goodfastpay.com auto-ADMIN).
+        -- First admin is granted via manual audited SQL; all others via admin API.
+        'USER',
         'ACTIVE',
         0.00,
         COALESCE(NEW.created_at, NOW())
     )
     ON CONFLICT (email) DO UPDATE SET
         id = EXCLUDED.id,
-        role = EXCLUDED.role,
+        -- role intentionally untouched: never demote/promote on re-signup
         name = COALESCE(public.profiles.name, EXCLUDED.name);
     RETURN NEW;
 END;

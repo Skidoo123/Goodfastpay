@@ -61,8 +61,8 @@ const INITIAL_DATABASE = {
         "user@goodfastpay.com": {
             name: "Abdallah",
             email: "user@goodfastpay.com",
-            passwordHash: "user123", // Simplified for demo simulation
-            transactionPin: "1234", // 4-digit Transaction Security PIN
+            passwordHash: null, // local demo fixture has no credential; use signup flow
+            transactionPin: null, // set by user; verified server-side
             phone: "+1 555-0199",
             role: "USER",
             status: "ACTIVE",
@@ -73,9 +73,9 @@ const INITIAL_DATABASE = {
                 accountHolderName: "Abdallah"
             },
             wallet: {
-                balance: 150000.00, // starting balance in NGN
+                balance: 0.00, // no pre-loaded funds (FIN-02)
                 pendingBalance: 0.00,
-                usdBalance: 250.00, // starting balance in USD ($)
+                usdBalance: 0.00, // no signup credit (FIN-02)
                 usdPending: 0.00
             },
             logs: [
@@ -89,7 +89,7 @@ const INITIAL_DATABASE = {
         "admin@goodfastpay.com": {
             name: "Chief Admin",
             email: "admin@goodfastpay.com",
-            passwordHash: "AdminGoodfastpay2026!",
+            passwordHash: null, // credentials live server-side only
             adminPin: "123456",
             staffRole: "SUPER_ADMIN",
             phone: "+1 555-0100",
@@ -266,7 +266,7 @@ function getDB() {
                 dirty = true;
             }
             if (db.users[email].wallet.usdBalance === undefined) {
-                db.users[email].wallet.usdBalance = 250.00;
+                db.users[email].wallet.usdBalance = 0.00; // no auto-credit (FIN-02)
                 db.users[email].wallet.usdPending = 0.00;
                 dirty = true;
             }
@@ -277,11 +277,8 @@ function getDB() {
             }
         });
     }
-    // Auto-migrate transactionPin for demo user if missing in existing localStorage
-    if (db.users && db.users["user@goodfastpay.com"] && db.users["user@goodfastpay.com"].transactionPin === undefined) {
-        db.users["user@goodfastpay.com"].transactionPin = "1234";
-        dirty = true;
-    }
+    // Legacy transactionPin backfill removed: PINs are verified server-side (TOTP),
+    // never seeded into localStorage.
     // Auto-migrate adminPin and staffRole for admin users if missing in existing localStorage
     if (db.users) {
         Object.keys(db.users).forEach(email => {
@@ -421,13 +418,13 @@ function getSessionUser() {
                 id: null,
                 name: sessionEmail.split("@")[0],
                 email: sessionEmail,
-                passwordHash: "password123",
+                passwordHash: null, // credentials live server-side only
                 phone: "",
-                role: sessionEmail === "admin@goodfastpay.com" ? "ADMIN" : "USER",
+                role: "USER", // admin flag is server-assigned only; never self-granted
                 status: "ACTIVE",
                 createdAt: new Date().toISOString(),
                 bankDetails: null,
-                wallet: { balance: 0.00, pendingBalance: 0.00, usdBalance: 250.00, usdPending: 0.00 },
+                wallet: { balance: 0.00, pendingBalance: 0.00, usdBalance: 0.00, usdPending: 0.00 },
                 logs: [],
                 notifications: []
             };

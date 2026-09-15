@@ -39,21 +39,23 @@ function getUserLoyaltyTier(totalVolume = 0) {
 }
 
 /**
- * Calculate total user volume from localStorage trade ledger
+ * Calculate total user volume from the canonical local store.
+ * Reads approved submissions from 'goodfastpay_db' (NOT the dead
+ * 'goodfastpay_portal_state' key, which no writer populates).
  */
 function calculateUserTotalVolume() {
     let total = 0;
     try {
-        const state = JSON.parse(localStorage.getItem("goodfastpay_portal_state") || "{}");
-        const trades = state.trades || [];
-        trades.forEach(t => {
-            if (t.status === "COMPLETED" || t.status === "SUCCESS") {
-                const amt = parseFloat(t.payout || t.amount || 0);
+        const db = (typeof getDB === 'function') ? getDB() : JSON.parse(localStorage.getItem('goodfastpay_db') || '{}');
+        const subs = db.submissions || [];
+        subs.forEach(s => {
+            if (s.status === 'COMPLETED' || s.status === 'SUCCESS' || s.status === 'APPROVED') {
+                const amt = parseFloat(s.payoutAmount ?? s.payout ?? s.amount ?? 0);
                 if (!isNaN(amt)) total += amt;
             }
         });
     } catch (e) {
-        console.warn("Volume calculation error:", e);
+        console.warn('Volume calculation error:', e);
     }
     return total;
 }

@@ -395,7 +395,7 @@
                 <a href="#solutions" class="hover:text-primary transition-colors">Solutions</a>
                 <a href="#security" class="hover:text-primary transition-colors">Security</a>
                 <a href="portal.html" class="hover:text-primary transition-colors">Portal</a>
-                <a href="diagnostic.html" class="hover:text-primary transition-colors text-indigo-400 font-semibold"><i class="fa-solid fa-gauge-high mr-1"></i>Diagnostics</a>
+                <!-- Diagnostics page removed: unauthenticated, leaked project IDs. Use /api health behind auth. -->
             </div>
             <p class="text-xs text-outline font-mono">&copy; 2026 RANAF Technologies Ltd. All rights reserved.</p>
         </div>
@@ -745,15 +745,14 @@
 
         function quickMobileDemoLogin() {
             const demoEmail = "user@goodfastpay.com";
-            
-            const emailField = document.getElementById("login-email");
-            const passField = document.getElementById("login-password");
-            if (emailField) emailField.value = demoEmail;
-            if (passField) passField.value = "password123";
 
-            const code = generateOTP(demoEmail);
+            const emailField = document.getElementById("login-email");
+            if (emailField) emailField.value = demoEmail;
+
+            // Password is never autofilled. OTP code is never displayed.
+            generateOTP(demoEmail);
             openOtpModal(demoEmail, "login");
-            showToast(`📱 Mobile Demo Mode Activated (OTP: ${code})`, "success");
+            showToast("📱 Mobile login started. Enter the OTP sent to you.", "success");
         }
 
         function autoFillDemoOtp() {
@@ -958,16 +957,20 @@
             
             if (action === "register") {
                 const pending = JSON.parse(sessionStorage.getItem("pending_registration") || "null");
-                const regName = pending ? pending.name : (email.split("@")[0]);
-                const regPhone = pending ? pending.phone : "";
-                const regPw = pending ? pending.passwordHash : "password123";
-                
+                if (!pending || !pending.passwordHash) {
+                    showToast("Registration session expired. Please sign up again.", "danger");
+                    return;
+                }
+                const regName = pending.name || (email.split("@")[0]);
+                const regPhone = pending.phone || "";
+                const regPw = pending.passwordHash;
+
                 db.users[email] = {
                     name: regName,
                     email: email,
                     passwordHash: regPw,
                     phone: regPhone,
-                    role: email === "admin@goodfastpay.com" ? "ADMIN" : "USER",
+                    role: "USER", // admin flag is server-assigned only; never self-granted
                     status: "ACTIVE",
                     createdAt: new Date().toISOString(),
                     bankDetails: null,

@@ -1,226 +1,211 @@
-// Vercel Serverless Function: Client Trade & Withdrawal Sync API
-// Ensures customer submissions, withdrawals, and bank accounts are reliably committed to Supabase.
+import { authenticate } from '../_lib/auth.js';
+import { supabaseAdmin } from '../_lib/supabaseAdmin.js';
+import { applyLedger, LedgerError } from '../_lib/ledger.js';
+import { applyCors, fail, ok, readBody, methodGuard } from '../_lib/http.js';
+import { money, str, pick, newReferenceId } from '../_lib/validate.js';
 
-import { createClient } from '@supabase/supabase-js';
+/* ---------------- action handlers (server is authority on all amounts) ---------------- */
 
-const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || "https://btbolekfrcwzzjqhorgi.supabase.co";
-const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ0Ym9sZWtmcmN3enpqcWhvcmdpIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4NjQ2NTgwOSwiZXhwIjoyMTAyMDQxODA5fQ.TwxiYMMHG55UJ2LATrYToMi-V8djArCQA_aY8DPAgg0";
+async function createSubmission(user, payload) {
+  // Accept both canonical fields and the legacy nested { sub } shape.
+  const src = payload.sub ?? payload;
+  const cardType = str(src.cardType ?? src.brand, { name: 'cardType', max: 60 });
+  const cardCode = str(src.cardCode ?? src.code, { name: 'cardCode', max: 200 });
+  const declaredValue = money(src.declaredValue ?? src.cardValue);
+  const currency = src.currency === 'USD' ? 'USD' : 'NGN';
 
-const supabase = createClient(SUPABASE_URL, SUPABASE_KEY, {
-    auth: { persistSession: false }
-});
+  const { data, error } = await supabaseAdmin()
+    .from('submissions')
+    .insert({
+      user_id: user.id,
+      user_email: user.email,
+      brand: cardType,
+      card_code: cardCode,
+      card_value: declaredValue,
+      currency,
+      status: 'PENDING',
+    })
+    .select('id, status, created_at')
+    .single();
+
+  if (error) throw new Error(error.message);
+  // NOTE: no balance movement here. Credit happens ONLY on admin approval.
+  return { submission: data };
+}
+
+async function requestWithdrawal(user, payload) {
+  // Accept both canonical fields and the legacy nested { wd } shape.
+  const w = payload.wd ?? payload;
+  const amount = money(w.amount);
+  if (amount < 500) throw Object.assign(new Error('Minimum withdrawal is 500'), { httpStatus: 400 });
+  const fee = 50;
+  const total = Math.round((amount + fee) * 100) / 100;
+
+  const bankName = str(w.bankName, { name: 'bankName', max: 80 });
+  const accountNumber = str(w.accountNumber, { name: 'accountNumber', max: 20 });
+  const accountHolder = (w.accountHolderName ?? w.accountHolder)
+    ? str(w.accountHolderName ?? w.accountHolder, { name: 'accountHolderName', max: 120 })
+    : null;
+
+  const referenceId = newReferenceId('wd');
+
+  const { data: wd, error: wdErr } = await supabaseAdmin()
+    .from('withdrawals')
+    .insert({
+      id: undefined,
+      user_id: user.id,
+      user_email: user.email,
+      amount: total,
+      fee,
+      net_payout: amount,
+      bank_name: bankName,
+      account_number: accountNumber,
+      account_holder_name: accountHolder || user.email,
+      status: 'PENDING',
+    })
+    .select('id, status')
+    .single();
+
+  if (wdErr) throw new Error(wdErr.message);
+
+  // Hold funds immediately — server decides the amount, not the client.
+  try {
+    await applyLedger({
+      userId: user.id,
+      currency: 'NGN',
+      direction: 'DEBIT',
+      amount: total,
+      entryType: 'WITHDRAWAL_HOLD',
+      referenceId,
+      metadata: { withdrawal_id: wd.id },
+    });
+  } catch (e) {
+    // Roll the request back so the user isn't left with a phantom withdrawal.
+    await supabaseAdmin().from('withdrawals').delete().eq('id', wd.id);
+    throw e;
+  }
+
+  return { withdrawal: wd };
+}
+
+async function updateProfile(user, payload) {
+  // Strict allowlist. Balances, role, and id are NOT client-writable.
+  const allowed = pick(payload.updates ?? payload, ['name', 'phone', 'avatar_url']);
+  if (Object.keys(allowed).length === 0) {
+    throw Object.assign(new Error('No updatable fields supplied'), { httpStatus: 400 });
+  }
+  if (allowed.name !== undefined) allowed.name = str(allowed.name, { name: 'name', max: 120 });
+  if (allowed.phone !== undefined) allowed.phone = str(allowed.phone, { name: 'phone', max: 32 });
+
+  const { data, error } = await supabaseAdmin()
+    .from('profiles')
+    .update(allowed)
+    .eq('id', user.id)
+    .select('id, name, phone, avatar_url')
+    .single();
+
+  if (error) throw new Error(error.message);
+  return { profile: data };
+}
+
+async function saveBank(user, payload) {
+  const bankData = payload.bankData ?? payload;
+  const bankName = str(bankData.bankName, { name: 'bankName', max: 80 });
+  const accountNumber = str(bankData.accountNumber, { name: 'accountNumber', max: 20 });
+  const holder = str(bankData.accountHolderName ?? bankData.accountHolder ?? user.email, { name: 'accountHolderName', max: 120 });
+
+  const { data, error } = await supabaseAdmin()
+    .from('bank_accounts')
+    .insert([{
+      user_id: user.id,
+      user_email: user.email,
+      bank_name: bankName,
+      account_number: accountNumber,
+      account_holder_name: holder,
+      is_primary: true,
+    }])
+    .select();
+
+  if (error) throw new Error(error.message);
+  return { bankAccounts: data };
+}
+
+async function logSecurityEvent(user, payload, req) {
+  const event = str(payload.event, { name: 'event', max: 120 });
+  const details = payload.details ? str(payload.details, { name: 'details', max: 500 }) : null;
+  // IP + user agent are server-derived, never trusted from the client.
+  const fwd = (req.headers['x-forwarded-for'] || '').split(',')[0].trim();
+  const ip = fwd || req.socket?.remoteAddress || '127.0.0.1';
+  const ua = (req.headers['user-agent'] || 'Web Browser').slice(0, 300);
+  const db = supabaseAdmin();
+
+  await db.from('security_logs').insert([{
+    user_id: user.id,
+    user_email: user.email,
+    event,
+    ip_address: ip,
+    user_agent: ua,
+  }]);
+  await db.from('audit_trail').insert([{
+    operator_email: user.email,
+    event,
+    details: details || `Device: ${ua} | IP: ${ip}`,
+  }]);
+  return { logged: true };
+}
+
+async function deleteBank(user, payload) {
+  const id = payload.bankAccountId ?? payload.id;
+  const db = supabaseAdmin();
+  // Owner-scoped: delete by id AND user id. RLS lockdown enforces the same.
+  let q = db.from('bank_accounts').delete().eq('user_id', user.id);
+  q = id ? q.eq('id', id) : q;
+  const { error } = await q;
+  if (error) throw new Error(error.message);
+  return { deleted: true };
+}
+
+/* ---------------- router ---------------- */
+
+const HANDLERS = {
+  // New canonical names + legacy aliases from the old frontend
+  create_submission: createSubmission,
+  submit_card: createSubmission,
+  request_withdrawal: requestWithdrawal,
+  update_profile: updateProfile,
+  save_bank: saveBank,
+  delete_bank: deleteBank,
+  log_security_event: logSecurityEvent,
+};
 
 export default async function handler(req, res) {
-    res.setHeader('Access-Control-Allow-Credentials', true);
-    res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'POST,OPTIONS');
-    res.setHeader(
-        'Access-Control-Allow-Headers',
-        'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, Authorization'
-    );
+  applyCors(req, res);
+  if (!methodGuard(req, res, ['POST'])) return;
 
-    if (req.method === 'OPTIONS') {
-        res.status(200).end();
-        return;
+  const auth = await authenticate(req);
+  if (!auth.ok) return fail(res, auth.status, auth.code, auth.message);
+
+  let body;
+  try { body = readBody(req); }
+  catch (e) { return fail(res, 400, 'BAD_JSON', e.message); }
+
+  const action = body?.action;
+  const payload = body?.payload ?? {};
+
+  if (typeof action !== 'string' || !HANDLERS[action]) {
+    return fail(res, 400, 'UNKNOWN_ACTION', `Unsupported action: ${String(action)}`);
+  }
+
+  try {
+    const result = await HANDLERS[action](auth.user, payload, req);
+    return ok(res, { action, ...result });
+  } catch (err) {
+    if (err instanceof LedgerError) {
+      const status = err.code === 'INSUFFICIENT_FUNDS' ? 409 : 400;
+      return fail(res, status, err.code, err.message);
     }
-
-    if (req.method !== 'POST') {
-        return res.status(405).json({ success: false, error: 'Method Not Allowed' });
-    }
-
-    try {
-        const { action, payload, userEmail } = req.body || {};
-
-        if (!action) {
-            return res.status(400).json({ success: false, error: 'Action parameter is required.' });
-        }
-
-        const cleanEmail = (userEmail || 'user@goodfastpay.com').trim().toLowerCase();
-
-        // Ensure user profile exists in public.profiles
-        const { data: existingUser } = await supabase
-            .from('profiles')
-            .select('id, email, wallet_balance')
-            .eq('email', cleanEmail)
-            .maybeSingle();
-
-        let profileId = existingUser?.id;
-
-        if (!profileId) {
-            const { data: newProfile, error: profErr } = await supabase
-                .from('profiles')
-                .upsert([{
-                    email: cleanEmail,
-                    name: cleanEmail.split('@')[0],
-                    role: cleanEmail === 'admin@goodfastpay.com' ? 'ADMIN' : 'USER',
-                    status: 'ACTIVE'
-                }], { onConflict: 'email' })
-                .select();
-            if (newProfile && newProfile[0]) {
-                profileId = newProfile[0].id;
-            }
-        }
-
-        switch (action) {
-            case 'submit_card': {
-                const { sub } = payload;
-                if (!sub || !sub.id || !sub.brand || !sub.cardValue) {
-                    return res.status(400).json({ success: false, error: 'Complete submission data is required.' });
-                }
-
-                const subRow = {
-                    id: sub.id,
-                    user_email: cleanEmail,
-                    user_id: profileId || null,
-                    brand: sub.brand,
-                    card_value: sub.cardValue,
-                    currency: sub.currency || 'USD',
-                    card_code: sub.cardCode || sub.code || 'CODE',
-                    front_image_url: sub.frontImageUrl || sub.frontImage || null,
-                    back_image_url: sub.backImageUrl || sub.backImage || null,
-                    status: sub.status || 'PENDING',
-                    payout_amount: sub.payoutAmount || null
-                };
-
-                const { data, error } = await supabase
-                    .from('submissions')
-                    .upsert([subRow], { onConflict: 'id' })
-                    .select();
-
-                if (error) throw error;
-                return res.status(200).json({ success: true, data });
-            }
-
-            case 'request_withdrawal': {
-                const { wd } = payload;
-                if (!wd || !wd.id || !wd.amount) {
-                    return res.status(400).json({ success: false, error: 'Complete withdrawal data is required.' });
-                }
-
-                const wdRow = {
-                    id: wd.id,
-                    user_email: cleanEmail,
-                    user_id: profileId || null,
-                    amount: wd.amount,
-                    fee: wd.fee || 50,
-                    net_payout: wd.netPayout || (wd.amount - 50),
-                    bank_name: wd.bankName,
-                    account_number: wd.accountNumber,
-                    account_holder_name: wd.accountHolderName || wd.accountHolder || 'Customer',
-                    status: wd.status || 'PENDING'
-                };
-
-                const { data, error } = await supabase
-                    .from('withdrawals')
-                    .upsert([wdRow], { onConflict: 'id' })
-                    .select();
-
-                if (error) throw error;
-                return res.status(200).json({ success: true, data });
-            }
-
-            case 'purchase_card': {
-                const { cardId, newBalance } = payload;
-                if (!cardId) {
-                    return res.status(400).json({ success: false, error: 'cardId is required.' });
-                }
-
-                // Mark inventory as SOLD
-                await supabase
-                    .from('inventory')
-                    .update({
-                        status: 'SOLD',
-                        purchased_by: cleanEmail,
-                        purchased_at: new Date().toISOString()
-                    })
-                    .eq('id', cardId);
-
-                // Update user wallet balance
-                if (newBalance !== undefined) {
-                    await supabase
-                        .from('profiles')
-                        .update({ wallet_balance: newBalance })
-                        .eq('email', cleanEmail);
-                }
-
-                return res.status(200).json({ success: true });
-            }
-
-            case 'save_bank': {
-                const { bankData } = payload;
-                if (!bankData || !bankData.bankName || !bankData.accountNumber) {
-                    return res.status(400).json({ success: false, error: 'bankData is required.' });
-                }
-
-                const { data, error } = await supabase
-                    .from('bank_accounts')
-                    .insert([{
-                        user_email: cleanEmail,
-                        user_id: profileId || null,
-                        bank_name: bankData.bankName,
-                        account_number: bankData.accountNumber,
-                        account_holder_name: bankData.accountHolderName,
-                        is_primary: true
-                    }])
-                    .select();
-
-                if (error) throw error;
-                return res.status(200).json({ success: true, data });
-            }
-
-            case 'update_profile': {
-                const { updates } = payload;
-                const updatePayload = {};
-                if (updates.name !== undefined) updatePayload.name = updates.name;
-                if (updates.phone !== undefined) updatePayload.phone = updates.phone;
-                if (updates.transactionPin !== undefined) updatePayload.transaction_pin = updates.transactionPin;
-                if (updates.wallet && updates.wallet.balance !== undefined) {
-                    updatePayload.wallet_balance = updates.wallet.balance;
-                }
-
-                const { data, error } = await supabase
-                    .from('profiles')
-                    .update(updatePayload)
-                    .eq('email', cleanEmail)
-                    .select();
-
-                if (error) throw error;
-                return res.status(200).json({ success: true, data });
-            }
-
-            case 'log_security_event': {
-                const { event, ip, userAgent, details } = payload;
-                if (!event) {
-                    return res.status(400).json({ success: false, error: 'Event name is required.' });
-                }
-
-                const clientIp = ip || req.headers['x-forwarded-for'] || req.socket?.remoteAddress || '127.0.0.1';
-                const clientUa = userAgent || req.headers['user-agent'] || 'Web Browser';
-
-                // Insert into public.security_logs
-                await supabase.from('security_logs').insert([{
-                    user_id: profileId || null,
-                    user_email: cleanEmail,
-                    event: event,
-                    ip_address: clientIp,
-                    user_agent: clientUa
-                }]);
-
-                // Insert into public.audit_trail
-                await supabase.from('audit_trail').insert([{
-                    operator_email: cleanEmail,
-                    event: event,
-                    details: details || `Device: ${clientUa} | IP: ${clientIp}`
-                }]);
-
-                return res.status(200).json({ success: true });
-            }
-
-            default:
-                return res.status(400).json({ success: false, error: `Unrecognized action: ${action}` });
-        }
-    } catch (err) {
-        console.error('❌ Client Action API Exception:', err);
-        return res.status(500).json({ success: false, error: err.message || 'Internal Server Error' });
-    }
+    const status = err.httpStatus || 500;
+    if (status >= 500) console.error('[client/action]', action, err);
+    return fail(res, status, 'ACTION_FAILED', status >= 500 ? 'Internal error' : err.message);
+  }
 }
