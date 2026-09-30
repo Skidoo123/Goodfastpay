@@ -955,8 +955,17 @@ function inspectCardSubmission(id) {
     // Calculate default payout estimate
     const rateMap = db.settings.rates[sub.brand];
     const rate = (rateMap && rateMap[sub.currency]) ? rateMap[sub.currency] : 0;
-    const defaultPayout = sub.cardValue * rate;
     
+    const isUSD = sub.payoutCurrency === "USD";
+    const currSym = isUSD ? "$" : "₦";
+    const targetLabel = isUSD ? "Credit Payout Amount (USD $ Vault)" : "Credit Payout Amount (NGN ₦ Wallet)";
+    
+    let defaultPayout = sub.cardValue * rate;
+    if (isUSD) {
+        const usdRateNGN = (db.currencies && db.currencies["USD"] && db.currencies["USD"].rate) ? db.currencies["USD"].rate : 1200;
+        defaultPayout = parseFloat((sub.cardValue * Math.min(1.0, rate / usdRateNGN)).toFixed(2));
+    }
+
     let decisionHTML = "";
     if (sub.status === "PENDING") {
         decisionHTML = `
@@ -965,9 +974,9 @@ function inspectCardSubmission(id) {
                 <div class="grid-2" style="gap:16px;">
                     <!-- Approve form block -->
                     <div style="border-right: 1px solid var(--border-color); padding-right:16px;">
-                        <span class="input-label" style="display:block; margin-bottom:8px; font-size:0.75rem;">Credit Payout Amount (NGN)</span>
+                        <span class="input-label" style="display:block; margin-bottom:8px; font-size:0.75rem;">${targetLabel}</span>
                         <input type="number" id="dec-payout" class="input-field" style="padding:10px 14px; margin-bottom:12px;" value="${defaultPayout}">
-                        <button class="btn btn-accent btn-sm" style="width:100%;" onclick="approveCardTrade('${sub.id}')"><i class="fas fa-check"></i> Approve Trade</button>
+                        <button class="btn btn-accent btn-sm" style="width:100%;" onclick="approveCardTrade('${sub.id}')"><i class="fas fa-check"></i> Approve Trade (${currSym})</button>
                     </div>
                     
                     <!-- Reject form block -->
@@ -1058,8 +1067,17 @@ function approveCardTrade(id) {
         user = db.users[sub.userId];
     }
     
-    // Approve credit to available balance
-    user.wallet.balance += payoutAmount;
+    // Approve credit to target wallet balance (NGN or USD)
+    const isUSD = sub.payoutCurrency === "USD";
+    const currSym = isUSD ? "$" : "₦";
+    const currName = isUSD ? "Global USD Vault" : "NGN Wallet";
+
+    if (isUSD) {
+        if (user.wallet.usdBalance === undefined) user.wallet.usdBalance = 250.00;
+        user.wallet.usdBalance += payoutAmount;
+    } else {
+        user.wallet.balance += payoutAmount;
+    }
     
     // Change submission state
     sub.status = "COMPLETED";
@@ -1068,7 +1086,7 @@ function approveCardTrade(id) {
     
     // Log in user activity
     user.logs.unshift({
-        event: `Gift Card Trade APPROVED: ${sub.brand} (${sub.currency} ${sub.cardValue}) -> +₦${payoutAmount.toLocaleString()}`,
+        event: `Gift Card Trade APPROVED: ${sub.brand} (${sub.currency} ${sub.cardValue}) -> +${currSym}${payoutAmount.toLocaleString()} (${currName})`,
         timestamp: new Date().toISOString(),
         ip: "system"
     });

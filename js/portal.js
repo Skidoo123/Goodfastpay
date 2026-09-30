@@ -759,6 +759,36 @@ function getCardExchangeRate(brand, currency) {
     return 1200;
 }
 
+// Toggle Payout Settlement Currency (NGN vs USD)
+function selectSellPayoutCurrency(curr) {
+    const hidden = document.getElementById("sell-payout-currency");
+    const btnNgn = document.getElementById("btn-payout-curr-ngn");
+    const btnUsd = document.getElementById("btn-payout-curr-usd");
+
+    if (hidden) hidden.value = curr;
+
+    if (curr === "USD") {
+        if (btnNgn) {
+            btnNgn.style.background = "transparent";
+            btnNgn.style.color = "var(--text-secondary)";
+        }
+        if (btnUsd) {
+            btnUsd.style.background = "#6366f1";
+            btnUsd.style.color = "#ffffff";
+        }
+    } else {
+        if (btnNgn) {
+            btnNgn.style.background = "#10b981";
+            btnNgn.style.color = "#ffffff";
+        }
+        if (btnUsd) {
+            btnUsd.style.background = "transparent";
+            btnUsd.style.color = "var(--text-secondary)";
+        }
+    }
+    updateSellRate();
+}
+
 // Update live estimation rate in trade workspace
 function updateSellRate() {
     const brandSelect = document.getElementById("sell-brand");
@@ -777,7 +807,27 @@ function updateSellRate() {
     if (typeof getLoyaltyRateMultiplier === "function") {
         rate = Math.round(rate * getLoyaltyRateMultiplier());
     }
-    const payout = val * rate;
+
+    const payoutCurrInput = document.getElementById("sell-payout-currency");
+    const payoutCurr = payoutCurrInput ? payoutCurrInput.value : "NGN";
+
+    let payout = 0;
+    let payoutSymbol = "₦";
+    let receiveLabel = "You will receive in NGN Main Wallet";
+
+    if (payoutCurr === "USD") {
+        const db = getDB();
+        const usdRateNGN = (db.currencies && db.currencies["USD"] && db.currencies["USD"].rate) ? db.currencies["USD"].rate : 1200;
+        const usdYieldFactor = Math.min(1.0, rate / usdRateNGN);
+        payout = val * usdYieldFactor;
+        payoutSymbol = "$";
+        receiveLabel = "You will receive in Global USD Vault";
+    } else {
+        payout = val * rate;
+        payoutSymbol = "₦";
+        receiveLabel = "You will receive in NGN Main Wallet";
+    }
+
     const symbol = getCurrencySymbol(currency) || "$";
     
     // Update Currency Symbol Prefix in Input
@@ -786,11 +836,24 @@ function updateSellRate() {
 
     // Update Live Rate Tag Pill
     const rateBadgeEl = document.getElementById("sell-rate-badge-text");
-    if (rateBadgeEl) rateBadgeEl.textContent = `Current Rate: ₦${rate.toLocaleString()} / ${symbol}1`;
+    if (rateBadgeEl) {
+        if (payoutCurr === "USD") {
+            const usdYield = (rate / 1200).toFixed(2);
+            rateBadgeEl.textContent = `Current Payout Yield: $${usdYield} USD / ${symbol}1`;
+        } else {
+            rateBadgeEl.textContent = `Current Rate: ₦${rate.toLocaleString()} / ${symbol}1`;
+        }
+    }
 
     const exchangeTextEl = document.getElementById("sell-exchange-text");
     if (exchangeTextEl) exchangeTextEl.textContent = `₦${rate.toLocaleString()} / ${symbol}1`;
     
+    const payoutSymbolEl = document.getElementById("sell-payout-symbol");
+    if (payoutSymbolEl) payoutSymbolEl.textContent = payoutSymbol;
+
+    const receiveLabelEl = document.getElementById("sell-payout-receive-label");
+    if (receiveLabelEl) receiveLabelEl.textContent = receiveLabel;
+
     const payoutResultEl = document.getElementById("sell-payout-result");
     if (payoutResultEl) payoutResultEl.textContent = payout.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
 }
@@ -923,6 +986,9 @@ function handleCardSubmit(e) {
         const db = getDB();
         const submissionId = "GC-" + Math.floor(1000 + Math.random() * 9000);
         
+        const payoutCurrInput = document.getElementById("sell-payout-currency");
+        const payoutCurrency = payoutCurrInput ? payoutCurrInput.value : "NGN";
+        
         // Add trade submission entry
         const newSubmission = {
             id: submissionId,
@@ -930,6 +996,7 @@ function handleCardSubmit(e) {
             brand: brand,
             cardValue: value,
             currency: currency,
+            payoutCurrency: payoutCurrency,
             cardCode: code,
             frontImageUrl: frontBase64,
             backImageUrl: backBase64,

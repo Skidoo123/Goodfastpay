@@ -405,11 +405,25 @@
                                     </div>
                                 </div>
 
+                                 <!-- 3. Select Payout Settlement Currency (NGN vs USD) -->
+                                <div style="margin-bottom: 16px;">
+                                    <label class="input-label" style="font-size: 0.8rem; font-weight: 700; color: var(--text-secondary); margin-bottom: 8px; display: block;">3. Select Payout Currency</label>
+                                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; background: var(--bg-secondary); padding: 4px; border-radius: 12px; border: 1px solid var(--border-color);">
+                                        <button type="button" id="btn-payout-curr-ngn" onclick="selectSellPayoutCurrency('NGN')" class="btn-payout-curr active" style="padding: 10px; border-radius: 8px; border: none; font-weight: 800; font-size: 0.82rem; cursor: pointer; transition: all 0.2s; background: #10b981; color: #ffffff; display: flex; align-items: center; justify-content: center; gap: 6px;">
+                                            <span>🇳🇬</span> Naira (NGN ₦)
+                                        </button>
+                                        <button type="button" id="btn-payout-curr-usd" onclick="selectSellPayoutCurrency('USD')" class="btn-payout-curr" style="padding: 10px; border-radius: 8px; border: none; font-weight: 800; font-size: 0.82rem; cursor: pointer; transition: all 0.2s; background: transparent; color: var(--text-secondary); display: flex; align-items: center; justify-content: center; gap: 6px;">
+                                            <span>🇺🇸</span> US Dollar (USD $)
+                                        </button>
+                                    </div>
+                                    <input type="hidden" id="sell-payout-currency" value="NGN">
+                                </div>
+
                                 <!-- You Will Receive Box -->
                                 <div class="payout-receive-box">
-                                    <span class="receive-label">You will receive</span>
+                                    <span class="receive-label" id="sell-payout-receive-label">You will receive in NGN Wallet</span>
                                     <span class="receive-value">
-                                        <span class="currency-symbol">₦</span>
+                                        <span class="currency-symbol" id="sell-payout-symbol">₦</span>
                                         <span id="sell-payout-result">0.00</span>
                                     </span>
                                 </div>
