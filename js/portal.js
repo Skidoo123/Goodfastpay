@@ -297,8 +297,23 @@ function updateDashboardStats() {
     // Completed Withdrawals Counter
     const userWithdrawals = db.withdrawals.filter(wd => wd.userId === user.email && wd.status === "COMPLETED");
     const statWithdrawalsEl = document.getElementById("stat-withdrawals");
-    if (statWithdrawalsEl) {
-        statWithdrawalsEl.textContent = userWithdrawals.length;
+    // Total Purchases Counter
+    const userPurchases = db.inventory ? db.inventory.filter(item => item.status === "SOLD" && item.purchasedBy === user.email) : [];
+    const statPurchasesEl = document.getElementById("stat-purchases");
+    if (statPurchasesEl) {
+        statPurchasesEl.textContent = userPurchases.length;
+    }
+    
+    // Update notifications count badge in sidebar
+    const unreadCount = user.notifications.filter(n => !n.read).length;
+    const countBadge = document.getElementById("nav-notif-count");
+    if (countBadge) {
+        if (unreadCount > 0) {
+            countBadge.textContent = unreadCount;
+            countBadge.style.display = "inline-flex";
+        } else {
+            countBadge.style.display = "none";
+        }
     }
 }
 
@@ -406,24 +421,6 @@ function handleUSDToNGNSwapSubmit(e) {
 
     closeUSDConverterModal();
     loadSession();
-}
-    
-    // Total Purchases Counter
-    const userPurchases = db.inventory ? db.inventory.filter(item => item.status === "SOLD" && item.purchasedBy === user.email) : [];
-    const statPurchasesEl = document.getElementById("stat-purchases");
-    if (statPurchasesEl) {
-        statPurchasesEl.textContent = userPurchases.length;
-    }
-    
-    // Update notifications count badge in sidebar
-    const unreadCount = user.notifications.filter(n => !n.read).length;
-    const countBadge = document.getElementById("nav-notif-count");
-    if (unreadCount > 0) {
-        countBadge.textContent = unreadCount;
-        countBadge.style.display = "inline-flex";
-    } else {
-        countBadge.style.display = "none";
-    }
 }
 
 // Supported Popular & Extended Brand Catalog definitions

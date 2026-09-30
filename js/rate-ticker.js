@@ -17,9 +17,8 @@ const LIVE_RATE_DATA = [
  * Render Live Financial Rate Marquee Ticker in Target Elements
  */
 function initRateTickerHeader() {
-    // Rate ticker removed per user request
-    return;
-}
+    const tickerContainers = document.querySelectorAll(".rate-ticker-container, #header-rate-ticker");
+    if (!tickerContainers || tickerContainers.length === 0) return;
 
     const tickerItemsHTML = LIVE_RATE_DATA.map(item => `
         <div class="rate-ticker-chip" style="display: inline-flex; align-items: center; gap: 8px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); padding: 4px 12px; border-radius: 99px; font-size: 0.78rem; font-weight: 600; white-space: nowrap; margin-right: 12px;">

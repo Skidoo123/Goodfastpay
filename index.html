@@ -796,7 +796,11 @@
         }
 
         function closeOtpModal() {
-            document.getElementById("otp-modal").classList.remove("active");
+            const modal = document.getElementById("otp-modal");
+            if (modal) {
+                modal.classList.remove("active");
+                modal.style.display = "none";
+            }
         }
 
         function validateRegPasswordStrength(pw) {
