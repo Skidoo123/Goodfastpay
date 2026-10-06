@@ -293,51 +293,187 @@ function handleCopilotSubmit(e) {
 }
 
 /**
- * FastPay AI Response Rules Engine
+ * FastPay AI Helper: Auto-fill trade workspace form and navigate user directly
+ */
+function copilotAutoFillTrade(brand, currency, value) {
+    if (typeof switchSection === "function") {
+        switchSection("sell-card");
+    }
+    
+    setTimeout(() => {
+        const brandSelect = document.getElementById("sell-brand");
+        const currSelect = document.getElementById("sell-currency");
+        const valInput = document.getElementById("sell-value");
+
+        if (brandSelect && brand) {
+            brandSelect.value = brand;
+            brandSelect.dispatchEvent(new Event("change"));
+        }
+
+        setTimeout(() => {
+            if (currSelect && currency) {
+                currSelect.value = currency;
+                currSelect.dispatchEvent(new Event("change"));
+            }
+            if (valInput && value) {
+                valInput.value = value;
+                valInput.dispatchEvent(new Event("input"));
+            }
+            if (typeof updateSellRate === "function") {
+                updateSellRate();
+            }
+
+            const targetSection = document.getElementById("sell-card-section") || document.getElementById("sell-card");
+            if (targetSection) {
+                targetSection.scrollIntoView({ behavior: "smooth", block: "start" });
+            }
+        }, 150);
+    }, 100);
+}
+
+/**
+ * FastPay AI Response Rules Engine connected to Live Database
  * @param {String} query - User input string
  * @returns {String} HTML response text
  */
 function getAISmartResponse(query) {
     const q = query.toLowerCase();
 
-    if (q.includes("steam") || q.includes("apple") || q.includes("amazon") || q.includes("rate")) {
-        return `📊 <strong>Live Rate Breakdown:</strong><br>
-        • <strong>Steam USD:</strong> ₦860 / $1<br>
-        • <strong>Apple USD:</strong> ₦840 / $1<br>
-        • <strong>Amazon USD:</strong> ₦825 / $1<br>
-        • <strong>Razer Gold:</strong> ₦875 / $1<br>
-        <em>Note: VIP Silver/Gold/Diamond accounts automatically get up to +1.5% cashback bonus!</em>`;
+    // Fetch Live Database instance
+    let db = null;
+    try {
+        if (typeof getDB === "function") {
+            db = getDB();
+        }
+    } catch (err) {
+        console.warn("Copilot DB fetch warning:", err);
     }
 
-    if (q.includes("payout") || q.includes("fast") || q.includes("time") || q.includes("withdrawal")) {
+    // 1. Live Wallet Balance & Account Inquiry
+    if (q.includes("balance") || q.includes("wallet") || q.includes("vault") || q.includes("my money") || q.includes("account balance")) {
+        let user = null;
+        if (window.currentUser) {
+            user = window.currentUser;
+        } else if (db && db.users && db.users.length > 0) {
+            user = db.users[0];
+        }
+
+        if (user && user.wallet) {
+            const ngnBal = (user.wallet.balance || 0).toLocaleString(undefined, {minimumFractionDigits: 2});
+            const usdBal = (user.wallet.usdBalance || 0).toFixed(2);
+            const tier = user.vipTier || user.loyaltyTier || "Bronze Tier";
+
+            return `💳 <strong>Your Live Account Overview:</strong><br>
+            • <strong>Main NGN Wallet:</strong> ₦${ngnBal}<br>
+            • <strong>Global USD Vault:</strong> $${usdBal} USD<br>
+            • <strong>VIP Rank:</strong> <span style="color:#10b981; font-weight:700;">${tier}</span><br><br>
+            <div style="display:flex; gap:8px; margin-top:6px;">
+                <button onclick="if(typeof switchSection==='function') switchSection('withdraw');" class="copilot-chip" style="background:#10b981; color:#fff;">💸 Withdraw NGN</button>
+                <button onclick="copilotAutoFillTrade('Steam', 'USD', 100);" class="copilot-chip" style="background:#6366f1; color:#fff;">⚡ Sell Gift Card</button>
+            </div>`;
+        } else {
+            return `💳 <strong>Account Balance:</strong><br>
+            Please log in to your dashboard to view your live NGN wallet and USD Vault balances!`;
+        }
+    }
+
+    // 2. Live Rate Query (Queries db.settings.rates in real-time)
+    const knownBrands = ["steam", "apple", "amazon", "google", "razer", "sephora", "ebay", "nordstrom", "vanilla", "nike", "walmart", "footlocker", "xbox", "playstation"];
+    const isRateQuery = q.includes("rate") || q.includes("how much") || knownBrands.some(b => q.includes(b));
+
+    if (isRateQuery && db && db.settings && db.settings.rates) {
+        const rates = db.settings.rates;
+        let matchedBrand = knownBrands.find(b => q.includes(b));
+        
+        let multiplier = 1.0;
+        if (typeof getLoyaltyRateMultiplier === "function") {
+            multiplier = getLoyaltyRateMultiplier();
+        }
+
+        if (matchedBrand) {
+            // Find capitalized key in rates matrix
+            const brandKey = Object.keys(rates).find(k => k.toLowerCase().includes(matchedBrand));
+            if (brandKey && rates[brandKey]) {
+                const bRates = rates[brandKey];
+                let listHTML = `📊 <strong>Live Rate for ${brandKey}:</strong><br>`;
+                for (const [curr, r] of Object.entries(bRates)) {
+                    const finalRate = Math.round(r * multiplier);
+                    const sym = curr === "USD" ? "$" : curr === "EUR" ? "€" : curr === "GBP" ? "£" : curr;
+                    listHTML += `• <strong>${curr}:</strong> ₦${finalRate.toLocaleString()} per ${sym}1<br>`;
+                }
+                if (multiplier > 1.0) {
+                    listHTML += `<em>(Includes your active VIP Loyalty Bonus multiplier!)</em><br>`;
+                }
+                listHTML += `<div style="margin-top:8px;">
+                    <button onclick="copilotAutoFillTrade('${brandKey}', 'USD', 100);" class="copilot-chip" style="background:#6366f1; color:#fff;">⚡ Trade ${brandKey} Now</button>
+                </div>`;
+                return listHTML;
+            }
+        }
+
+        // Return Top Live Rates Summary
+        let summaryHTML = `📊 <strong>Live Platform Exchange Rates (per $1):</strong><br>`;
+        const topBrands = ["Steam", "Apple", "Amazon", "Razer Gold", "Google Play"];
+        topBrands.forEach(b => {
+            if (rates[b] && rates[b]["USD"]) {
+                const rate = Math.round(rates[b]["USD"] * multiplier);
+                summaryHTML += `• <strong>${b} USD:</strong> ₦${rate.toLocaleString()} / $1<br>`;
+            }
+        });
+        summaryHTML += `<div style="margin-top:8px; display:flex; gap:6px;">
+            <button onclick="copilotAutoFillTrade('Steam', 'USD', 100);" class="copilot-chip">⚡ Steam $100</button>
+            <button onclick="copilotAutoFillTrade('Apple', 'USD', 100);" class="copilot-chip">⚡ Apple $100</button>
+        </div>`;
+        return summaryHTML;
+    }
+
+    // 3. Payout & Withdrawal Speed
+    if (q.includes("payout") || q.includes("fast") || q.includes("time") || q.includes("withdrawal") || q.includes("withdraw")) {
         return `⚡ <strong>Automated Instant Payouts:</strong><br>
-        All withdrawals are processed via our automated Interbank NIBSS Gateway and usually land in your bank account in <strong>under 2 minutes</strong>! 🚀`;
+        All withdrawals are processed via our automated Interbank NIBSS Gateway and land in your bank account in <strong>under 2 minutes</strong>! 🚀<br>
+        <div style="margin-top:8px;">
+            <button onclick="if(typeof switchSection==='function') switchSection('withdraw');" class="copilot-chip" style="background:#10b981; color:#fff;">💸 Open Withdrawal Portal</button>
+        </div>`;
     }
 
+    // 4. VIP Tier Perks
     if (q.includes("vip") || q.includes("tier") || q.includes("rank") || q.includes("bonus")) {
         return `💎 <strong>VIP Loyalty Tier Perks:</strong><br>
         • <strong>Bronze:</strong> Standard rates<br>
         • <strong>Silver VIP (₦500k+):</strong> +0.5% Cash Bonus<br>
         • <strong>Gold Elite (₦2M+):</strong> +1.0% Cash Bonus + Zero Withdrawal Fees<br>
-        • <strong>Diamond Titan (₦5M+):</strong> +1.5% Cash Bonus + Dedicated Concierge`;
+        • <strong>Diamond Titan (₦5M+):</strong> +1.5% Cash Bonus + Dedicated Concierge<br>
+        <div style="margin-top:8px;">
+            <button onclick="if(typeof switchSection==='function') switchSection('loyalty');" class="copilot-chip" style="background:#6366f1; color:#fff;">💎 View My VIP Progress</button>
+        </div>`;
     }
 
-    if (q.includes("sell") || q.includes("how to")) {
+    // 5. How to Sell / Trade Assistance
+    if (q.includes("sell") || q.includes("trade") || q.includes("how to")) {
         return `💡 <strong>How to Sell a Gift Card:</strong><br>
-        1. Navigate to <strong>Sell Gift Card</strong> in your portal.<br>
-        2. Select your brand & currency.<br>
-        3. Upload card scan (our <strong>AI OCR Scanner</strong> will extract PIN automatically!).<br>
-        4. Tap <strong>Sell Now</strong> to start instant settlement.`;
+        1. Click below to auto-open the trade workspace.<br>
+        2. Upload your card scan (our <strong>AI OCR Scanner</strong> will extract PIN automatically!).<br>
+        3. Select payout in <strong>NGN ₦ Wallet</strong> or <strong>USD $ Vault</strong>.<br>
+        4. Tap <strong>Sell Now</strong> for instant payout!<br>
+        <div style="margin-top:8px;">
+            <button onclick="copilotAutoFillTrade('Steam', 'USD', 100);" class="copilot-chip" style="background:#10b981; color:#fff;">🚀 Start Trade Now</button>
+        </div>`;
     }
 
-    if (q.includes("safe") || q.includes("security") || q.includes("legit")) {
+    // 6. Security & Legitimacy
+    if (q.includes("safe") || q.includes("security") || q.includes("legit") || q.includes("trust")) {
         return `🛡️ <strong>100% Guaranteed & Encrypted:</strong><br>
-        Goodfastpay utilizes SSL 256-bit encryption, automated fraud interceptors, and instant reserve vault settlement to guarantee your payouts.`;
+        Goodfastpay utilizes SSL 256-bit encryption, automated fraud interceptors, and instant reserve vault settlement to guarantee 100% payout security.`;
     }
 
-    return `🤖 Thank you for reaching out! You can trade gift cards, withdraw funds instantly to bank, or check rates directly in your dashboard. If you need dedicated human support, open a ticket under <strong>Help & Support</strong>!`;
+    // Fallback response with live database hint
+    return `🤖 Hi! I am connected to live Goodfastpay rates & user balances. Ask me:
+    • <em>"What is the live rate for Steam $100?"</em>
+    • <em>"Check my wallet balance"</em>
+    • <em>"How fast are bank payouts?"</em>`;
 }
 
 document.addEventListener("DOMContentLoaded", () => {
     initCopilotWidget();
 });
+
