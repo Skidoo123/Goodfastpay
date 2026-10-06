@@ -1225,9 +1225,15 @@ function updateWithdrawalBreakdown() {
     let amount = amountInput ? parseFloat(amountInput.value) : 0;
     if (isNaN(amount) || amount < 0) amount = 0;
 
-    const fee = 50.00;
+    const fee = (db.settings && db.settings.processingFee !== undefined) ? parseFloat(db.settings.processingFee) : 50.00;
     let netNaira = 0;
     let grossNaira = 0;
+
+    const calcFeeEl = document.getElementById("calc-transfer-fee");
+    if (calcFeeEl) calcFeeEl.textContent = `₦${fee.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+
+    const feeTextEl = document.getElementById("withdraw-fee-text");
+    if (feeTextEl) feeTextEl.textContent = `Fee: ₦${fee.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
 
     if (currency === "USD") {
         const usdRate = (db.currencies && db.currencies["USD"] && db.currencies["USD"].rate) ? parseFloat(db.currencies["USD"].rate) : 1200;
@@ -1591,7 +1597,7 @@ function openForgotPinFromAuthModal() {
 function executeWithdrawal(amount, currency = "NGN") {
     const db = getDB();
     const user = db.users[currentUser.email];
-    const fee = 50.00;
+    const fee = (db.settings && db.settings.processingFee !== undefined) ? parseFloat(db.settings.processingFee) : 50.00;
 
     let netNairaPayout = 0;
     let amountStr = "";
@@ -1625,6 +1631,7 @@ function executeWithdrawal(amount, currency = "NGN") {
         id: withdrawalId,
         userId: currentUser.email,
         amount: netNairaPayout,
+        fee: fee,
         currency: currency,
         sourceAmount: amount,
         bankName: user.bankDetails.bankName,

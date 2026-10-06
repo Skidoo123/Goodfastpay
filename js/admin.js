@@ -2469,13 +2469,51 @@ function playNotificationSound() {
     }
 }
 
-// ==========================================================================
-// CENTRAL CURRENCY MANAGER & RATE REGISTRY ENGINE
-// ==========================================================================
+function loadAdminProcessingFeeSettings() {
+    const db = getDB();
+    const feeInput = document.getElementById("admin-setting-processing-fee");
+    const tradeFeeInput = document.getElementById("admin-setting-trade-fee");
+    
+    if (feeInput) {
+        feeInput.value = (db.settings && db.settings.processingFee !== undefined) ? db.settings.processingFee : 50;
+    }
+    if (tradeFeeInput) {
+        tradeFeeInput.value = (db.settings && db.settings.tradeFee !== undefined) ? db.settings.tradeFee : 0;
+    }
+}
 
-// RENDER CURRENCY REGISTRY LIST
+function saveAdminProcessingFeeSettings() {
+    const db = getDB();
+    const feeInput = document.getElementById("admin-setting-processing-fee");
+    const tradeFeeInput = document.getElementById("admin-setting-trade-fee");
+    
+    const feeVal = feeInput ? (parseFloat(feeInput.value) || 0) : 50;
+    const tradeFeeVal = tradeFeeInput ? (parseFloat(tradeFeeInput.value) || 0) : 0;
+
+    if (!db.settings) db.settings = {};
+    db.settings.processingFee = feeVal;
+    db.settings.tradeFee = tradeFeeVal;
+
+    if (typeof saveDB === "function") {
+        saveDB(db);
+    } else {
+        localStorage.setItem("goodfastpay_db", JSON.stringify(db));
+    }
+
+    if (typeof showToast === "function") {
+        showToast(`Processing fee settings saved! (Withdrawal: ₦${feeVal.toFixed(2)}, Trade: ₦${tradeFeeVal.toFixed(2)})`, "success");
+    }
+    
+    localStorage.setItem("goodfastpay_db_updated", Date.now());
+}
+
+// RENDER CURRENCY REGISTRY LIST & PROCESSING FEE SETTINGS
 function renderCurrencyManager() {
     const db = getDB();
+    
+    // Load processing fee values into input fields
+    loadAdminProcessingFeeSettings();
+
     const tbody = document.getElementById("admin-currencies-tbody");
     if (!tbody) return;
     tbody.innerHTML = "";

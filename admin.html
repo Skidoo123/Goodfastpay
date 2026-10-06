@@ -494,6 +494,41 @@
                     </div>
                 </div>
 
+                <!-- Platform Processing Fee Charges Control Card -->
+                <div class="card" style="padding: 24px; margin-bottom: 28px; background: rgba(99, 102, 241, 0.05); border: 1px solid rgba(99, 102, 241, 0.2); border-radius: 16px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; margin-bottom: 16px;">
+                        <div style="display: flex; align-items: center; gap: 12px;">
+                            <div style="width: 42px; height: 42px; border-radius: 10px; background: rgba(99, 102, 241, 0.15); display: flex; align-items: center; justify-content: center; color: #6366f1; font-size: 1.2rem;">
+                                <i class="fas fa-receipt"></i>
+                            </div>
+                            <div>
+                                <h4 style="font-weight: 800; margin: 0; color: var(--text-primary); font-size: 1.05rem;">Transaction Processing Fee Charges</h4>
+                                <p style="font-size: 0.8rem; color: var(--text-secondary); margin: 2px 0 0 0;">Set processing fees charged to customers when performing bank withdrawals or gift card trades.</p>
+                            </div>
+                        </div>
+                        <button type="button" class="btn btn-accent btn-sm" onclick="saveAdminProcessingFeeSettings()" style="padding: 10px 18px; font-weight: 700;"><i class="fas fa-save" style="margin-right: 6px;"></i> Save Fee Settings</button>
+                    </div>
+                    
+                    <div class="grid-2" style="gap: 16px;">
+                        <div>
+                            <label class="input-label" style="font-size: 0.8rem; margin-bottom: 6px;">Bank Cashout Processing Fee (NGN ₦)</label>
+                            <div class="input-currency-wrapper">
+                                <span class="input-currency-prefix">₦</span>
+                                <input type="number" id="admin-setting-processing-fee" class="input-currency-field" placeholder="50.00" min="0" step="1" style="height: 42px;">
+                            </div>
+                            <span style="font-size: 0.72rem; color: var(--text-muted);">Fixed processing fee deducted from customer bank withdrawals (Default: ₦50.00).</span>
+                        </div>
+                        <div>
+                            <label class="input-label" style="font-size: 0.8rem; margin-bottom: 6px;">Gift Card Trade Processing Fee (NGN ₦)</label>
+                            <div class="input-currency-wrapper">
+                                <span class="input-currency-prefix">₦</span>
+                                <input type="number" id="admin-setting-trade-fee" class="input-currency-field" placeholder="0.00" min="0" step="1" style="height: 42px;">
+                            </div>
+                            <span style="font-size: 0.72rem; color: var(--text-muted);">Processing fee per gift card trade submission (Set 0 for free/waived).</span>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="currency-registry-row">
                     <!-- Central Currency Registry -->
                     <div class="card currency-registry-table-col" style="padding: 24px; display: flex; flex-direction: column; min-width: 0; margin-bottom: 0;">
