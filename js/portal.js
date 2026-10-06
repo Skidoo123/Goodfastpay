@@ -1225,20 +1225,24 @@ function updateWithdrawalBreakdown() {
     let amount = amountInput ? parseFloat(amountInput.value) : 0;
     if (isNaN(amount) || amount < 0) amount = 0;
 
-    const fee = (db.settings && db.settings.processingFee !== undefined) ? parseFloat(db.settings.processingFee) : 50.00;
+    const ngnFee = (db.settings && db.settings.processingFee !== undefined) ? parseFloat(db.settings.processingFee) : 50.00;
+    const usdFee = (db.settings && db.settings.usdProcessingFee !== undefined) ? parseFloat(db.settings.usdProcessingFee) : 1.00;
+
+    let feeNaira = 0;
     let netNaira = 0;
     let grossNaira = 0;
 
-    const calcFeeEl = document.getElementById("calc-transfer-fee");
-    if (calcFeeEl) calcFeeEl.textContent = `₦${fee.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
-
-    const feeTextEl = document.getElementById("withdraw-fee-text");
-    if (feeTextEl) feeTextEl.textContent = `Fee: ₦${fee.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
-
     if (currency === "USD") {
         const usdRate = (db.currencies && db.currencies["USD"] && db.currencies["USD"].rate) ? parseFloat(db.currencies["USD"].rate) : 1200;
+        feeNaira = usdFee * usdRate;
         grossNaira = amount * usdRate;
-        netNaira = Math.max(0, grossNaira - fee);
+        netNaira = Math.max(0, grossNaira - feeNaira);
+
+        const calcFeeEl = document.getElementById("calc-transfer-fee");
+        if (calcFeeEl) calcFeeEl.textContent = `$${usdFee.toFixed(2)} USD (₦${feeNaira.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})})`;
+
+        const feeTextEl = document.getElementById("withdraw-fee-text");
+        if (feeTextEl) feeTextEl.textContent = `Fee: $${usdFee.toFixed(2)} USD`;
 
         const calcAmountEl = document.getElementById("calc-withdraw-amount");
         if (calcAmountEl) calcAmountEl.textContent = `$${amount.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})} (₦${grossNaira.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})})`;
@@ -1246,8 +1250,15 @@ function updateWithdrawalBreakdown() {
         const calcNetEl = document.getElementById("calc-net-payout");
         if (calcNetEl) calcNetEl.textContent = "₦" + netNaira.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
     } else {
+        feeNaira = ngnFee;
         grossNaira = amount;
-        netNaira = Math.max(0, amount - fee);
+        netNaira = Math.max(0, amount - feeNaira);
+
+        const calcFeeEl = document.getElementById("calc-transfer-fee");
+        if (calcFeeEl) calcFeeEl.textContent = `₦${ngnFee.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+
+        const feeTextEl = document.getElementById("withdraw-fee-text");
+        if (feeTextEl) feeTextEl.textContent = `Fee: ₦${ngnFee.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
 
         const calcAmountEl = document.getElementById("calc-withdraw-amount");
         if (calcAmountEl) calcAmountEl.textContent = "₦" + amount.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
@@ -1597,8 +1608,10 @@ function openForgotPinFromAuthModal() {
 function executeWithdrawal(amount, currency = "NGN") {
     const db = getDB();
     const user = db.users[currentUser.email];
-    const fee = (db.settings && db.settings.processingFee !== undefined) ? parseFloat(db.settings.processingFee) : 50.00;
+    const ngnFee = (db.settings && db.settings.processingFee !== undefined) ? parseFloat(db.settings.processingFee) : 50.00;
+    const usdFee = (db.settings && db.settings.usdProcessingFee !== undefined) ? parseFloat(db.settings.usdProcessingFee) : 1.00;
 
+    let feeNaira = 0;
     let netNairaPayout = 0;
     let amountStr = "";
 
@@ -1609,17 +1622,19 @@ function executeWithdrawal(amount, currency = "NGN") {
             return;
         }
         const usdRate = (db.currencies && db.currencies["USD"] && db.currencies["USD"].rate) ? parseFloat(db.currencies["USD"].rate) : 1200;
+        feeNaira = usdFee * usdRate;
         const grossNaira = amount * usdRate;
-        netNairaPayout = Math.max(0, grossNaira - fee);
+        netNairaPayout = Math.max(0, grossNaira - feeNaira);
 
         user.wallet.usdBalance -= amount;
         amountStr = `$${amount.toFixed(2)} USD (₦${netNairaPayout.toLocaleString()} NGN Net Payout)`;
     } else {
+        feeNaira = ngnFee;
         if (amount > user.wallet.balance) {
             showToast("Insufficient wallet balance for withdrawal.", "danger");
             return;
         }
-        netNairaPayout = Math.max(0, amount - fee);
+        netNairaPayout = Math.max(0, amount - feeNaira);
         user.wallet.balance -= amount;
         amountStr = `₦${amount.toLocaleString()}`;
     }
@@ -1631,7 +1646,7 @@ function executeWithdrawal(amount, currency = "NGN") {
         id: withdrawalId,
         userId: currentUser.email,
         amount: netNairaPayout,
-        fee: fee,
+        fee: currency === "USD" ? feeNaira : ngnFee,
         currency: currency,
         sourceAmount: amount,
         bankName: user.bankDetails.bankName,

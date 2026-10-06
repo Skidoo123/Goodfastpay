@@ -2472,10 +2472,14 @@ function playNotificationSound() {
 function loadAdminProcessingFeeSettings() {
     const db = getDB();
     const feeInput = document.getElementById("admin-setting-processing-fee");
+    const usdFeeInput = document.getElementById("admin-setting-usd-fee");
     const tradeFeeInput = document.getElementById("admin-setting-trade-fee");
     
     if (feeInput) {
         feeInput.value = (db.settings && db.settings.processingFee !== undefined) ? db.settings.processingFee : 50;
+    }
+    if (usdFeeInput) {
+        usdFeeInput.value = (db.settings && db.settings.usdProcessingFee !== undefined) ? db.settings.usdProcessingFee : 1.00;
     }
     if (tradeFeeInput) {
         tradeFeeInput.value = (db.settings && db.settings.tradeFee !== undefined) ? db.settings.tradeFee : 0;
@@ -2485,13 +2489,16 @@ function loadAdminProcessingFeeSettings() {
 function saveAdminProcessingFeeSettings() {
     const db = getDB();
     const feeInput = document.getElementById("admin-setting-processing-fee");
+    const usdFeeInput = document.getElementById("admin-setting-usd-fee");
     const tradeFeeInput = document.getElementById("admin-setting-trade-fee");
     
     const feeVal = feeInput ? (parseFloat(feeInput.value) || 0) : 50;
+    const usdFeeVal = usdFeeInput ? (parseFloat(usdFeeInput.value) || 0) : 1.00;
     const tradeFeeVal = tradeFeeInput ? (parseFloat(tradeFeeInput.value) || 0) : 0;
 
     if (!db.settings) db.settings = {};
     db.settings.processingFee = feeVal;
+    db.settings.usdProcessingFee = usdFeeVal;
     db.settings.tradeFee = tradeFeeVal;
 
     if (typeof saveDB === "function") {
@@ -2501,7 +2508,7 @@ function saveAdminProcessingFeeSettings() {
     }
 
     if (typeof showToast === "function") {
-        showToast(`Processing fee settings saved! (Withdrawal: ₦${feeVal.toFixed(2)}, Trade: ₦${tradeFeeVal.toFixed(2)})`, "success");
+        showToast(`Processing fee settings saved! (NGN: ₦${feeVal.toFixed(2)}, USD Vault: $${usdFeeVal.toFixed(2)}, Trade: ₦${tradeFeeVal.toFixed(2)})`, "success");
     }
     
     localStorage.setItem("goodfastpay_db_updated", Date.now());

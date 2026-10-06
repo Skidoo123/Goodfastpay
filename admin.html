@@ -509,22 +509,30 @@
                         <button type="button" class="btn btn-accent btn-sm" onclick="saveAdminProcessingFeeSettings()" style="padding: 10px 18px; font-weight: 700;"><i class="fas fa-save" style="margin-right: 6px;"></i> Save Fee Settings</button>
                     </div>
                     
-                    <div class="grid-2" style="gap: 16px;">
+                    <div class="grid-3" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px;">
                         <div>
-                            <label class="input-label" style="font-size: 0.8rem; margin-bottom: 6px;">Bank Cashout Processing Fee (NGN ₦)</label>
+                            <label class="input-label" style="font-size: 0.8rem; margin-bottom: 6px;">NGN Cashout Processing Fee (₦)</label>
                             <div class="input-currency-wrapper">
                                 <span class="input-currency-prefix">₦</span>
                                 <input type="number" id="admin-setting-processing-fee" class="input-currency-field" placeholder="50.00" min="0" step="1" style="height: 42px;">
                             </div>
-                            <span style="font-size: 0.72rem; color: var(--text-muted);">Fixed processing fee deducted from customer bank withdrawals (Default: ₦50.00).</span>
+                            <span style="font-size: 0.72rem; color: var(--text-muted);">Fixed fee for NGN bank withdrawals (Default: ₦50.00).</span>
                         </div>
                         <div>
-                            <label class="input-label" style="font-size: 0.8rem; margin-bottom: 6px;">Gift Card Trade Processing Fee (NGN ₦)</label>
+                            <label class="input-label" style="font-size: 0.8rem; margin-bottom: 6px;">USD Vault Cashout Fee (USD $)</label>
+                            <div class="input-currency-wrapper">
+                                <span class="input-currency-prefix">$</span>
+                                <input type="number" id="admin-setting-usd-fee" class="input-currency-field" placeholder="1.00" min="0" step="0.1" style="height: 42px;">
+                            </div>
+                            <span style="font-size: 0.72rem; color: var(--text-muted);">Processing fee for USD Vault withdrawals (Default: $1.00).</span>
+                        </div>
+                        <div>
+                            <label class="input-label" style="font-size: 0.8rem; margin-bottom: 6px;">Gift Card Trade Processing Fee (₦)</label>
                             <div class="input-currency-wrapper">
                                 <span class="input-currency-prefix">₦</span>
                                 <input type="number" id="admin-setting-trade-fee" class="input-currency-field" placeholder="0.00" min="0" step="1" style="height: 42px;">
                             </div>
-                            <span style="font-size: 0.72rem; color: var(--text-muted);">Processing fee per gift card trade submission (Set 0 for free/waived).</span>
+                            <span style="font-size: 0.72rem; color: var(--text-muted);">Processing fee per card trade (Set 0 for free/waived).</span>
                         </div>
                     </div>
                 </div>
