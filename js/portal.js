@@ -2215,28 +2215,99 @@ function closeReceiptModal() {
 }
 
 function downloadTransactionReceiptPDF() {
-    const element = document.getElementById("receipt-printable-area");
-    if (!element) return;
+    const origElement = document.getElementById("receipt-printable-area");
+    if (!origElement) return;
     
-    showToast("Generating official digital PDF receipt...", "info");
+    if (typeof showToast === "function") {
+        showToast("Generating official digital PDF receipt...", "info");
+    }
+
+    // Clone element into off-screen container to guarantee non-blank rendering
+    const clone = origElement.cloneNode(true);
+    
+    // Remove close button from clone if present
+    const closeBtn = clone.querySelector(".modal-close");
+    if (closeBtn) closeBtn.remove();
+
+    // Prepare offscreen wrapper with explicit background and visibility
+    const wrapper = document.createElement("div");
+    wrapper.style.cssText = "position: fixed; top: 0; left: -9999px; width: 480px; z-index: -9999; background: #0f172a; padding: 20px; box-sizing: border-box;";
+    clone.style.cssText += "; display: block !important; visibility: visible !important; opacity: 1 !important; background: #0f172a !important; color: #ffffff !important;";
+    wrapper.appendChild(clone);
+    document.body.appendChild(wrapper);
+
+    const filename = `Goodfastpay_Receipt_${currentActiveReceiptId || 'TX'}.pdf`;
 
     const opt = {
         margin:       [0.2, 0.2, 0.2, 0.2],
-        filename:     `Goodfastpay_Receipt_${currentActiveReceiptId || 'TX'}.pdf`,
+        filename:     filename,
         image:        { type: 'jpeg', quality: 0.98 },
-        html2canvas:  { scale: 2, useCORS: true, backgroundColor: '#1c1f2c' },
+        html2canvas:  { scale: 2, useCORS: true, allowTaint: true, backgroundColor: '#0f172a', scrollX: 0, scrollY: 0 },
         jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' }
     };
 
+    const cleanup = () => {
+        if (wrapper && wrapper.parentNode) {
+            wrapper.parentNode.removeChild(wrapper);
+        }
+    };
+
     if (typeof html2pdf === "function") {
-        html2pdf().set(opt).from(element).save().then(() => {
-            showToast("PDF Receipt downloaded successfully!", "success");
+        html2pdf().set(opt).from(clone).save().then(() => {
+            cleanup();
+            if (typeof showToast === "function") {
+                showToast("PDF Receipt downloaded successfully!", "success");
+            }
         }).catch(err => {
-            window.print();
+            console.warn("html2pdf error, using print window fallback:", err);
+            cleanup();
+            printReceiptWindow(origElement.innerHTML);
         });
     } else {
-        window.print();
+        cleanup();
+        printReceiptWindow(origElement.innerHTML);
     }
+}
+
+/**
+ * Dedicated Print Window Fallback (Guarantees zero blank pages)
+ */
+function printReceiptWindow(innerHTML) {
+    const printWin = window.open('', '_blank', 'width=520,height=700');
+    if (!printWin) {
+        window.print();
+        return;
+    }
+
+    printWin.document.write(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Goodfastpay Receipt - ${currentActiveReceiptId || 'TX'}</title>
+            <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+            <style>
+                body { background: #0f172a; color: #ffffff; font-family: sans-serif; padding: 24px; margin: 0; }
+                .modal-close { display: none !important; }
+                @media print {
+                    body { background: #ffffff !important; color: #000000 !important; }
+                    div { border-color: #cccccc !important; }
+                }
+            </style>
+        </head>
+        <body>
+            <div style="max-width: 480px; margin: 0 auto; background: #0f172a; padding: 24px; border-radius: 16px; border: 1px solid #334155;">
+                ${innerHTML}
+            </div>
+            <script>
+                setTimeout(() => {
+                    window.print();
+                    window.close();
+                }, 500);
+            </script>
+        </body>
+        </html>
+    `);
+    printWin.document.close();
 }
 
 // Render Selling Trade History panel table
