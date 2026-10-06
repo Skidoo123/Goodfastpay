@@ -2019,6 +2019,9 @@ function openReceiptModal(txId, txType) {
     const db = getDB();
     let tx = null;
 
+    const currentProcessingFee = (db.settings && db.settings.processingFee !== undefined) ? parseFloat(db.settings.processingFee) : 50.00;
+    const currentTradeFee = (db.settings && db.settings.tradeFee !== undefined) ? parseFloat(db.settings.tradeFee) : 0.00;
+
     // Search across submissions
     if (db.submissions) {
         const sub = db.submissions.find(s => s.id === txId);
@@ -2037,7 +2040,7 @@ function openReceiptModal(txId, txType) {
                 status: sub.status,
                 date: new Date(sub.createdAt),
                 details: `${sub.brand} (${sub.currency} ${sub.cardValue})`,
-                fee: 0,
+                fee: sub.fee !== undefined ? sub.fee : currentTradeFee,
                 rejectionReason: sub.rejectionReason
             };
         }
@@ -2055,7 +2058,7 @@ function openReceiptModal(txId, txType) {
                 status: wd.status,
                 date: new Date(wd.createdAt),
                 details: `${wd.bankName} - ${wd.accountNumber}`,
-                fee: wd.fee || 50,
+                fee: wd.fee !== undefined ? wd.fee : currentProcessingFee,
                 rejectionReason: wd.declineReason
             };
         }
@@ -2130,7 +2133,10 @@ function openReceiptModal(txId, txType) {
     if (detailsEl) detailsEl.textContent = tx.details;
 
     const feeEl = document.getElementById("rcpt-fee");
-    if (feeEl) feeEl.textContent = tx.fee ? `₦${Number(tx.fee).toLocaleString(undefined, {minimumFractionDigits: 2})}` : "₦0.00 (Waived)";
+    if (feeEl) {
+        const feeVal = Number(tx.fee || 0);
+        feeEl.textContent = feeVal > 0 ? `₦${feeVal.toLocaleString(undefined, {minimumFractionDigits: 2})}` : "₦0.00 (Waived)";
+    }
 
     const badgeEl = document.getElementById("rcpt-status-badge");
     const bannerEl = document.getElementById("rcpt-eta-banner");
