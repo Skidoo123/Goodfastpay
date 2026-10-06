@@ -2017,11 +2017,16 @@ function openReceiptModal(txId, txType) {
         const sub = db.submissions.find(s => s.id === txId);
         if (sub) {
             const estRate = getCardExchangeRate(sub.brand, sub.currency);
-            const payout = sub.payoutAmount !== null ? sub.payoutAmount : (sub.cardValue * estRate);
+            const isUSD = sub.payoutCurrency === "USD";
+            let payout = sub.payoutAmount !== null ? sub.payoutAmount : (sub.cardValue * estRate);
+            if (isUSD && sub.payoutAmount === null) {
+                payout = parseFloat((sub.cardValue * Math.min(1.0, estRate / 1200)).toFixed(2));
+            }
             tx = {
                 id: sub.id,
-                type: "Gift Card Sale",
+                type: isUSD ? "Gift Card Sale (USD Vault)" : "Gift Card Sale (NGN Wallet)",
                 amount: payout,
+                isUSD: isUSD,
                 status: sub.status,
                 date: new Date(sub.createdAt),
                 details: `${sub.brand} (${sub.currency} ${sub.cardValue})`,
@@ -2039,6 +2044,7 @@ function openReceiptModal(txId, txType) {
                 id: wd.id,
                 type: "Cash Withdrawal",
                 amount: wd.amount,
+                isUSD: false,
                 status: wd.status,
                 date: new Date(wd.createdAt),
                 details: `${wd.bankName} - ${wd.accountNumber}`,
@@ -2056,6 +2062,7 @@ function openReceiptModal(txId, txType) {
                 id: item.id,
                 type: "Gift Card Purchase",
                 amount: item.price,
+                isUSD: false,
                 status: "COMPLETED",
                 date: new Date(item.purchasedAt || Date.now()),
                 details: `${item.brand} (${item.currency} ${item.cardValue})`,
@@ -2073,6 +2080,7 @@ function openReceiptModal(txId, txType) {
                 id: adj.id,
                 type: isCredit ? "Admin Balance Credit" : "Admin Balance Deduction",
                 amount: adj.amount,
+                isUSD: false,
                 status: adj.status || "COMPLETED",
                 date: new Date(adj.createdAt),
                 details: adj.reason || "Wallet Adjustment by Admin",
@@ -2086,6 +2094,7 @@ function openReceiptModal(txId, txType) {
             id: txId,
             type: txType || "Account Transaction",
             amount: 0,
+            isUSD: false,
             status: "COMPLETED",
             date: new Date(),
             details: "Official System Transaction Record",
@@ -2096,7 +2105,10 @@ function openReceiptModal(txId, txType) {
     currentActiveReceiptId = tx.id;
 
     const amountValEl = document.getElementById("rcpt-amount-val");
-    if (amountValEl) amountValEl.textContent = `₦${Number(tx.amount || 0).toLocaleString(undefined, {minimumFractionDigits: 2})}`;
+    if (amountValEl) {
+        const sym = tx.isUSD ? "$" : "₦";
+        amountValEl.textContent = `${sym}${Number(tx.amount || 0).toLocaleString(undefined, {minimumFractionDigits: 2})}`;
+    }
 
     const typeEl = document.getElementById("rcpt-type");
     if (typeEl) typeEl.textContent = tx.type;
@@ -2323,8 +2335,11 @@ function renderWithdrawHistory() {
                         <div style="font-size: 0.72rem; color: var(--text-muted);">${dateStr} • ${timeStr}</div>
                     </div>
                 </div>
-                <div>
+                <div style="display: flex; align-items: center; gap: 8px;">
                     ${statusBadge}
+                    <button type="button" onclick="event.stopPropagation(); openReceiptModal('${w.id}', 'Cash Withdrawal')" style="background: rgba(3, 181, 211, 0.15); border: 1px solid rgba(3, 181, 211, 0.35); color: #03b5d3; width: 30px; height: 30px; border-radius: 8px; font-size: 0.85rem; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; transition: all 0.2s ease;" title="View Official Digital Receipt" aria-label="View Official Digital Receipt">
+                        <i class="fas fa-file-invoice"></i>
+                    </button>
                 </div>
             </div>
             <div class="withdraw-ledger-card-bottom">
