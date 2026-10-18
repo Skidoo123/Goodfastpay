@@ -70,7 +70,7 @@ if (typeof window !== "undefined") {
         });
 }
 
-// Listen for incoming OAuth redirects and session state transitions
+// Restore active Supabase sessions (email/password, magic links, password reset redirects)
 if (typeof window !== "undefined") {
     window.addEventListener("DOMContentLoaded", async () => {
         if (supabaseClient) {
@@ -142,47 +142,6 @@ function configureSupabaseCredentials(url, key) {
 // -------------------------------------------------------------
 // AUTHENTICATION API METHODS
 // -------------------------------------------------------------
-
-/**
- * Sign In with OAuth Provider (Google, GitHub, Apple, etc.)
- */
-async function supabaseAuthSignInWithOAuth(provider = "google") {
-    if (supabaseClient && isSupabaseConfigured) {
-        try {
-            const redirectUrl = window.location.origin + window.location.pathname;
-            const { data, error } = await supabaseClient.auth.signInWithOAuth({
-                provider: provider,
-                options: {
-                    redirectTo: redirectUrl,
-                    queryParams: {
-                        access_type: 'offline',
-                        prompt: 'consent',
-                    }
-                }
-            });
-
-            if (error) {
-                return { success: false, message: error.message };
-            }
-
-            return { success: true, data };
-        } catch (e) {
-            return { success: false, message: e.message || `OAuth authentication with ${provider} failed.` };
-        }
-    } else {
-        const simulatedEmail = `${provider}.trader@goodfastpay.com`;
-        syncLocalUserAccount(simulatedEmail, {
-            name: `${provider.charAt(0).toUpperCase() + provider.slice(1)} Trader`,
-            phone: "+234 800 000 0000"
-        }, "oauth_user");
-        setSessionUser(simulatedEmail);
-        showToast(`Signed in with ${provider.toUpperCase()} (Demo Mode)`, "success");
-        setTimeout(() => {
-            window.location.href = "portal.html";
-        }, 1000);
-        return { success: true, isLocalFallback: true };
-    }
-}
 
 /**
  * Sign Up with Email and Password via Supabase Auth
