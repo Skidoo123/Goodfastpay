@@ -184,9 +184,17 @@ async function supabaseAuthSignUp(email, password, metadata = {}) {
 
     // Profile row is created by the on_auth_user_created trigger; fill in phone/name
     try {
+        // Ensure a profile row exists for the new user (upsert by email)
         await supabaseClient.from('profiles')
-            .update({ name: metadata.name || cleanEmail.split("@")[0], phone: metadata.phone || "" })
-            .eq('email', cleanEmail);
+            .upsert([
+                {
+                    email: cleanEmail,
+                    name: metadata.name || cleanEmail.split("@")[0],
+                    phone: metadata.phone || "",
+                    role: 'USER',
+                    status: 'ACTIVE'
+                }
+            ], { onConflict: 'email' });
     } catch (pErr) {
         console.warn("Profile update notice:", pErr.message);
     }
