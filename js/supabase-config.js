@@ -254,6 +254,20 @@ async function supabaseAuthSignIn(email, password) {
         name: authData.user.user_metadata?.full_name || cleanEmail.split("@")[0],
         phone: authData.user.user_metadata?.phone || ""
     }, "");
+    // Record successful login in security_logs for realtime admin tracking
+    try {
+        await supabaseClient.from('security_logs').insert([
+            {
+                user_email: cleanEmail,
+                event: 'User logged in successfully',
+                ip_address: window.location.hostname,
+                user_agent: navigator.userAgent,
+                created_at: new Date().toISOString()
+            }
+        ]);
+    } catch (logErr) {
+        console.warn('Security log insert failed:', logErr.message);
+    }
     await loadUserPreferences();
     return { success: true, user: authData.user };
 }
