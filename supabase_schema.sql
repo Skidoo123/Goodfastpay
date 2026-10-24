@@ -25,6 +25,7 @@ BEGIN
         ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS password TEXT DEFAULT NULL;
         ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS usd_balance NUMERIC(15, 2) NOT NULL DEFAULT 0.00 CHECK (usd_balance >= 0);
         ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS usd_pending_balance NUMERIC(15, 2) NOT NULL DEFAULT 0.00 CHECK (usd_pending_balance >= 0);
+        ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS preferences JSONB NOT NULL DEFAULT '{}'::jsonb;
         ALTER TABLE public.profiles ALTER COLUMN id SET DEFAULT gen_random_uuid();
     END IF;
 
@@ -80,6 +81,7 @@ CREATE TABLE IF NOT EXISTS public.profiles (
     wallet_pending_balance NUMERIC(15, 2) NOT NULL DEFAULT 0.00 CHECK (wallet_pending_balance >= 0),
     usd_balance NUMERIC(15, 2) NOT NULL DEFAULT 0.00 CHECK (usd_balance >= 0),
     usd_pending_balance NUMERIC(15, 2) NOT NULL DEFAULT 0.00 CHECK (usd_pending_balance >= 0),
+    preferences JSONB NOT NULL DEFAULT '{}'::jsonb,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
@@ -289,8 +291,36 @@ BEGIN
         WHERE profiles.id = auth.uid()
         AND profiles.role = 'ADMIN'
     );
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- 3.12 DIAGNOSTICS TABLE (stores client-side diagnostics summaries)
+CREATE TABLE IF NOT EXISTS public.diagnostics (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    environment TEXT NOT NULL,
+    supabase_project TEXT NOT NULL,
+    browser_user_agent TEXT NOT NULL,
+    screen_resolution TEXT NOT NULL,
+    cookies_enabled BOOLEAN NOT NULL,
+    extra JSONB NOT NULL DEFAULT '{}'::jsonb,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE POLICY "Public diagnostics all" ON public.diagnostics FOR ALL USING (true);
 
 -- Permissive Policies to allow client-side database auth
 CREATE POLICY "Public profiles read" ON public.profiles FOR ALL USING (true);

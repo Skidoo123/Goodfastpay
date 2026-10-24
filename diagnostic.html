@@ -291,7 +291,7 @@
             let authSuccess = false;
             try {
                 logToConsole("Checking custom database authenticated user session...", "info");
-                const sessionEmail = sessionStorage.getItem("goodfastpay_user");
+                const sessionEmail = getSessionEmail();
                 
                 if (sessionEmail) {
                     document.getElementById("auth-status-badge").className = "px-3 py-1 rounded-full text-xs font-semibold bg-emerald-950 text-emerald-400 font-mono pulse-glow-success";
@@ -385,11 +385,35 @@
             }
             
             logToConsole("🏁 Diagnostics Suite Finished.", "info");
+
+            // Persist diagnostics summary to Supabase
+            try {
+                const { error: insertError } = await supabaseClient.from('diagnostics').insert({
+                    environment: env,
+                    supabase_project: projectHost,
+                    browser_user_agent: navigator.userAgent,
+                    screen_resolution: `${window.innerWidth}x${window.innerHeight}`,
+                    cookies_enabled: navigator.cookieEnabled,
+                    extra: {
+                        host,
+                        db_connected: dbConnected,
+                        auth_success: authSuccess,
+                        realtime_success: realtimeSuccess
+                    }
+                });
+                if (insertError) {
+                    logToConsole(`Failed to store diagnostics: ${insertError.message}`, "error");
+                } else {
+                    logToConsole("Diagnostics data stored in Supabase.", "success");
+                }
+            } catch (e) {
+                logToConsole(`Exception while storing diagnostics: ${e.message}`, "error");
+            }
         }
 
         async function logoutTest() {
             logToConsole("Logging out current active database session...", "info");
-            sessionStorage.removeItem("goodfastpay_user");
+            clearSession();
             logToConsole("Session state cleared.", "success");
             runAllDiagnostics();
         }

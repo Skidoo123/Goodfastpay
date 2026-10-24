@@ -213,204 +213,63 @@ const INITIAL_DATABASE = {
     adjustments: []
 };
 
-// Database In-Memory Cache for Maximum Performance & Zero-Lag Operations
+// Live Database Mirror (in memory only). Populated from Supabase by syncFromSupabaseCloud()
+// and kept current by Supabase Realtime. Nothing is persisted in the browser.
 let cachedDB = null;
 
 function invalidateDBCache() {
-    cachedDB = null;
+    // Re-pull from Supabase instead of discarding live state
+    if (typeof syncFromSupabaseCloud === "function") syncFromSupabaseCloud();
 }
 
-if (typeof window !== "undefined") {
-    window.addEventListener('storage', (e) => {
-        if (e.key === 'goodfastpay_db') {
-            invalidateDBCache();
-        }
-    });
+function createEmptyLiveDB() {
+    return {
+        users: {},
+        submissions: [],
+        inventory: [],
+        withdrawals: [],
+        auditTrail: [],
+        tickets: [],
+        adjustments: [],
+        currencyHistory: [],
+        settings: {
+            siteName: "Goodfastpay",
+            maintenanceMode: false,
+            rates: JSON.parse(JSON.stringify(DEFAULT_CARD_RATES))
+        },
+        currencies: JSON.parse(JSON.stringify(DEFAULT_SYSTEM_CURRENCIES))
+    };
 }
 
-// Database Initializer
 function getDB() {
-    if (cachedDB) return cachedDB;
-
-    if (!localStorage.getItem("goodfastpay_db")) {
-        localStorage.setItem("goodfastpay_db", JSON.stringify(INITIAL_DATABASE));
-    }
-    let db = JSON.parse(localStorage.getItem("goodfastpay_db"));
-    let dirty = false;
-
-    if (!db.submissions) {
-        db.submissions = INITIAL_DATABASE.submissions || [];
-        dirty = true;
-    }
-    if (!db.withdrawals) {
-        db.withdrawals = INITIAL_DATABASE.withdrawals || [];
-        dirty = true;
-    }
-    if (!db.inventory) {
-        db.inventory = INITIAL_DATABASE.inventory || [];
-        dirty = true;
-    }
-    if (!db.adjustments) {
-        db.adjustments = [];
-        dirty = true;
-    }
-    if (!db.currencies) {
-        db.currencies = DEFAULT_SYSTEM_CURRENCIES;
-        dirty = true;
-    }
-    // Auto-migrate dual wallet balances (NGN & USD) for all users
-    if (db.users) {
-        Object.keys(db.users).forEach(email => {
-            if (!db.users[email].wallet) {
-                db.users[email].wallet = { balance: 0.00, pendingBalance: 0.00, usdBalance: 0.00, usdPending: 0.00 };
-                dirty = true;
-            }
-            if (db.users[email].wallet.usdBalance === undefined) {
-                db.users[email].wallet.usdBalance = 250.00;
-                db.users[email].wallet.usdPending = 0.00;
-                dirty = true;
-            }
-            if (db.users[email].wallet.balance === undefined) {
-                db.users[email].wallet.balance = 0.00;
-                db.users[email].wallet.pendingBalance = 0.00;
-                dirty = true;
-            }
-        });
-    }
-    // Auto-migrate transactionPin for demo user if missing in existing localStorage
-    if (db.users && db.users["user@goodfastpay.com"] && db.users["user@goodfastpay.com"].transactionPin === undefined) {
-        db.users["user@goodfastpay.com"].transactionPin = "1234";
-        dirty = true;
-    }
-    // Auto-migrate adminPin and staffRole for admin users if missing in existing localStorage
-    if (db.users) {
-        Object.keys(db.users).forEach(email => {
-            if (db.users[email].role === "ADMIN") {
-                if (!db.users[email].adminPin) {
-                    db.users[email].adminPin = "123456";
-                    dirty = true;
-                }
-                if (!db.users[email].staffRole) {
-                    db.users[email].staffRole = "SUPER_ADMIN";
-                    dirty = true;
-                }
-            }
-        });
-    }
-    // Auto-migrate rates in database settings if missing or updating
-    if (!db.settings.rates || Object.keys(db.settings.rates).length < 20 || !db.settings.rates["Amazon"] || !db.settings.rates["Amazon"]["USD"]) {
-        db.settings.rates = DEFAULT_CARD_RATES;
-        dirty = true;
-    }
-    if (!db.currencyHistory) {
-        db.currencyHistory = [
-            { currency: "USD", oldRate: 1200, newRate: 1200, operator: "system", timestamp: new Date().toISOString() },
-            { currency: "EUR", oldRate: 1100, newRate: 1100, operator: "system", timestamp: new Date().toISOString() },
-            { currency: "GBP", oldRate: 1500, newRate: 1500, operator: "system", timestamp: new Date().toISOString() },
-            { currency: "NGN", oldRate: 1, newRate: 1, operator: "system", timestamp: new Date().toISOString() }
-        ];
-        dirty = true;
-    }
-    if (!db.tickets) {
-        db.tickets = [
-            {
-                id: "TKT-10492",
-                userId: "user@goodfastpay.com",
-                title: "Amazon Gift Card Sale Pending Review",
-                category: "Failed Gift Card Transaction",
-                priority: "HIGH",
-                status: "OPEN",
-                createdAt: new Date(Date.now() - 3600000 * 4).toISOString(),
-                updatedAt: new Date(Date.now() - 3600000 * 4).toISOString(),
-                description: "I submitted an Amazon gift card front/back scans but it is still pending review. Please verify it.",
-                attachments: [],
-                assignedTo: "Support Staff A",
-                messages: [
-                    {
-                        sender: "USER",
-                        senderEmail: "user@goodfastpay.com",
-                        text: "I submitted an Amazon gift card front/back scans but it is still pending review. Please verify it.",
-                        timestamp: new Date(Date.now() - 3600000 * 4).toISOString()
-                    }
-                ],
-                userUnread: false,
-                adminUnread: true
-            },
-            {
-                id: "TKT-10511",
-                userId: "user@goodfastpay.com",
-                title: "Withdrawal Delay to GTBank",
-                category: "Report Payment Delay",
-                priority: "CRITICAL",
-                status: "PENDING",
-                createdAt: new Date(Date.now() - 3600000 * 24).toISOString(),
-                updatedAt: new Date(Date.now() - 3600000 * 23).toISOString(),
-                description: "My withdrawal of ₦50,000 to my Guaranty Trust Bank account is delayed.",
-                attachments: [],
-                assignedTo: "Support Staff B",
-                messages: [
-                    {
-                        sender: "USER",
-                        senderEmail: "user@goodfastpay.com",
-                        text: "My withdrawal of ₦50,000 to my Guaranty Trust Bank account is delayed.",
-                        timestamp: new Date(Date.now() - 3600000 * 24).toISOString()
-                    },
-                    {
-                        sender: "ADMIN",
-                        senderEmail: "admin@goodfastpay.com",
-                        text: "Hi Abdallah, we are investigating the bank settlement node. We will update you shortly.",
-                        timestamp: new Date(Date.now() - 3600000 * 23).toISOString()
-                    }
-                ],
-                userUnread: true,
-                adminUnread: false
-            }
-        ];
-        dirty = true;
-    }
-    if (dirty) {
-        localStorage.setItem("goodfastpay_db", JSON.stringify(db));
-    }
-    cachedDB = db;
+    if (!cachedDB) cachedDB = createEmptyLiveDB();
     return cachedDB;
 }
 
 function saveDB(db) {
+    // Live mode: just update the in-memory mirror. Writes to Supabase are done by
+    // the supabasePush*/supabaseAdmin* functions in supabase-config.js.
     cachedDB = db;
-    try {
-        localStorage.setItem("goodfastpay_db", JSON.stringify(db));
-    } catch (e) {
-        console.error("Storage quota exceeded! Clearing older images to save space...", e);
-        if (db.submissions && db.submissions.length > 0) {
-            // Keep only the 3 most recent submissions with full preview images, clear the rest
-            db.submissions.forEach((sub, idx) => {
-                if (idx > 2) {
-                    sub.frontImageUrl = "stripped";
-                    sub.backImageUrl = "stripped";
-                }
-            });
-            try {
-                localStorage.setItem("goodfastpay_db", JSON.stringify(db));
-            } catch (err2) {
-                // Clear all images if space is still tight
-                db.submissions.forEach(sub => {
-                    sub.frontImageUrl = "stripped";
-                    sub.backImageUrl = "stripped";
-                });
-                try {
-                    localStorage.setItem("goodfastpay_db", JSON.stringify(db));
-                } catch (err3) {
-                    console.error("Critical: Could not save database even after stripping images.", err3);
-                }
-            }
-        }
-    }
-
 }
 
-// Session Helpers
+// Session Helpers (backed by Supabase Auth — no custom localStorage/sessionStorage keys)
+const SUPABASE_AUTH_STORAGE_KEY = "sb-btbolekfrcwzzjqhorgi-auth-token";
+
+function getSessionEmail() {
+    // Read the session that supabase-js itself maintains (synchronous access)
+    try {
+        const raw = window.localStorage.getItem(SUPABASE_AUTH_STORAGE_KEY);
+        if (!raw) return null;
+        const parsed = JSON.parse(raw);
+        const email = parsed && parsed.user && parsed.user.email;
+        return email ? email.toLowerCase() : null;
+    } catch (e) {
+        return null;
+    }
+}
+
 function getSessionUser() {
-    const sessionEmail = sessionStorage.getItem("goodfastpay_user") || localStorage.getItem("goodfastpay_user");
+    const sessionEmail = getSessionEmail();
     if (!sessionEmail) return null;
     const db = getDB();
     if (!db.users[sessionEmail]) {
@@ -438,15 +297,48 @@ function getSessionUser() {
 }
 
 function setSessionUser(email) {
-    if (!email) return;
-    sessionStorage.setItem("goodfastpay_user", email);
-    localStorage.setItem("goodfastpay_user", email);
+    // No-op: the session is created by Supabase Auth (signInWithPassword / signUp)
 }
 
 function clearSession() {
-    sessionStorage.removeItem("goodfastpay_user");
-    sessionStorage.removeItem("goodfastpay_otp");
-    localStorage.removeItem("goodfastpay_user");
+    activeOtp = null;
+    userPreferences = {};
+    try { window.localStorage.removeItem(SUPABASE_AUTH_STORAGE_KEY); } catch (e) {}
+    if (typeof supabaseClient !== "undefined" && supabaseClient) {
+        supabaseClient.auth.signOut().catch(() => {});
+    }
+}
+
+// -------------------------------------------------------------
+// USER PREFERENCES (stored in Supabase profiles.preferences JSONB)
+// -------------------------------------------------------------
+let userPreferences = {};
+
+function getPref(key, fallback) {
+    return userPreferences[key] !== undefined ? userPreferences[key] : fallback;
+}
+
+function setPref(key, value) {
+    userPreferences[key] = value;
+    const email = getSessionEmail();
+    if (!email || typeof supabaseClient === "undefined" || !supabaseClient) return;
+    supabaseClient.from("profiles")
+        .update({ preferences: userPreferences })
+        .eq("email", email)
+        .then(({ error }) => { if (error) console.warn("Preference save notice:", error.message); });
+}
+
+async function loadUserPreferences() {
+    const email = getSessionEmail();
+    if (!email || typeof supabaseClient === "undefined" || !supabaseClient) return;
+    try {
+        const { data } = await supabaseClient.from("profiles").select("preferences").eq("email", email).maybeSingle();
+        userPreferences = (data && data.preferences) || {};
+        initTheme();
+        window.dispatchEvent(new CustomEvent("goodfastpay_prefs_loaded", { detail: userPreferences }));
+    } catch (e) {
+        console.warn("Preference load notice:", e.message);
+    }
 }
 
 // Rate Limiting Simulator
@@ -579,7 +471,7 @@ function showToast(message, type = "info") {
 
 // Initialize Active Theme
 function initTheme() {
-    const savedTheme = localStorage.getItem("goodfastpay_theme") || "dark";
+    const savedTheme = getPref("theme", "dark");
     document.documentElement.setAttribute("data-theme", savedTheme);
     const themeBtnIcon = document.querySelector(".theme-toggle-btn i");
     if (themeBtnIcon) {
@@ -591,7 +483,7 @@ function toggleTheme() {
     const currentTheme = document.documentElement.getAttribute("data-theme") || "dark";
     const newTheme = currentTheme === "dark" ? "light" : "dark";
     document.documentElement.setAttribute("data-theme", newTheme);
-    localStorage.setItem("goodfastpay_theme", newTheme);
+    setPref("theme", newTheme);
     
     const themeBtnIcon = document.querySelector(".theme-toggle-btn i");
     if (themeBtnIcon) {
@@ -599,10 +491,12 @@ function toggleTheme() {
     }
 }
 
-// Generate Mock OTP
+// Generate Mock OTP (held in memory only)
+let activeOtp = null;
+function getActiveOtp() { return activeOtp; }
 function generateOTP(email) {
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
-    sessionStorage.setItem("goodfastpay_otp", JSON.stringify({ email, otp, expires: Date.now() + (5 * 60 * 1000) }));
+    activeOtp = { email, otp, expires: Date.now() + (5 * 60 * 1000) };
     console.log(`[SIMULATED EMAIL / OTP for ${email}]: Your Goodfastpay code is: ${otp}`);
     return otp;
 }
@@ -613,14 +507,14 @@ function verifyOTP(email, enteredOtp) {
     // Master demo OTP "000000" always passes instantly
     if (cleanInput === "000000") return { success: true };
     
-    const stored = JSON.parse(sessionStorage.getItem("goodfastpay_otp") || "{}");
+    const stored = activeOtp;
     if (!stored || !stored.otp) {
         // Fallback for seamless demo verification on mobile devices
         return { success: true };
     }
     
     if (stored.otp === cleanInput) {
-        sessionStorage.removeItem("goodfastpay_otp");
+        activeOtp = null;
         return { success: true };
     }
     

@@ -1,6 +1,7 @@
 // Goodfastpay Platform - Administrative Console Controller JS
 
 let currentAdmin = null;
+let adminPinVerifiedFor = null; // in-memory only; PIN re-required on each page load
 let activeUserInspectEmail = null;
 let activeInspectTab = "bank";
 let activeCardInspectId = null;
@@ -67,12 +68,14 @@ function loadAdminSession() {
     }
     
     if (currentAdmin.role !== "ADMIN") {
+        // Role is only known after the live Supabase sync completes
+        if (!window.liveDataReady) return;
         window.location.href = "portal.html";
         return;
     }
 
     // Check 6-Digit Admin Security PIN authorization
-    const isPinVerified = sessionStorage.getItem("admin_pin_verified_" + currentAdmin.email) === "true";
+    const isPinVerified = adminPinVerifiedFor === currentAdmin.email;
     const pinModal = document.getElementById("admin-pin-modal");
     
     if (!isPinVerified) {
@@ -1844,12 +1847,11 @@ function confirmResetDB() {
         if (typeof showToast === "function") showToast("Resetting database sandbox is restricted to SUPER_ADMIN.", "danger");
         return;
     }
-    if (confirm("WARNING: Are you sure you want to restore the sandbox database to its default factory state? This will delete all user card trade submissions, cashout withdrawals, and linked bank accounts!")) {
-        localStorage.removeItem("goodfastpay_db");
-        showToast("Database sandbox restored to default credentials successfully! Reloading...", "warning");
+    if (confirm("Reload all data live from Supabase? (Local view will be refreshed.)")) {
+        showToast("Reloading live data from Supabase...", "info");
         setTimeout(() => {
             window.location.reload();
-        }, 1500);
+        }, 800);
     }
 }
 
@@ -4351,7 +4353,11 @@ function syncAdminActiveChat() {
    ========================================================================== */
 
 // 1. MULTI-ROLE STAFF ACCESS CONTROL (RBAC)
-let activeAdminRole = localStorage.getItem("goodfastpay_admin_role") || "SUPER_ADMIN";
+let activeAdminRole = getPref("adminRole", "SUPER_ADMIN");
+window.addEventListener("goodfastpay_prefs_loaded", () => {
+    activeAdminRole = getPref("adminRole", "SUPER_ADMIN");
+    if (typeof applyAdminRolePermissions === "function") applyAdminRolePermissions();
+});
 
 function switchAdminRole(newRole) {
     const db = getDB();
@@ -4368,7 +4374,7 @@ function switchAdminRole(newRole) {
     }
 
     activeAdminRole = newRole;
-    localStorage.setItem("goodfastpay_admin_role", newRole);
+    setPref("adminRole", newRole);
     applyAdminRolePermissions();
     if (typeof showToast === "function") {
         showToast(`Switched staff operational role to: ${newRole.replace('_', ' ')}`, "info");
@@ -4383,7 +4389,7 @@ function applyAdminRolePermissions() {
     // Enforce locked assigned role for non-Super-Admin accounts
     if (assignedRole !== "SUPER_ADMIN") {
         activeAdminRole = assignedRole;
-        localStorage.setItem("goodfastpay_admin_role", activeAdminRole);
+        setPref("adminRole", activeAdminRole);
     }
 
     const roleSelector = document.getElementById("admin-role-selector");
@@ -4866,7 +4872,7 @@ function handleAdminPinVerification(e) {
     const expectedPin = (currentAcc && currentAcc.adminPin) ? currentAcc.adminPin : "123456";
 
     if (enteredPin === expectedPin) {
-        sessionStorage.setItem("admin_pin_verified_" + currentAdmin.email, "true");
+        adminPinVerifiedFor = currentAdmin.email;
         if (typeof showToast === "function") showToast("Admin Security PIN verified. Console unlocked.", "success");
         if (pinInput) pinInput.value = "";
 

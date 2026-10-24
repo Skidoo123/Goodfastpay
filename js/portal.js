@@ -274,7 +274,7 @@ function updateDashboardStats() {
     // Available NGN Balance display
     const balanceText = "₦" + user.wallet.balance.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
     const usdBalanceText = "$" + (user.wallet.usdBalance !== undefined ? user.wallet.usdBalance : 250.00).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
-    const isHidden = localStorage.getItem("hideBalance") === "true";
+    const isHidden = getPref("hideBalance", false) === true;
     
     const balanceEl = document.getElementById("stat-wallet-balance");
     if (balanceEl) {
@@ -1113,11 +1113,16 @@ function populateWithdrawConfirmDetails() {
 }
 
 // Handle Hero Wallet Currency Switcher (NGN vs USD)
-let activeHeroCurrency = localStorage.getItem("activeHeroCurrency") || "NGN";
+let activeHeroCurrency = getPref("activeHeroCurrency", "NGN");
+window.addEventListener("goodfastpay_prefs_loaded", () => {
+    activeHeroCurrency = getPref("activeHeroCurrency", "NGN");
+    if (typeof updateDashboardStats === "function") updateDashboardStats();
+    if (typeof renderHeroBalance === "function") renderHeroBalance();
+});
 
 function setHeroCurrency(curr) {
     activeHeroCurrency = curr;
-    localStorage.setItem("activeHeroCurrency", curr);
+    setPref("activeHeroCurrency", curr);
     renderHeroBalance();
 }
 
@@ -1126,7 +1131,7 @@ function renderHeroBalance() {
     const user = currentUser ? db.users[currentUser.email] : null;
     if (!user || !user.wallet) return;
 
-    const isHidden = localStorage.getItem("hideBalance") === "true";
+    const isHidden = getPref("hideBalance", false) === true;
     const ngnVal = user.wallet.balance || 0;
     const usdVal = user.wallet.usdBalance !== undefined ? user.wallet.usdBalance : 250.00;
 
@@ -3428,10 +3433,10 @@ function applyUserThemeSelection(val) {
     const themeMode = (val || "dark").toLowerCase();
     if (themeMode === "dark") {
         document.documentElement.setAttribute("data-theme", "dark");
-        localStorage.setItem("goodfastpay_theme", "dark");
+        setPref("theme", "dark");
     } else {
         document.documentElement.setAttribute("data-theme", "light");
-        localStorage.setItem("goodfastpay_theme", "light");
+        setPref("theme", "light");
     }
     showToast(`Theme updated to ${themeMode} mode.`, "info");
 }
@@ -4532,8 +4537,8 @@ function toggleBalanceVisibility() {
     
     // Step 2: Swap values after fade-out transition completes (150ms)
     setTimeout(() => {
-        const currentHidden = localStorage.getItem("hideBalance") === "true";
-        localStorage.setItem("hideBalance", !currentHidden ? "true" : "false");
+        const currentHidden = getPref("hideBalance", false) === true;
+        setPref("hideBalance", !currentHidden);
         
         // Re-calculate stats and update texts synchronously
         updateDashboardStats();

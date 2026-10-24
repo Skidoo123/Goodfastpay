@@ -13,23 +13,10 @@ let realtimeChannel = null;
 (function initSupabase() {
     try {
         if (typeof supabase !== "undefined" && typeof supabase.createClient === "function") {
-            // Sanitize localStorage if corrupted key was stored
-            let storedUrl = localStorage.getItem("goodfastpay_supabase_url");
-            let storedKey = localStorage.getItem("goodfastpay_supabase_key");
+            const activeUrl = SUPABASE_URL;
+            const activeKey = SUPABASE_ANON_KEY;
 
-            if (storedKey && (storedKey.startsWith("your-") || storedKey.length < 50)) {
-                localStorage.removeItem("goodfastpay_supabase_key");
-                storedKey = null;
-            }
-            if (storedUrl && storedUrl.includes("your-project-id")) {
-                localStorage.removeItem("goodfastpay_supabase_url");
-                storedUrl = null;
-            }
-
-            const activeUrl = storedUrl || SUPABASE_URL;
-            const activeKey = storedKey || SUPABASE_ANON_KEY;
-
-            if (activeUrl && activeKey && !activeUrl.includes("your-project-id") && !activeKey.startsWith("your-")) {
+            if (activeUrl && activeKey) {
                 supabaseClient = supabase.createClient(activeUrl, activeKey, {
                     auth: {
                         persistSession: true,
@@ -99,6 +86,9 @@ if (typeof window !== "undefined") {
                     }
                 }
 
+                // Load user preferences (theme, hidden balance, etc.) from profiles.preferences
+                await loadUserPreferences();
+
                 // Initialize Realtime Live Sync
                 setupSupabaseRealtimeSubscriptions();
                 // Pull latest data from database
@@ -122,8 +112,6 @@ function configureSupabaseCredentials(url, key) {
         return false;
     }
     
-    localStorage.setItem("goodfastpay_supabase_url", url);
-    localStorage.setItem("goodfastpay_supabase_key", key);
     if (typeof supabase !== "undefined") {
         supabaseClient = supabase.createClient(url, key, {
             auth: {
@@ -148,97 +136,45 @@ function configureSupabaseCredentials(url, key) {
  */
 async function supabaseAuthSignUp(email, password, metadata = {}) {
     const cleanEmail = email.trim().toLowerCase();
-    
-    // Check if email already exists in local database
-    const db = getDB();
-    if (db.users && db.users[cleanEmail]) {
-        // Update user record with newly provided credentials in local DB
-        db.users[cleanEmail].passwordHash = password;
-        if (metadata.name) db.users[cleanEmail].name = metadata.name;
-        if (metadata.phone) db.users[cleanEmail].phone = metadata.phone;
-        saveDB(db);
-        return { success: true, isUpdated: true };
+
+    if (!supabaseClient || !isSupabaseConfigured) {
+        return { success: false, message: "Cannot reach the server. Please try again." };
     }
-    
-    if (supabaseClient && isSupabaseConfigured) {
-        try {
-            // Check if profile exists in Supabase Cloud
-            try {
-                const { data: existing } = await supabaseClient
-                    .from('profiles')
-                    .select('email')
-                    .eq('email', cleanEmail)
-                    .maybeSingle();
 
-                if (existing) {
-                    console.warn("Profile already in Supabase Cloud for:", cleanEmail);
-                }
-            } catch (cErr) {
-                console.warn("Supabase profile check notice:", cErr.message);
-            }
-
-            // Attempt standard Supabase Auth creation if supported
-            let authId = null;
-            try {
-                const { data: authData } = await supabaseClient.auth.signUp({
-                    email: cleanEmail,
-                    password: password,
-                    options: {
-                        data: {
-                            full_name: metadata.name || cleanEmail.split("@")[0],
-                            phone: metadata.phone || ""
-                        }
-                    }
-                });
-                if (authData && authData.user) {
-                    authId = authData.user.id;
-                }
-            } catch (aErr) {
-                console.warn("Supabase Auth signUp attempt notice:", aErr.message);
-            }
-
-            // Create new profile record in Supabase public.profiles
-            let profileId = authId;
-            try {
-                const { data: newProfile, error: insertErr } = await supabaseClient
-                    .from('profiles')
-                    .insert([{
-                        ...(authId ? { id: authId } : {}),
-                        email: cleanEmail,
-                        name: metadata.name || cleanEmail.split("@")[0],
-                        phone: metadata.phone || "",
-                        password: password,
-                        role: cleanEmail === "admin@goodfastpay.com" ? "ADMIN" : "USER",
-                        status: "ACTIVE"
-                    }])
-                    .select()
-                    .maybeSingle();
-
-                if (insertErr) {
-                    console.warn("Supabase direct profile insert notice (falling back to local session):", insertErr.message);
-                } else if (newProfile) {
-                    profileId = newProfile.id;
-                }
-            } catch (pErr) {
-                console.warn("Supabase profile insert exception:", pErr.message);
-            }
-
-            syncLocalUserAccount(cleanEmail, {
-                id: profileId,
-                name: metadata.name || cleanEmail.split("@")[0],
+    const { data: authData, error: authErr } = await supabaseClient.auth.signUp({
+        email: cleanEmail,
+        password: password,
+        options: {
+            data: {
+                full_name: metadata.name || cleanEmail.split("@")[0],
                 phone: metadata.phone || ""
-            }, password);
-
-            return { success: true };
-        } catch (e) {
-            console.warn("Supabase direct signup fallback exception:", e.message);
-            syncLocalUserAccount(cleanEmail, metadata, password);
-            return { success: true, isFallback: true };
+            }
         }
-    } else {
-        syncLocalUserAccount(cleanEmail, metadata, password);
-        return { success: true, isLocalFallback: true };
+    });
+
+    if (authErr) {
+        return { success: false, message: authErr.message };
     }
+    if (!authData || !authData.session) {
+        return { success: false, message: "Account created. Please check your email to confirm it, then sign in." };
+    }
+
+    // Profile row is created by the on_auth_user_created trigger; fill in phone/name
+    try {
+        await supabaseClient.from('profiles')
+            .update({ name: metadata.name || cleanEmail.split("@")[0], phone: metadata.phone || "" })
+            .eq('email', cleanEmail);
+    } catch (pErr) {
+        console.warn("Profile update notice:", pErr.message);
+    }
+
+    syncLocalUserAccount(cleanEmail, {
+        id: authData.user.id,
+        name: metadata.name || cleanEmail.split("@")[0],
+        phone: metadata.phone || ""
+    }, "");
+
+    return { success: true };
 }
 
 /**
@@ -246,94 +182,57 @@ async function supabaseAuthSignUp(email, password, metadata = {}) {
  */
 async function supabaseAuthSignIn(email, password) {
     const cleanEmail = email.trim().toLowerCase();
-    const db = getDB();
 
-    // 1. Check demo accounts first for 100% instant reliable login
-    if (cleanEmail === "user@goodfastpay.com" || cleanEmail === "admin@goodfastpay.com") {
-        if (!db.users[cleanEmail]) {
-            syncLocalUserAccount(cleanEmail, { email: cleanEmail, name: cleanEmail === "admin@goodfastpay.com" ? "System Administrator" : "Abdallah Dev" }, password || "password123");
-        }
-        setSessionUser(cleanEmail);
-        return { success: true, isDemo: true };
+    if (!supabaseClient || !isSupabaseConfigured) {
+        return { success: false, message: "Cannot reach the server. Please try again." };
     }
 
-    // 2. Query Native Supabase Auth if connected
-    if (supabaseClient && isSupabaseConfigured) {
-        try {
-            const { data: authData, error: authErr } = await supabaseClient.auth.signInWithPassword({
-                email: cleanEmail,
-                password: password
-            });
-
-            if (authData && authData.user) {
-                syncLocalUserAccount(cleanEmail, {
-                    id: authData.user.id,
-                    name: authData.user.user_metadata?.full_name || cleanEmail.split("@")[0],
-                    phone: authData.user.user_metadata?.phone || ""
-                }, password);
-                setSessionUser(cleanEmail);
-                return { success: true, user: authData.user };
-            }
-        } catch (authEx) {
-            console.warn("Supabase Auth signInWithPassword exception:", authEx.message);
-        }
-
-        // 3. Query Supabase Cloud Profiles table
-        try {
-            const { data: profile } = await supabaseClient
-                .from('profiles')
-                .select('*')
-                .eq('email', cleanEmail)
-                .maybeSingle();
-
-            if (profile) {
-                if (profile.status === "SUSPENDED") {
-                    return { success: false, message: "Your account has been suspended. Please contact support." };
-                }
-                if (profile.status === "BANNED") {
-                    return { success: false, message: "Your account has been permanently banned." };
-                }
-                if (profile.password && profile.password === password) {
-                    syncLocalUserAccount(cleanEmail, profile, password);
-                    setSessionUser(cleanEmail);
-                    return { success: true, user: { email: cleanEmail, id: profile.id } };
-                }
-            }
-        } catch (pErr) {
-            console.warn("Supabase profile check notice:", pErr.message);
-        }
+    // Block suspended / banned accounts
+    let profile = null;
+    try {
+        const { data } = await supabaseClient.from('profiles').select('*').eq('email', cleanEmail).maybeSingle();
+        profile = data;
+    } catch (pErr) {
+        console.warn("Supabase profile check notice:", pErr.message);
+    }
+    if (profile && profile.status === "SUSPENDED") {
+        return { success: false, message: "Your account has been suspended. Please contact support." };
+    }
+    if (profile && profile.status === "BANNED") {
+        return { success: false, message: "Your account has been permanently banned." };
     }
 
-    // 4. Check local database user matching
-    const localUser = db.users[cleanEmail];
-    if (localUser) {
-        if (localUser.status === "SUSPENDED") {
-            return { success: false, message: "Your account has been suspended. Please contact support." };
-        }
-        if (localUser.status === "BANNED") {
-            return { success: false, message: "Your account has been permanently banned." };
-        }
+    let { data: authData, error: authErr } = await supabaseClient.auth.signInWithPassword({
+        email: cleanEmail,
+        password: password
+    });
 
-        const isPasswordMatch = !localUser.passwordHash || 
-                               localUser.passwordHash === password || 
-                               password === "1234" || 
-                               password === "password123";
-        if (isPasswordMatch) {
-            if (password && password !== "1234" && password !== "password123") {
-                localUser.passwordHash = password;
-                saveDB(db);
-            }
-            setSessionUser(cleanEmail);
-            return { success: true, isLocalFallback: true };
+    // Legacy accounts: profile has a password but no Supabase Auth user yet → migrate once
+    if ((!authData || !authData.session) && profile && profile.password && profile.password === password) {
+        const { data: upData } = await supabaseClient.auth.signUp({
+            email: cleanEmail,
+            password: password,
+            options: { data: { full_name: profile.name || cleanEmail.split("@")[0], phone: profile.phone || "" } }
+        });
+        if (upData && upData.session) {
+            authData = upData;
+            authErr = null;
         } else {
-            return { success: false, message: "Incorrect email address or password combination." };
+            return { success: false, message: "Please confirm your email address to finish upgrading your account, then sign in again." };
         }
     }
 
-    // 5. Auto-provision new account if logging in for first time
-    syncLocalUserAccount(cleanEmail, { email: cleanEmail }, password);
-    setSessionUser(cleanEmail);
-    return { success: true, isAutoProvisioned: true };
+    if (authErr || !authData || !authData.session) {
+        return { success: false, message: "Incorrect email address or password combination." };
+    }
+
+    syncLocalUserAccount(cleanEmail, {
+        id: authData.user.id,
+        name: authData.user.user_metadata?.full_name || cleanEmail.split("@")[0],
+        phone: authData.user.user_metadata?.phone || ""
+    }, "");
+    await loadUserPreferences();
+    return { success: true, user: authData.user };
 }
 
 /**
@@ -341,6 +240,9 @@ async function supabaseAuthSignIn(email, password) {
  */
 async function supabaseAuthSignOut() {
     clearSession();
+    if (supabaseClient) {
+        try { await supabaseClient.auth.signOut(); } catch (e) {}
+    }
     window.location.href = "index.html";
 }
 

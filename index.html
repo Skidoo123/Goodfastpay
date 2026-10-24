@@ -728,9 +728,8 @@
             if (emailField) emailField.value = demoEmail;
             if (passField) passField.value = "password123";
 
-            const code = generateOTP(demoEmail);
-            openOtpModal(demoEmail, "login");
-            showToast(`📱 Mobile Demo Mode Activated (OTP: ${code})`, "success");
+            openAuthModal('login');
+            document.getElementById("login-form").requestSubmit();
         }
 
         function autoFillDemoOtp() {
@@ -748,7 +747,7 @@
             document.getElementById("otp-target-action").value = action;
             
             // Retrieve generated OTP
-            const storedOtp = JSON.parse(sessionStorage.getItem("goodfastpay_otp") || "{}");
+            const storedOtp = getActiveOtp() || {};
             const activeCode = storedOtp.otp || "000000";
             
             const otpInput = document.getElementById("otp-input");
@@ -907,9 +906,7 @@
                 }
 
                 const otpCode = generateOTP(email);
-                sessionStorage.setItem("pending_registration", JSON.stringify({
-                    name, email, phone, passwordHash: password
-                }));
+                pendingRegistration = { name, email, phone };
                 
                 showToast(`Verification code sent! (OTP: ${otpCode})`, "success");
                 openOtpModal(email, "register");
@@ -922,6 +919,8 @@
                 }
             }
         }
+
+        let pendingRegistration = null;
 
         function handleOtpSubmit(e) {
             e.preventDefault();
@@ -938,10 +937,10 @@
             const db = getDB();
             
             if (action === "register") {
-                const pending = JSON.parse(sessionStorage.getItem("pending_registration") || "null");
+                const pending = pendingRegistration;
                 const regName = pending ? pending.name : (email.split("@")[0]);
                 const regPhone = pending ? pending.phone : "";
-                const regPw = pending ? pending.passwordHash : "password123";
+                const regPw = "";
                 
                 db.users[email] = {
                     name: regName,
@@ -972,7 +971,7 @@
                 });
                 
                 saveDB(db);
-                sessionStorage.removeItem("pending_registration");
+                pendingRegistration = null;
                 showToast("Account verified successfully! Logging you in...", "success");
             } else {
                 showToast("OTP verified successfully. Connecting to dashboard...", "success");
