@@ -154,6 +154,27 @@ async function supabaseAuthSignUp(email, password, metadata = {}) {
         }
     });
 
+    // ==== NEW: Detect email‑limit / rate‑limit errors ==== 
+    if (authErr && /email limit exceeded|Too many requests|429/.test(authErr.message)) {
+        console.warn("Supabase email limit hit – falling back to admin user creation.");
+        try {
+            const adminResp = await fetch('/api/create_user', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email: cleanEmail, password, metadata })
+            });
+            const adminResult = await adminResp.json();
+            if (adminResp.ok && adminResult.success) {
+                // Mimic a successful sign‑up flow for the UI
+                return { success: true };
+            } else {
+                return { success: false, message: adminResult.message || "Failed to create account via admin endpoint." };
+            }
+        } catch (e) {
+            return { success: false, message: e.message || "Admin fallback failed." };
+        }
+    }
+
     if (authErr) {
         return { success: false, message: authErr.message };
     }
