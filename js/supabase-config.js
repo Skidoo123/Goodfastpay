@@ -148,7 +148,9 @@ async function supabaseAuthSignUp(email, password, metadata = {}) {
             data: {
                 full_name: metadata.name || cleanEmail.split("@")[0],
                 phone: metadata.phone || ""
-            }
+            },
+            // After signup Supabase will send a verification email that redirects back here
+            redirectTo: `${window.location.origin}/index.html`
         }
     });
 
