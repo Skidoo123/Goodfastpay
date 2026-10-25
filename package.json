@@ -9,6 +9,9 @@
     "start": "npx serve ."
   },
   "dependencies": {
-    "@supabase/supabase-js": "^2.48.1"
+    "@supabase/supabase-js": "^2.118.0"
+  },
+  "devDependencies": {
+    "vercel": "^65.2.0"
   }
 }
