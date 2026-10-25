@@ -10,6 +10,31 @@ let supabaseClient = null;
 let isSupabaseConfigured = false;
 let realtimeChannel = null;
 
+// Promise to signal when Supabase client is ready
+let supabaseReadyResolve;
+const supabaseReady = new Promise((resolve) => {
+  supabaseReadyResolve = resolve;
+});
+
+// Synchronous initialization if credentials are available
+if (typeof supabase !== 'undefined' && SUPABASE_URL && SUPABASE_ANON_KEY) {
+    try {
+        supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+            auth: {
+                persistSession: true,
+                autoRefreshToken: true,
+                detectSessionInUrl: true
+            }
+        });
+        isSupabaseConfigured = true;
+        if (supabaseReadyResolve) supabaseReadyResolve();
+        window.supabaseClient = supabaseClient;
+        console.log('⚡ Supabase Client synchronously initialized');
+    } catch (e) {
+        console.error('Supabase sync init error:', e);
+    }
+}
+
 (function initSupabase() {
     try {
         if (typeof supabase !== "undefined" && typeof supabase.createClient === "function") {

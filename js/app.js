@@ -304,7 +304,7 @@ function clearSession() {
     activeOtp = null;
     userPreferences = {};
     try { window.localStorage.removeItem(SUPABASE_AUTH_STORAGE_KEY); } catch (e) {}
-    if (typeof supabaseClient !== "undefined" && supabaseClient) {
+    if (supabaseClient && supabaseClient.auth) {
         supabaseClient.auth.signOut().catch(() => {});
     }
 }
@@ -321,7 +321,7 @@ function getPref(key, fallback) {
 function setPref(key, value) {
     userPreferences[key] = value;
     const email = getSessionEmail();
-    if (!email || typeof supabaseClient === "undefined" || !supabaseClient) return;
+    if (!email || !supabaseClient) return;
     supabaseClient.from("profiles")
         .update({ preferences: userPreferences })
         .eq("email", email)
@@ -330,7 +330,7 @@ function setPref(key, value) {
 
 async function loadUserPreferences() {
     const email = getSessionEmail();
-    if (!email || typeof supabaseClient === "undefined" || !supabaseClient) return;
+    if (!email || !supabaseClient) return;
     try {
         const { data } = await supabaseClient.from("profiles").select("preferences").eq("email", email).maybeSingle();
         userPreferences = (data && data.preferences) || {};
