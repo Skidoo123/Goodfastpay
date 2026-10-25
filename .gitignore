@@ -5,3 +5,4 @@
 .env.*.local
 *.log
 .vercel
+node_modules/
