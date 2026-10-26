@@ -16,24 +16,7 @@ const supabaseReady = new Promise((resolve) => {
   supabaseReadyResolve = resolve;
 });
 
-// Synchronous initialization if credentials are available
-if (typeof supabase !== 'undefined' && SUPABASE_URL && SUPABASE_ANON_KEY) {
-    try {
-        supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-            auth: {
-                persistSession: true,
-                autoRefreshToken: true,
-                detectSessionInUrl: true
-            }
-        });
-        isSupabaseConfigured = true;
-        if (supabaseReadyResolve) supabaseReadyResolve();
-        window.supabaseClient = supabaseClient;
-        console.log('⚡ Supabase Client synchronously initialized');
-    } catch (e) {
-        console.error('Supabase sync init error:', e);
-    }
-}
+// NOTE: The synchronous init block was removed. Initialization now occurs only in the async IIFE below.
 
 (function initSupabase() {
     try {
@@ -52,6 +35,8 @@ if (typeof supabase !== 'undefined' && SUPABASE_URL && SUPABASE_ANON_KEY) {
                 isSupabaseConfigured = true;
                 window.supabaseClient = supabaseClient;
                 console.log("⚡ Supabase Client connected to:", activeUrl);
+                // Resolve the ready promise now that the client is available
+                if (supabaseReadyResolve) supabaseReadyResolve();
             }
         } else {
             console.warn("Supabase CDN script not loaded yet.");
@@ -60,6 +45,14 @@ if (typeof supabase !== 'undefined' && SUPABASE_URL && SUPABASE_ANON_KEY) {
         console.error("Supabase initialization notice:", err);
     }
 })();
+
+// Helper to await Supabase readiness
+async function ensureSupabaseReady(){
+    await supabaseReady;
+    return true;
+}
+// expose globally for other scripts
+window.ensureSupabaseReady = ensureSupabaseReady;
 
 // Dynamically fetch Vercel Environment variables from /api/config if deployed on Vercel
 if (typeof window !== "undefined") {
@@ -112,7 +105,9 @@ if (typeof window !== "undefined") {
                 }
 
                 // Load user preferences (theme, hidden balance, etc.) from profiles.preferences
-                await loadUserPreferences();
+                // Ensure Supabase is ready before loading preferences
+await ensureSupabaseReady();
+await loadUserPreferences();
 
                 // Initialize Realtime Live Sync
                 setupSupabaseRealtimeSubscriptions();
@@ -160,6 +155,7 @@ function configureSupabaseCredentials(url, key) {
  * Sign Up with Email and Password via Supabase Auth
  */
 async function supabaseAuthSignUp(email, password, metadata = {}) {
+    await ensureSupabaseReady();
     const cleanEmail = email.trim().toLowerCase();
 
     if (!supabaseClient || !isSupabaseConfigured) {
@@ -237,6 +233,7 @@ async function supabaseAuthSignUp(email, password, metadata = {}) {
  * Sign In with Email and Password via Supabase Auth
  */
 async function supabaseAuthSignIn(email, password) {
+    await ensureSupabaseReady();
     const cleanEmail = email.trim().toLowerCase();
 
     if (!supabaseClient || !isSupabaseConfigured) {
@@ -320,6 +317,7 @@ async function supabaseAuthSignOut() {
  * Reset Password via Supabase Auth
  */
 async function supabaseAuthResetPassword(email) {
+    await ensureSupabaseReady();
     if (supabaseClient && isSupabaseConfigured) {
         try {
             const redirectUrl = window.location.origin + "/index.html?action=reset_password";
