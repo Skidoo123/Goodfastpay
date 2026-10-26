@@ -5,13 +5,14 @@
   "type": "module",
   "description": "Goodfastpay Digital Gift Card & Currency Exchange Platform",
   "scripts": {
-    "dev": "npx serve .",
+    "lint": "eslint .",
     "start": "npx serve ."
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.118.0"
   },
   "devDependencies": {
+    "eslint": "^10.13.0",
     "vercel": "^65.2.0"
   }
 }

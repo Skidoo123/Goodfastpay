@@ -2740,45 +2740,10 @@ function handleEditCurrencySubmit(e) {
     loadAdminSession();
 }
 
-// DELETE CURRENCY
-function deleteCurrency(code) {
-    if (code === "USD" || code === "EUR" || code === "NGN") {
-        if (typeof showToast === "function") showToast(`Base system currency ${code} cannot be deleted.`, "danger");
-        return;
-    }
-    
-    if (!confirm(`Are you sure you want to delete the currency ${code}? This will remove it from calculator options.`)) {
-        return;
-    }
-    
-    const db = getDB();
-    if (!db.currencies || !db.currencies[code]) return;
-    
-    delete db.currencies[code];
-    
-    if (db.settings && db.settings.rates) {
-        Object.keys(db.settings.rates).forEach(brand => {
-            if (db.settings.rates[brand]) {
-                delete db.settings.rates[brand][code];
-            }
-        });
-    }
-    
-    if (typeof writeAuditLog === "function") {
-        writeAuditLog(
-            currentAdmin ? currentAdmin.email : "Admin",
-            "Currency Deleted",
-            `Deleted Currency: ${code}`
-        );
-    }
-    
-    saveDB(db);
-    if (typeof showToast === "function") showToast(`Currency ${code} deleted successfully.`, "success");
-    loadAdminSession();
-}
+
 
 // RENDER CURRENCY REGISTRY LIST
-function renderCurrencyManager() {
+function renderCurrencyManager_old() {
     const db = getDB();
     const tbody = document.getElementById("admin-currencies-tbody");
     if (!tbody) return;
@@ -2826,85 +2791,10 @@ function renderCurrencyManager() {
 }
 
 // HANDLE ADD NEW CURRENCY FORM ACTION
-function handleAddCurrency(e) {
-    e.preventDefault();
-    if (activeAdminRole !== "SUPER_ADMIN") {
-        if (typeof showToast === "function") showToast("General Approval authority for currency rates is restricted to SUPER_ADMIN.", "danger");
-        return;
-    }
-    const code = document.getElementById("add-curr-code").value.trim().toUpperCase();
-    const name = document.getElementById("add-curr-name").value.trim();
-    const rate = parseFloat(document.getElementById("add-curr-rate").value);
-    const status = document.getElementById("add-curr-status").value;
-    
-    if (code.length !== 3) {
-        showToast("Currency Code must be exactly 3 characters.", "danger");
-        return;
-    }
-    if (isNaN(rate) || rate <= 0) {
-        showToast("Base Exchange Rate must be a positive non-zero number.", "danger");
-        return;
-    }
-    
-    const db = getDB();
-    if (db.currencies && db.currencies[code]) {
-        showToast(`Currency code ${code} already exists.`, "danger");
-        return;
-    }
-    
-    db.currencies[code] = { code, name, rate, status };
-    
-    // Log audit trail
-    writeAuditLog(
-        currentAdmin.email,
-        "Currency Created",
-        `Created Currency: ${code} (${name}) with rate ₦${rate.toLocaleString()} and status ${status}`
-    );
-    
-    // Record in rate history
-    if (!db.currencyHistory) db.currencyHistory = [];
-    db.currencyHistory.unshift({
-        currency: code,
-        oldRate: rate,
-        newRate: rate,
-        operator: currentAdmin.email,
-        timestamp: new Date().toISOString()
-    });
-    
-    // Initialize default brand rates for this currency
-    Object.keys(db.settings.rates).forEach(brand => {
-        db.settings.rates[brand][code] = rate; // Default card rate matches base rate
-    });
-    
-    saveDB(db);
-    showToast(`Currency ${code} added successfully!`, "success");
-    
-    // Reset form
-    document.getElementById("admin-add-currency-form").reset();
-    
-    // Refresh views
-    loadAdminSession();
-}
+
 
 // TOGGLE CURRENCY ENABLE/DISABLE STATUS
-function toggleCurrencyStatus(code) {
-    const db = getDB();
-    if (!db.currencies || !db.currencies[code]) return;
-    
-    const currentStatus = db.currencies[code].status;
-    const newStatus = currentStatus === "ACTIVE" ? "DISABLED" : "ACTIVE";
-    db.currencies[code].status = newStatus;
-    
-    writeAuditLog(
-        currentAdmin.email,
-        "Currency Status Toggled",
-        `Currency: ${code} status changed from ${currentStatus} to ${newStatus}`
-    );
-    
-    saveDB(db);
-    showToast(`Currency ${code} is now ${newStatus.toLowerCase()}.`, "success");
-    loadAdminSession();
-}
+
 
 // EDIT BASE EXCHANGE RATE & NAME
 function editCurrencyRate(code) {
