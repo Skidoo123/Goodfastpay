@@ -12,9 +12,10 @@ let realtimeChannel = null;
 
 // Promise to signal when Supabase client is ready
 let supabaseReadyResolve;
-const supabaseReady = new Promise((resolve) => {
+var supabaseReady = new Promise((resolve) => {
   supabaseReadyResolve = resolve;
 });
+window.supabaseReady = supabaseReady;
 
 // NOTE: The synchronous init block was removed. Initialization now occurs only in the async IIFE below.
 
