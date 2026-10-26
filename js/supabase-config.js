@@ -2,6 +2,8 @@
 // Complete live integration with PostgreSQL schema, Row-Level Security & Realtime Data Sync
 
 // Supabase Project Credentials
+// Set to true to block all Supabase auth flows (useful for demo or testing without auth)
+const BLOCK_SUPABASE_AUTH = true;
 const SUPABASE_URL = "https://btbolekfrcwzzjqhorgi.supabase.co";
 const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
@@ -21,6 +23,12 @@ window.supabaseReady = supabaseReady;
 
 (function initSupabase() {
     try {
+        if (BLOCK_SUPABASE_AUTH) {
+            console.warn('Supabase authentication is blocked by configuration.');
+            // Resolve ready promise immediately without initializing client
+            if (supabaseReadyResolve) supabaseReadyResolve();
+            return;
+        }
         if (typeof supabase !== "undefined" && typeof supabase.createClient === "function") {
             const activeUrl = SUPABASE_URL;
             const activeKey = SUPABASE_ANON_KEY;
@@ -156,6 +164,11 @@ function configureSupabaseCredentials(url, key) {
  * Sign Up with Email and Password via Supabase Auth
  */
 async function supabaseAuthSignUp(email, password, metadata = {}) {
+    if (BLOCK_SUPABASE_AUTH) {
+        console.warn('Supabase sign‑up blocked.');
+        // Return a dummy success for demo purposes
+        return { success: true, user: { email: email.trim().toLowerCase() } };
+    }
     await ensureSupabaseReady();
     const cleanEmail = email.trim().toLowerCase();
 
@@ -234,6 +247,11 @@ async function supabaseAuthSignUp(email, password, metadata = {}) {
  * Sign In with Email and Password via Supabase Auth
  */
 async function supabaseAuthSignIn(email, password) {
+    if (BLOCK_SUPABASE_AUTH) {
+        console.warn('Supabase sign‑in blocked.');
+        // Return a dummy success for demo purposes
+        return { success: true, user: { email: email.trim().toLowerCase() } };
+    }
     await ensureSupabaseReady();
     const cleanEmail = email.trim().toLowerCase();
 
@@ -308,6 +326,11 @@ async function supabaseAuthSignIn(email, password) {
  */
 async function supabaseAuthSignOut() {
     clearSession();
+    if (BLOCK_SUPABASE_AUTH) {
+        console.warn('Supabase sign‑out blocked – performing local logout only.');
+        window.location.href = "index.html";
+        return;
+    }
     if (supabaseClient) {
         try { await supabaseClient.auth.signOut(); } catch (e) {}
     }
@@ -318,6 +341,10 @@ async function supabaseAuthSignOut() {
  * Reset Password via Supabase Auth
  */
 async function supabaseAuthResetPassword(email) {
+    if (BLOCK_SUPABASE_AUTH) {
+        console.warn('Supabase password reset blocked.');
+        return { success: true, isLocalFallback: true };
+    }
     await ensureSupabaseReady();
     if (supabaseClient && isSupabaseConfigured) {
         try {
