@@ -45,30 +45,21 @@ async function handleLoginSubmit(event) {
     return;
   }
   try {
-    // Use local backend for authentication
-    const response = await fetch('http://localhost:3000/api/login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password })
-    });
-    if (!response.ok) {
-      const errData = await response.json();
-      throw new Error(errData.message || 'Login failed');
-    }
-    const data = await response.json(); // { user: { id, email, name, phone } }
+    const client = await window.getSupabaseClient?.();
+    if (!client) throw new Error('Supabase client not ready');
+    const { data, error } = await client.auth.signInWithPassword({ email, password });
+    if (error) throw error;
     // Sync local user store
     if (typeof syncLocalUserAccount === 'function') {
       const sbUser = data.user;
       syncLocalUserAccount(email, {
         id: sbUser.id,
-        name: sbUser.name || email.split('@')[0],
-        phone: sbUser.phone || ''
+        name: sbUser.user_metadata?.full_name || email.split('@')[0],
+        phone: sbUser.user_metadata?.phone || ''
       });
     }
-    // Store session locally
     window.localStorage.setItem('sessionUser', email);
     closeAuthModal();
-    // Redirect to portal after short fade
     setTimeout(() => { window.location.href = 'portal.html'; }, 300);
   } catch (err) {
     console.error('Login error:', err);
