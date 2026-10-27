@@ -4962,6 +4962,15 @@ function closeResetAdminPinModal() {
     }
 }
 
+function closeAdminPinModal() {
+    const modal = document.getElementById("admin-pin-modal");
+    if (modal) {
+        modal.classList.remove("active");
+        modal.style.display = "none";
+    }
+}
+
+
 function handleResetAdminPinSubmit(e) {
     e.preventDefault();
     const email = document.getElementById("reset-pin-target-email").value;
