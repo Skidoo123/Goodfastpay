@@ -126,3 +126,42 @@ window.toggleAuthTab = toggleAuthTab;
 window.handleLoginSubmit = handleLoginSubmit;
 window.handleRegisterSubmit = handleRegisterSubmit;
 window.quickMobileDemoLogin = quickMobileDemoLogin;
+// Supabase auth wrapper functions for UI code
+async function supabaseAuthSignIn(email, password) {
+  try {
+    const client = await window.getSupabaseClient?.();
+    if (client) {
+      const { data, error } = await client.auth.signInWithPassword({ email, password });
+      if (error) return { success: false, message: error.message };
+      return { success: true, message: 'Signed in', data };
+    } else {
+      // Local fallback using mock DB
+      const db = getDB();
+      const user = db.users[email];
+      if (user && user.passwordHash === password) {
+        return { success: true, message: 'Signed in (local fallback)', data: { user } };
+      }
+      return { success: false, message: 'Invalid credentials (local fallback)' };
+    }
+  } catch (e) {
+    return { success: false, message: e.message };
+  }
+}
+
+async function supabaseAuthSignOut() {
+  try {
+    const client = await window.getSupabaseClient?.();
+    if (client) {
+      const { error } = await client.auth.signOut();
+      if (error) return { success: false, message: error.message };
+    }
+    if (typeof clearSession === 'function') clearSession();
+    return { success: true };
+  } catch (e) {
+    return { success: false, message: e.message };
+  }
+}
+
+// expose globally
+window.supabaseAuthSignIn = supabaseAuthSignIn;
+window.supabaseAuthSignOut = supabaseAuthSignOut;
