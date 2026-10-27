@@ -68,17 +68,7 @@ function getDB() {
   return window.__goodfastpayDB;
 }
 
-export {
-  supabaseClient,
-  getSupabaseClient,
-  ensureSupabaseReady,
-  setupSupabaseRealtimeSubscriptions,
-  syncFromSupabaseCloud,
-  loadUserPreferences,
-  syncLocalUserAccount,
-  setSessionUser,
-  getDB
-};
+
 
 window.addEventListener('DOMContentLoaded', async () => {
   await ensureSupabaseReady();
