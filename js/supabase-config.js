@@ -3,7 +3,7 @@
 
 // Supabase Project Credentials
 // Set to true to block all Supabase auth flows (useful for demo or testing without auth)
-const BLOCK_SUPABASE_AUTH = true;
+const BLOCK_SUPABASE_AUTH = false;
 const SUPABASE_URL = "https://btbolekfrcwzzjqhorgi.supabase.co";
 const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
