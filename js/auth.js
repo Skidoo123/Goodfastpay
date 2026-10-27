@@ -39,11 +39,16 @@ async function handleLoginSubmit(event) {
   event.preventDefault();
   const email = document.getElementById('login-email')?.value?.trim();
   const password = document.getElementById('login-password')?.value;
+  console.log('Login submit triggered', { email });
   if (!email || !password) {
     showToast('Please provide both email and password.', 'danger');
     return;
   }
   try {
+    // Ensure Supabase client is ready
+    if (typeof window.ensureSupabaseReady === 'function') {
+      await window.ensureSupabaseReady();
+    }
     const client = await window.getSupabaseClient?.();
     if (!client) throw new Error('Supabase client not ready');
     const { data, error } = await client.auth.signInWithPassword({ email, password });
