@@ -59,6 +59,13 @@ window.supabaseReady = supabaseReady;
         console.error("Supabase initialization notice:", err);
     }
 })();
+// Safety fallback – unblock UI if Supabase never loads
+setTimeout(() => {
+  if (!window.supabaseClient) {
+    console.warn('Supabase still not available after 5 s – proceeding without it.');
+    if (typeof supabaseReadyResolve === 'function') supabaseReadyResolve();
+  }
+}, 5000);
 
 // Helper to await Supabase readiness
 async function ensureSupabaseReady(){
