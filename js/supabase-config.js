@@ -43,6 +43,11 @@ window.supabaseReady = supabaseReady;
                 });
                 isSupabaseConfigured = true;
                 window.supabaseClient = supabaseClient;
+        // Helper to retrieve the client after ready
+        window.getSupabaseClient = async () => {
+            await supabaseReady;
+            return supabaseClient;
+        };
                 console.log("⚡ Supabase Client connected to:", activeUrl);
                 // Resolve the ready promise now that the client is available
                 if (supabaseReadyResolve) supabaseReadyResolve();

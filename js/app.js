@@ -321,8 +321,10 @@ function getPref(key, fallback) {
 function setPref(key, value) {
     userPreferences[key] = value;
     const email = getSessionEmail();
-    if (!email || !supabaseClient) return;
-    supabaseClient.from("profiles")
+    if (!email) return;
+    const supabase = await getSupabaseClient();
+    if (!supabase) return;
+    supabase.from("profiles")
         .update({ preferences: userPreferences })
         .eq("email", email)
         .then(({ error }) => { if (error) console.warn("Preference save notice:", error.message); });
@@ -330,9 +332,11 @@ function setPref(key, value) {
 
 async function loadUserPreferences() {
     const email = getSessionEmail();
-    if (!email || !supabaseClient) return;
+    if (!email) return;
+    const supabase = await getSupabaseClient();
+    if (!supabase) return;
     try {
-        const { data } = await supabaseClient.from("profiles").select("preferences").eq("email", email).maybeSingle();
+        const { data } = await supabase.from("profiles").select("preferences").eq("email", email).maybeSingle();
         userPreferences = (data && data.preferences) || {};
         initTheme();
         window.dispatchEvent(new CustomEvent("goodfastpay_prefs_loaded", { detail: userPreferences }));
