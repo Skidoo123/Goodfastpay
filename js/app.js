@@ -318,7 +318,7 @@ function getPref(key, fallback) {
     return userPreferences[key] !== undefined ? userPreferences[key] : fallback;
 }
 
-function setPref(key, value) {
+async function setPref(key, value) {
     userPreferences[key] = value;
     const email = getSessionEmail();
     if (!email) return;

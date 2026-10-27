@@ -38,7 +38,9 @@ window.supabaseReady = supabaseReady;
 async function getSupabaseClient() {
   await supabaseReady;
   return supabaseClient;
+
 }
+window.getSupabaseClient = getSupabaseClient;
 async function ensureSupabaseReady() {
   await supabaseReady;
   return true;
