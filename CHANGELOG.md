@@ -4,6 +4,22 @@ Keep-a-changelog. Newest first. Every release links its full-audit output.
 
 ## [Unreleased]
 
+### Fixed
+- `api/admin/action.js` `audit()` now writes the canonical structured row to
+  `admin_audit_log` (migration 003) — previously that table was dead surface —
+  and keeps the legacy `audit_trail` mirror the admin console reads/streams.
+- Structure-level verification pass: every server write, frontend write,
+  select-list, ledger RPC param and audit query column verified against
+  `complete-supabase-setup.sql` + migrations 001–004 (pglast parse: all files OK).
+
+### Changed
+- Remove `rate_snapshots` table + `rates_public_read` policy from
+  `complete-supabase-setup.sql` (dead surface, referenced nowhere in js/ or
+  api/); alignment notes in `audit/scripts/rls-audit.sql` and
+  `tests/static/grep-rules.test.js`.
+- Annotate `transaction_pin` reads in `js/supabase-config.js` as tolerant
+  no-ops after migration 004 drops the column.
+
 ### Added
 - `supabase/complete-supabase-setup.sql`: one-script Supabase setup (hardened
   base tables + 001–004 + verification queries). `pglast`-parsed (104 statements),

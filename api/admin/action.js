@@ -7,13 +7,26 @@ import { money, str, newReferenceId } from '../_lib/validate.js';
 /* ---------------- audit ---------------- */
 
 async function audit(actor, action, target, details, req) {
-  await supabaseAdmin().from('audit_trail').insert({
+  const db = supabaseAdmin();
+  // Canonical structured row in admin_audit_log (migration 003).
+  await db.from('admin_audit_log').insert({
+    actor_id: actor.id,
+    actor_email: actor.email,
+    action,
+    target: target ?? null,
+    payload: { details: details ?? null },
+  }).then(
+    () => {},
+    (e) => console.error('[admin/action] admin_audit_log write failed', e?.message || e),
+  );
+  // Legacy mirror: the admin console reads/streams audit_trail (see js/supabase-config.js).
+  await db.from('audit_trail').insert({
     operator_email: actor.email,
     event: action,
     details: `${target ?? ''} ${details ?? ''}`.trim() || null,
   }).then(
     () => {},
-    (e) => console.error('[admin/action] audit write failed', e?.message || e),
+    (e) => console.error('[admin/action] audit_trail write failed', e?.message || e),
   );
   void req;
 }

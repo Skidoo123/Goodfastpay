@@ -805,6 +805,7 @@ function handleRealtimeProfileChange(payload) {
     if (updatedRecord.wallet_balance !== undefined) {
         user.wallet.balance = Number(updatedRecord.wallet_balance);
     }
+    // Post-004 the pin column may not exist; undefined read = harmless no-op.
     if (updatedRecord.transaction_pin) {
         user.transactionPin = updatedRecord.transaction_pin;
     }
@@ -1029,6 +1030,7 @@ async function syncFromSupabaseCloud() {
                     u.phone = p.phone || u.phone;
                     u.role = p.role || u.role;
                     u.status = p.status || u.status;
+                    // Post-004 the pin column may not exist; undefined read = harmless no-op.
                     if (p.transaction_pin) u.transactionPin = p.transaction_pin;
                     if (p.wallet_balance !== undefined) u.wallet.balance = Number(p.wallet_balance);
                     if (p.wallet_pending_balance !== undefined) u.wallet.pendingBalance = Number(p.wallet_pending_balance);

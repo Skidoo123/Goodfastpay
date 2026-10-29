@@ -89,7 +89,7 @@ test('no signup-credit residue (250.00)', () => {
 test('no open RLS in migration files (code lines only, comments excluded)', () => {
   // Intentional public rate-read policies (reference data by design — see V3).
   const ALLOWED = new Set([
-    'currencies_public_read', 'brand_rates_public_read', 'rates_public_read',
+    'currencies_public_read', 'brand_rates_public_read',
   ]);
   const bad = [];
   eachFile('supabase', ['.sql'], (p) => {

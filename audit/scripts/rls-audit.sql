@@ -12,7 +12,7 @@ where schemaname = 'public' and rowsecurity = true and forcerowsecurity = false;
 \echo '>>> R3: Permissive policies USING(true) outside the 3 intentional public rate reads (must be zero rows)'
 select schemaname, tablename, policyname, qual from pg_policies
 where schemaname = 'public' and qual = 'true'
-  and policyname not in ('currencies_public_read', 'brand_rates_public_read', 'rates_public_read');
+  and policyname not in ('currencies_public_read', 'brand_rates_public_read');
 
 \echo '>>> R4: RLS tables with ZERO policies (deny-all — review: must all be intentional)'
 select t.tablename from pg_tables t

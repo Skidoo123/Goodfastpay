@@ -6,6 +6,19 @@ supersede it with a new one.
 
 ---
 
+## 2026-10-29 — Canonical admin audit row + dead-surface alignment (Accepted)
+
+- **Context:** Structural audit found `admin_audit_log` (003) never written
+  (only legacy `audit_trail`), and `rate_snapshots` present in
+  `complete-supabase-setup.sql` but absent from migrations.
+- **Decision:** Admin API audits write `admin_audit_log` canonically and mirror
+  a legacy row into `audit_trail` (the console reads/streams it). Delete
+  `rate_snapshots` from the setup script — dead surface.
+- **Consequences:** Migration 003 becomes live; setup script is now truly
+  policy-identical to 001–004; no action for existing data.
+
+---
+
 ## 2026-09-15 — Harden in place, rebuild on `main` later (Accepted)
 
 - **Context:** Full audit found 20+ findings (open RLS, client-trusted balances,

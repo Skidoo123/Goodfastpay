@@ -201,12 +201,7 @@ CREATE TABLE IF NOT EXISTS public.audit_trail (
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
--- 1.13 Public rate snapshots (backing table for the public-read policy)
-CREATE TABLE IF NOT EXISTS public.rate_snapshots (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    snapshot JSONB NOT NULL DEFAULT '{}'::jsonb,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-);
+-- (rate_snapshots: deleted — dead surface, referenced nowhere in js/ or api/)
 
 -- ##########################################################################
 -- 2. LEDGER + AUDIT + PIN-HASH TABLES
@@ -368,7 +363,7 @@ CREATE POLICY notifications_select_own ON public.notifications
 CREATE POLICY notifications_update_own ON public.notifications
     FOR UPDATE TO authenticated USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
 
--- 4.10 currencies / brand_rates / rate_snapshots (public read, admin write)
+-- 4.10 currencies / brand_rates (public read, admin write)
 CREATE POLICY currencies_public_read ON public.currencies
     FOR SELECT TO anon, authenticated USING (true);
 CREATE POLICY currencies_admin_all ON public.currencies
@@ -377,8 +372,6 @@ CREATE POLICY brand_rates_public_read ON public.brand_rates
     FOR SELECT TO anon, authenticated USING (true);
 CREATE POLICY brand_rates_admin_all ON public.brand_rates
     FOR ALL TO authenticated USING (public.is_admin()) WITH CHECK (public.is_admin());
-CREATE POLICY rates_public_read ON public.rate_snapshots
-    FOR SELECT TO anon, authenticated USING (true);
 
 -- 4.11 ledger: read-only for owner/admin. NO write policies = append-only.
 CREATE POLICY ledger_select_own ON public.ledger_entries
@@ -624,13 +617,13 @@ SELECT 'V2 RLS not forced (must be zero rows)' AS check, schemaname, tablename
 FROM pg_tables
 WHERE schemaname = 'public' AND rowsecurity = true AND forcerowsecurity = false;
 
--- V3: permissive USING(true) policies → zero rows outside the 3 intentional
--- public rate-read policies (currencies/brand_rates/rate_snapshots are
+-- V3: permissive USING(true) policies → zero rows outside the 2 intentional
+-- public rate-read policies (currencies/brand_rates are
 -- reference data by design; everything else must be ownership-scoped)
 SELECT 'V3 permissive policy (must be zero rows)' AS check, tablename, policyname
 FROM pg_policies
 WHERE schemaname = 'public' AND qual = 'true'
-  AND policyname NOT IN ('currencies_public_read', 'brand_rates_public_read', 'rates_public_read');
+  AND policyname NOT IN ('currencies_public_read', 'brand_rates_public_read');
 
 -- V4: deny-all tables (review: must ALL be intentional)
 SELECT 'V4 deny-all table (review list)' AS check, t.tablename
